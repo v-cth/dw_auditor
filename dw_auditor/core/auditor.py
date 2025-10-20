@@ -19,6 +19,7 @@ from ..utils.output import print_results, get_summary_stats
 from ..exporters.dataframe_export import export_to_dataframe
 from ..exporters.json_export import export_to_json
 from ..exporters.html_export import export_to_html
+from ..exporters.summary_export import export_column_summary_to_dataframe
 from .database import DatabaseConnection
 
 
@@ -57,7 +58,8 @@ class SecureTableAuditor:
         mask_pii: bool = True,
         sample_in_db: bool = True,
         custom_query: Optional[str] = None,
-        custom_pii_keywords: List[str] = None
+        custom_pii_keywords: List[str] = None,
+        user_primary_key: Optional[List[str]] = None
     ) -> Dict:
         """
         Audit table directly from database using Ibis (RECOMMENDED)
@@ -101,9 +103,44 @@ class SecureTableAuditor:
         db_conn.connect()
 
         try:
-            # Get row count if sampling is enabled
+            # Get table metadata (including UID and row count)
+            table_metadata = {}
             row_count = None
-            if sample_in_db:
+            primary_key_columns = []
+
+            try:
+                table_metadata = db_conn.get_table_metadata(table_name, schema)
+                if table_metadata:
+                    if 'table_uid' in table_metadata:
+                        print(f"🔖 Table UID: {table_metadata['table_uid']}")
+                    if 'table_type' in table_metadata and table_metadata['table_type']:
+                        table_type = table_metadata['table_type']
+                        # INFORMATION_SCHEMA.TABLES returns readable types like "BASE TABLE", "VIEW", etc.
+                        print(f"📑 Table type: {table_type}")
+                    if 'row_count' in table_metadata and table_metadata['row_count'] is not None:
+                        row_count = table_metadata['row_count']
+                        print(f"📊 Table has {row_count:,} rows")
+            except Exception as e:
+                print(f"⚠️  Could not get table metadata: {e}")
+
+            # Get primary key columns - prioritize user-defined, then INFORMATION_SCHEMA
+            if user_primary_key:
+                primary_key_columns = user_primary_key
+                print(f"🔑 Primary key from config: {', '.join(primary_key_columns)}")
+                table_metadata['primary_key_columns'] = primary_key_columns
+                table_metadata['primary_key_source'] = 'user_config'
+            else:
+                try:
+                    primary_key_columns = db_conn.get_primary_key_columns(table_name, schema)
+                    if primary_key_columns:
+                        print(f"🔑 Primary key from schema: {', '.join(primary_key_columns)}")
+                        table_metadata['primary_key_columns'] = primary_key_columns
+                        table_metadata['primary_key_source'] = 'information_schema'
+                except Exception as e:
+                    print(f"⚠️  Could not get primary key info: {e}")
+
+            # Fallback to row count query if not in metadata
+            if row_count is None and sample_in_db:
                 try:
                     row_count = db_conn.get_row_count(table_name, schema)
                     if row_count is not None:
@@ -134,8 +171,17 @@ class SecureTableAuditor:
             if mask_pii:
                 df = mask_pii_columns(df, custom_pii_keywords)
 
-            # Run audit - pass the actual row count if we have it
-            results = self.audit_table(df, table_name, total_row_count=row_count)
+            # Run audit - pass the actual row count, metadata, and primary key columns
+            results = self.audit_table(
+                df,
+                table_name,
+                total_row_count=row_count,
+                primary_key_columns=primary_key_columns
+            )
+
+            # Add table metadata to results
+            if table_metadata:
+                results['table_metadata'] = table_metadata
 
             # Clear from memory
             del df
@@ -188,7 +234,8 @@ class SecureTableAuditor:
         df: pl.DataFrame,
         table_name: str = "table",
         check_config: Optional[Dict] = None,
-        total_row_count: Optional[int] = None
+        total_row_count: Optional[int] = None,
+        primary_key_columns: Optional[List[str]] = None
     ) -> Dict:
         """
         Main audit function - runs all checks on a Polars DataFrame
@@ -230,6 +277,7 @@ class SecureTableAuditor:
             'sampled': analyzed_rows < actual_total_rows,
             'analyzed_rows': analyzed_rows,
             'columns': {},
+            'column_summary': {},  # Summary for ALL columns
             'timestamp': start_time.isoformat(),
             'start_time': start_time.isoformat()
         }
@@ -246,10 +294,40 @@ class SecureTableAuditor:
             }
 
         # Analyze each column
+        potential_keys = []
         for col in df.columns:
-            col_results = self._audit_column(df, col, check_config)
+            col_results = self._audit_column(df, col, check_config, primary_key_columns)
+
+            # Determine status based on column type and issues found
+            dtype = df[col].dtype
+            if dtype in [pl.Utf8, pl.String, pl.Datetime, pl.Date]:
+                # Columns that are checked for quality issues
+                status = 'ERROR' if col_results['issues'] else 'OK'
+            else:
+                # Columns not checked (numeric, boolean, etc.)
+                status = 'NOT_CHECKED'
+
+            # Store summary for ALL columns
+            results['column_summary'][col] = {
+                'dtype': col_results['dtype'],
+                'null_count': col_results['null_count'],
+                'null_pct': col_results['null_pct'],
+                'distinct_count': col_results['distinct_count'],
+                'status': status
+            }
+
+            # Check if this column could be a primary key (unique + no nulls)
+            if col_results['distinct_count'] == analyzed_rows and col_results['null_count'] == 0:
+                potential_keys.append(col)
+
+            # Store detailed results only for columns with issues
             if col_results['issues']:
                 results['columns'][col] = col_results
+
+        # Store potential primary key columns
+        if potential_keys:
+            results['potential_primary_keys'] = potential_keys
+            print(f"\n🔑 Potential primary key column(s): {', '.join(potential_keys)}")
 
         # Calculate duration
         end_time = datetime.now()
@@ -262,16 +340,20 @@ class SecureTableAuditor:
 
         return results
 
-    def _audit_column(self, df: pl.DataFrame, col: str, check_config: Dict) -> Dict:
+    def _audit_column(self, df: pl.DataFrame, col: str, check_config: Dict, primary_key_columns: Optional[List[str]] = None) -> Dict:
         """Audit a single column for all issues"""
         dtype = df[col].dtype
         null_count = df[col].null_count()
         total_rows = len(df)
 
+        # Calculate distinct value count (excluding nulls)
+        distinct_count = df[col].n_unique()
+
         col_result = {
             'dtype': str(dtype),
             'null_count': null_count,
             'null_pct': (null_count / total_rows * 100) if total_rows > 0 else 0,
+            'distinct_count': distinct_count,
             'issues': []
         }
 
@@ -287,13 +369,13 @@ class SecureTableAuditor:
         # String column checks
         if dtype in [pl.Utf8, pl.String]:
             if check_config.get('trailing_spaces', True):
-                col_result['issues'].extend(check_trailing_spaces(df, col))
+                col_result['issues'].extend(check_trailing_spaces(df, col, primary_key_columns))
             if check_config.get('case_duplicates', True):
-                col_result['issues'].extend(check_case_duplicates(df, col))
+                col_result['issues'].extend(check_case_duplicates(df, col, primary_key_columns))
             if check_config.get('special_chars', True):
-                col_result['issues'].extend(check_special_chars(df, col))
+                col_result['issues'].extend(check_special_chars(df, col, primary_key_columns))
             if check_config.get('numeric_strings', True):
-                col_result['issues'].extend(check_numeric_strings(df, col))
+                col_result['issues'].extend(check_numeric_strings(df, col, primary_key_columns))
 
         # Timestamp/Date checks
         elif dtype in [pl.Datetime, pl.Date]:
@@ -367,3 +449,15 @@ class SecureTableAuditor:
             Dictionary with summary statistics
         """
         return get_summary_stats(results)
+
+    def export_column_summary_to_dataframe(self, results: Dict) -> pl.DataFrame:
+        """
+        Export column summary to a Polars DataFrame
+
+        Args:
+            results: Audit results dictionary
+
+        Returns:
+            DataFrame with one row per column with basic metrics (null count, null %, distinct count)
+        """
+        return export_column_summary_to_dataframe(results)

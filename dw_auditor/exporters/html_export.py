@@ -156,7 +156,21 @@ def export_to_html(results: Dict, file_path: str = "audit_report.html") -> str:
 <body>
     <div class="header">
         <h1>📊 Data Quality Audit Report</h1>
-        <p style="margin: 5px 0;">Table: <strong>{results['table_name']}</strong></p>
+        <p style="margin: 5px 0;">Table: <strong>{results['table_name']}</strong></p>"""
+
+    # Add table metadata if available
+    if 'table_metadata' in results:
+        if 'table_type' in results['table_metadata'] and results['table_metadata']['table_type']:
+            table_type = results['table_metadata']['table_type']
+            # INFORMATION_SCHEMA.TABLES returns readable types like "BASE TABLE", "VIEW", etc.
+            html += f"""
+        <p style="margin: 5px 0; opacity: 0.9;">Type: <strong>{table_type}</strong></p>"""
+
+        if 'table_uid' in results['table_metadata']:
+            html += f"""
+        <p style="margin: 5px 0; opacity: 0.9;">Table UID: <strong>{results['table_metadata']['table_uid']}</strong></p>"""
+
+    html += f"""
         <p style="margin: 5px 0; opacity: 0.9;">Generated: {results.get('timestamp', 'N/A')}</p>
         <p style="margin: 5px 0; opacity: 0.9;">Duration: {results.get('duration_seconds', 0):.2f} seconds</p>
     </div>
@@ -181,6 +195,84 @@ def export_to_html(results: Dict, file_path: str = "audit_report.html") -> str:
         <div class="metadata-card">
             <div class="label">Duration</div>
             <div class="value">{results.get('duration_seconds', 0):.2f}s</div>
+        </div>
+    </div>
+
+    <!-- Column Summary Table -->
+"""
+
+    # Add column summary for all columns if available
+    if 'column_summary' in results and results['column_summary']:
+        html += """
+    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #1f2937;">📋 Column Summary</h2>
+        <p style="color: #666; margin-bottom: 20px;">Basic metrics for all columns in the table</p>"""
+
+        # Show primary key information if available
+        primary_keys = []
+        if 'table_metadata' in results and 'primary_key_columns' in results['table_metadata']:
+            primary_keys = results['table_metadata']['primary_key_columns']
+        elif 'potential_primary_keys' in results:
+            primary_keys = results['potential_primary_keys']
+
+        if primary_keys:
+            html += f"""
+        <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 12px 15px; margin-bottom: 15px; border-radius: 4px;">
+            <strong>🔑 Primary Key Column(s):</strong> {', '.join(primary_keys)}
+        </div>"""
+
+        html += """
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+                <thead>
+                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: left; font-weight: 600;">Column Name</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600;">Data Type</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600;">Status</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null Count</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null %</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Distinct Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+"""
+        for col_name, col_data in results['column_summary'].items():
+            null_pct = col_data['null_pct']
+            is_primary_key = col_name in primary_keys
+            status = col_data.get('status', 'UNKNOWN')
+
+            # Determine row color based on status and other factors
+            if status == 'ERROR':
+                row_color = '#fef2f2'  # Light red for errors
+            elif is_primary_key:
+                row_color = '#ecfdf5'  # Light green for primary keys
+            elif null_pct > 10:
+                row_color = '#fef2f2'  # Light red for high nulls
+            else:
+                row_color = 'white'
+
+            # Status badge styling
+            if status == 'OK':
+                status_badge = '<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">✓ OK</span>'
+            elif status == 'ERROR':
+                status_badge = '<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">✗ ERROR</span>'
+            else:
+                status_badge = '<span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">- N/A</span>'
+
+            col_name_display = f"🔑 {col_name}" if is_primary_key else col_name
+            html += f"""
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: {row_color};">
+                        <td style="padding: 10px; font-weight: {'bold' if is_primary_key else '500'};">{col_name_display}</td>
+                        <td style="padding: 10px; color: #6b7280;">{col_data['dtype']}</td>
+                        <td style="padding: 10px; text-align: center;">{status_badge}</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">{col_data['null_count']:,}</td>
+                        <td style="padding: 10px; text-align: right; color: {'#dc2626' if null_pct > 10 else '#6b7280'}; font-weight: {'bold' if null_pct > 10 else 'normal'};">{null_pct:.1f}%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">{col_data['distinct_count']:,}</td>
+                    </tr>
+"""
+        html += """
+                </tbody>
+            </table>
         </div>
     </div>
 """
@@ -211,13 +303,20 @@ def export_to_html(results: Dict, file_path: str = "audit_report.html") -> str:
             <div class="column-name">{col_name}</div>
             <div class="column-type">{col_data['dtype']}</div>
         </div>
-"""
-
-            if col_data['null_count'] > 0:
-                html += f"""
-        <p style="color: #666; margin-bottom: 15px;">
-            Null values: {col_data['null_count']:,} ({col_data['null_pct']:.1f}%)
-        </p>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: {'#ef4444' if col_data['null_pct'] > 10 else '#6b7280'};">
+                    {col_data['null_count']:,} ({col_data['null_pct']:.1f}%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    {col_data.get('distinct_count', 'N/A'):,}
+                </div>
+            </div>
+        </div>
 """
 
             for issue in col_data['issues']:

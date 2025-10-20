@@ -33,22 +33,27 @@ database:
 
 # Tables to Audit
 # ----------------------------------------------------------------------------
-# Can be a simple list of table names OR objects with custom queries
+# Can be a simple list of table names OR objects with custom queries and primary keys
 tables:
   # Simple table names
-  - fct_avaibility
-  
+  - name: fct_avaibility
+  - name: dim_station
+    primary_key: station_code  # Optional: specify primary key column(s)
+
   # Table with custom query (for filtering or joining)
+  # - name: custom_table
+  #   query: "SELECT * FROM my_table WHERE date > '2024-01-01'"
+  #   primary_key: id
 
 
 # Sampling Configuration
 # ----------------------------------------------------------------------------
 sampling:
   # Number of rows to sample if table exceeds threshold
-  sample_size: 100000
+  sample_size: 10000
   
   # Row count threshold to trigger sampling
-  sample_threshold: 1000000
+  sample_threshold: 10000
   
   # Use database-native sampling (faster, more secure)
   # If true, sampling happens in the database before loading data

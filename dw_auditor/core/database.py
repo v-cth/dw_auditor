@@ -176,6 +176,157 @@ class DatabaseConnection:
         polars_df = result.to_polars()
         return polars_df
 
+    def get_table_metadata(self, table_name: str, schema: Optional[str] = None) -> Dict[str, Any]:
+        """
+        Get table metadata from INFORMATION_SCHEMA including UID/unique identifiers
+
+        Args:
+            table_name: Name of the table
+            schema: Optional schema name
+
+        Returns:
+            Dictionary with table metadata (row_count, created_time, table_type, etc.)
+        """
+        if self.conn is None:
+            self.connect()
+
+        metadata = {}
+
+        try:
+            if self.backend == 'bigquery':
+                # BigQuery INFORMATION_SCHEMA.TABLES
+                dataset = schema or self.connection_params.get('dataset_id')
+                if not dataset:
+                    return metadata
+
+                project_id = self.connection_params.get('project_id')
+
+                # Query INFORMATION_SCHEMA.TABLES using Ibis SQL - use region INFORMATION_SCHEMA
+                # In BigQuery, INFORMATION_SCHEMA is dataset-scoped, not project-scoped
+                info_schema_table = f"`{dataset}.INFORMATION_SCHEMA.TABLES`"
+
+                # Use Ibis SQL interface for INFORMATION_SCHEMA views
+                result = self.conn.sql(
+                    f"SELECT table_catalog, table_schema, table_name, table_type, creation_time "
+                    f"FROM {info_schema_table} "
+                    f"WHERE table_name = '{table_name}'"
+                ).to_polars()
+
+                if len(result) > 0:
+                    # Extract scalar values from Polars DataFrame
+                    metadata['table_name'] = str(result['table_name'][0])
+                    metadata['table_type'] = str(result['table_type'][0]) if result['table_type'][0] is not None else None
+                    metadata['created_time'] = str(result['creation_time'][0]) if result['creation_time'][0] is not None else None
+                    # Construct table UID
+                    metadata['table_uid'] = f"{project_id}.{dataset}.{table_name}"
+
+                # Get row count from __TABLES__ using Ibis table API (this works for system tables)
+                try:
+                    tables_meta = self.conn.table(f'{dataset}.__TABLES__')
+                    row_result = (
+                        tables_meta
+                        .filter(tables_meta.table_id == table_name)
+                        .select(['row_count'])
+                        .to_polars()
+                    )
+                    if len(row_result) > 0:
+                        metadata['row_count'] = int(row_result['row_count'][0]) if row_result['row_count'][0] is not None else None
+                except:
+                    pass
+
+            elif self.backend == 'snowflake':
+                # Snowflake INFORMATION_SCHEMA.TABLES
+                database = self.connection_params.get('database')
+                schema_name = schema or self.connection_params.get('schema', 'PUBLIC')
+
+                info_schema = self.conn.table(f'{database}.INFORMATION_SCHEMA.TABLES')
+                result = (
+                    info_schema
+                    .filter(
+                        (info_schema.table_schema == schema_name) &
+                        (info_schema.table_name == table_name.upper())
+                    )
+                    .select(['table_name', 'row_count', 'created', 'table_type'])
+                    .to_polars()
+                )
+
+                if len(result) > 0:
+                    # Extract scalar values from Polars DataFrame
+                    metadata['table_name'] = str(result['TABLE_NAME'][0])
+                    metadata['row_count'] = int(result['ROW_COUNT'][0]) if result['ROW_COUNT'][0] is not None else None
+                    metadata['created_time'] = str(result['CREATED'][0]) if result['CREATED'][0] is not None else None
+                    metadata['table_type'] = str(result['TABLE_TYPE'][0]) if result['TABLE_TYPE'][0] is not None else None
+                    # Snowflake table UID is database.schema.table
+                    metadata['table_uid'] = f"{database}.{schema_name}.{table_name}"
+
+        except Exception as e:
+            print(f"⚠️  Could not get table metadata from INFORMATION_SCHEMA: {e}")
+
+        return metadata
+
+    def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None) -> list:
+        """
+        Get primary key column names from INFORMATION_SCHEMA
+
+        Args:
+            table_name: Name of the table
+            schema: Optional schema name
+
+        Returns:
+            List of column names that form the primary key
+        """
+        if self.conn is None:
+            self.connect()
+
+        primary_keys = []
+
+        try:
+            if self.backend == 'bigquery':
+                # BigQuery doesn't enforce primary keys, so we can't get them from INFORMATION_SCHEMA
+                # Return empty list
+                return primary_keys
+
+            elif self.backend == 'snowflake':
+                # Snowflake stores primary key info in INFORMATION_SCHEMA.TABLE_CONSTRAINTS
+                database = self.connection_params.get('database')
+                schema_name = schema or self.connection_params.get('schema', 'PUBLIC')
+
+                # Query for primary key constraints
+                constraints = self.conn.table(f'{database}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS')
+                pk_constraints = (
+                    constraints
+                    .filter(
+                        (constraints.table_schema == schema_name) &
+                        (constraints.table_name == table_name.upper()) &
+                        (constraints.constraint_type == 'PRIMARY KEY')
+                    )
+                    .select('constraint_name')
+                    .to_polars()
+                )
+
+                if len(pk_constraints) > 0:
+                    constraint_name = pk_constraints['CONSTRAINT_NAME'][0]
+
+                    # Get column names for this constraint
+                    key_columns = self.conn.table(f'{database}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE')
+                    pk_columns = (
+                        key_columns
+                        .filter(
+                            (key_columns.table_schema == schema_name) &
+                            (key_columns.table_name == table_name.upper()) &
+                            (key_columns.constraint_name == constraint_name)
+                        )
+                        .select('column_name')
+                        .to_polars()
+                    )
+
+                    primary_keys = [str(col).lower() for col in pk_columns['COLUMN_NAME'].to_list()]
+
+        except Exception as e:
+            print(f"⚠️  Could not get primary key from INFORMATION_SCHEMA: {e}")
+
+        return primary_keys
+
     def get_row_count(self, table_name: str, schema: Optional[str] = None, approximate: bool = True) -> int:
         """
         Get row count for a table

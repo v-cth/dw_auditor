@@ -1,3 +1,0 @@
-table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
-fct_avaibility,100000,100000,false,station_name,String,0,0.0,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place du Général de Gaulle', 'Place Du Général De Gaulle'])]",2025-10-09T17:09:46.838885
-fct_avaibility,100000,100000,false,station_name,String,0,0.0,SPECIAL_CHARACTERS,38292,38.292,"","['Professeur René Leriche - Général Leclerc', 'Bas - Gabriel Péri', 'Dôme - République']",2025-10-09T17:09:46.838885

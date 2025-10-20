@@ -76,13 +76,17 @@ def main():
             print(f"{'='*70}")
 
             try:
+                # Get primary key from config if specified
+                user_defined_primary_key = config.table_primary_keys.get(table, None)
+
                 results = auditor.audit_from_database(
                     table_name=table,
                     backend=config.backend,
                     connection_params=config.connection_params,
                     schema=config.schema,
                     mask_pii=config.mask_pii,
-                    custom_pii_keywords=config.custom_pii_keywords
+                    custom_pii_keywords=config.custom_pii_keywords,
+                    user_primary_key=user_defined_primary_key
                 )
 
                 # Export results to run directory
@@ -95,10 +99,17 @@ def main():
                     auditor.export_results_to_json(results, str(output_file))
 
                 if 'csv' in config.export_formats:
+                    # Export issues CSV
                     output_file = run_dir / f'{config.file_prefix}_{table}.csv'
                     df = auditor.export_results_to_dataframe(results)
                     df.write_csv(str(output_file))
                     print(f"📄 CSV saved to: {output_file}")
+
+                    # Export column summary CSV
+                    summary_file = run_dir / f'{config.file_prefix}_{table}_summary.csv'
+                    summary_df = auditor.export_column_summary_to_dataframe(results)
+                    summary_df.write_csv(str(summary_file))
+                    print(f"📄 Column summary CSV saved to: {summary_file}")
 
             except Exception as e:
                 print(f"❌ Error auditing table '{table}': {e}")

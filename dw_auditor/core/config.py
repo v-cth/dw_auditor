@@ -18,8 +18,28 @@ class AuditConfig:
         self.connection_params = db_config.get('connection_params', {})
         self.schema = db_config.get('schema')
 
-        # Tables to audit
-        self.tables = config_dict.get('tables', [])
+        # Tables to audit - normalize format
+        # Support both simple list and dict format with primary keys
+        tables_raw = config_dict.get('tables', [])
+        self.tables = []
+        self.table_primary_keys = {}  # Map of table_name -> primary_key_column(s)
+
+        for table_entry in tables_raw:
+            if isinstance(table_entry, str):
+                # Simple string format
+                self.tables.append(table_entry)
+            elif isinstance(table_entry, dict):
+                # Dictionary format with optional primary_key
+                table_name = table_entry.get('name')
+                if table_name:
+                    self.tables.append(table_name)
+                    primary_key = table_entry.get('primary_key')
+                    if primary_key:
+                        # Support both single string and list of strings
+                        if isinstance(primary_key, str):
+                            self.table_primary_keys[table_name] = [primary_key]
+                        elif isinstance(primary_key, list):
+                            self.table_primary_keys[table_name] = primary_key
 
         # Sampling configuration
         sampling = config_dict.get('sampling', {})

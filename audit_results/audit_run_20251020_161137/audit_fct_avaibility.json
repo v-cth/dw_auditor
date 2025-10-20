@@ -1,0 +1,152 @@
+{
+  "table_name": "fct_avaibility",
+  "total_rows": 24417603,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1488,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3821,
+          "pct": 38.21,
+          "special_chars": [
+            "'",
+            "\u00ee",
+            "\u00f4",
+            "\u00e9",
+            "\u00e8",
+            "\u00e2",
+            "\u00e7",
+            "\u00fb"
+          ],
+          "examples": [
+            "Jean Moulin - Place Victor et H\u00e9l\u00e8ne Basch",
+            "Bridaine - Lamand\u00e9"
+          ]
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1492,
+      "status": "NOT_CHECKED"
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1488,
+      "status": "ERROR"
+    },
+    "capacity": {
+      "dtype": "Int64",
+      "null_count": 9,
+      "null_pct": 0.09,
+      "distinct_count": 73,
+      "status": "NOT_CHECKED"
+    },
+    "docks_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 67,
+      "status": "NOT_CHECKED"
+    },
+    "mechanical": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 62,
+      "status": "NOT_CHECKED"
+    },
+    "ebike": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 37,
+      "status": "NOT_CHECKED"
+    },
+    "duedate": {
+      "dtype": "Datetime(time_unit='ns', time_zone='UTC')",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9985,
+      "status": "OK"
+    },
+    "bikes_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 68,
+      "status": "NOT_CHECKED"
+    },
+    "rate_bike_available": {
+      "dtype": "Float64",
+      "null_count": 934,
+      "null_pct": 9.34,
+      "distinct_count": 1034,
+      "status": "NOT_CHECKED"
+    },
+    "rate_dock_available": {
+      "dtype": "Float64",
+      "null_count": 934,
+      "null_pct": 9.34,
+      "distinct_count": 1029,
+      "status": "NOT_CHECKED"
+    },
+    "bikes_out_of_order": {
+      "dtype": "Int64",
+      "null_count": 9,
+      "null_pct": 0.09,
+      "distinct_count": 92,
+      "status": "NOT_CHECKED"
+    },
+    "collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 7559,
+      "status": "OK"
+    },
+    "rounded_collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 7558,
+      "status": "OK"
+    }
+  },
+  "timestamp": "2025-10-20T16:11:47.959002",
+  "start_time": "2025-10-20T16:11:47.959002",
+  "end_time": "2025-10-20T16:11:47.976664",
+  "duration_seconds": 0.02,
+  "table_metadata": {
+    "table_name": "fct_avaibility",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-20 01:00:52.988000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.fct_avaibility",
+    "row_count": 24417603
+  }
+}

@@ -3,11 +3,23 @@ String-based data quality checks
 """
 
 import polars as pl
-from typing import List, Dict
+from typing import List, Dict, Optional
 import re
 
 
-def check_trailing_spaces(df: pl.DataFrame, col: str) -> List[Dict]:
+def _format_example_with_pk(row_data: Dict, col: str, primary_key_columns: Optional[List[str]] = None) -> str:
+    """Format an example with primary key context"""
+    if primary_key_columns and len(primary_key_columns) > 0:
+        pk_values = []
+        for pk_col in primary_key_columns:
+            if pk_col in row_data:
+                pk_values.append(f"{pk_col}={row_data[pk_col]}")
+        if pk_values:
+            return f"{row_data[col]} [{', '.join(pk_values)}]"
+    return str(row_data[col])
+
+
+def check_trailing_spaces(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None) -> List[Dict]:
     """Detect trailing or leading spaces"""
     issues = []
 
@@ -35,7 +47,13 @@ def check_trailing_spaces(df: pl.DataFrame, col: str) -> List[Dict]:
 
     if len(trailing) > 0:
         non_null_count = df[col].drop_nulls().len()
-        examples = [f"'{x}'" for x in trailing[col].head(3).to_list()]
+
+        # Format examples with primary key context if available
+        examples = []
+        select_cols = [col] + (primary_key_columns if primary_key_columns else [])
+        for row in trailing.select(select_cols).head(3).iter_rows(named=True):
+            examples.append(f"'{_format_example_with_pk(row, col, primary_key_columns)}'")
+
         issues.append({
             'type': 'TRAILING_SPACES',
             'count': len(trailing),
@@ -46,7 +64,7 @@ def check_trailing_spaces(df: pl.DataFrame, col: str) -> List[Dict]:
     return issues
 
 
-def check_case_duplicates(df: pl.DataFrame, col: str) -> List[Dict]:
+def check_case_duplicates(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None) -> List[Dict]:
     """Detect values that differ only in case"""
     issues = []
 
@@ -74,7 +92,7 @@ def check_case_duplicates(df: pl.DataFrame, col: str) -> List[Dict]:
     return issues
 
 
-def check_special_chars(df: pl.DataFrame, col: str, pattern: str = r'[^a-zA-Z0-9\s\.,\-_@]') -> List[Dict]:
+def check_special_chars(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None, pattern: str = r'[^a-zA-Z0-9\s\.,\-_@]') -> List[Dict]:
     """Detect strings with special characters"""
     issues = []
 
@@ -85,7 +103,12 @@ def check_special_chars(df: pl.DataFrame, col: str, pattern: str = r'[^a-zA-Z0-9
 
     if len(with_special) > 0:
         non_null_count = df[col].drop_nulls().len()
-        examples = with_special[col].head(3).to_list()
+
+        # Format examples with primary key context if available
+        examples = []
+        select_cols = [col] + (primary_key_columns if primary_key_columns else [])
+        for row in with_special.select(select_cols).head(2).iter_rows(named=True):
+            examples.append(_format_example_with_pk(row, col, primary_key_columns))
 
         # Extract unique special characters from examples
         special_chars = set()
@@ -104,7 +127,7 @@ def check_special_chars(df: pl.DataFrame, col: str, pattern: str = r'[^a-zA-Z0-9
     return issues
 
 
-def check_numeric_strings(df: pl.DataFrame, col: str, threshold: float = 0.8) -> List[Dict]:
+def check_numeric_strings(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None, threshold: float = 0.8) -> List[Dict]:
     """Detect string columns that contain only numbers"""
     issues = []
 

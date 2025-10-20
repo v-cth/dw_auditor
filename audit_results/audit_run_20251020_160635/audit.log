@@ -1,0 +1,122 @@
+📁 Audit run directory: audit_results/audit_run_20251020_160635
+📝 Logs will be saved to: audit_results/audit_run_20251020_160635/audit.log
+
+======================================================================
+🔍 Auditing table: fct_avaibility
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+⚠️  Could not get table metadata from INFORMATION_SCHEMA: 400 GET https://bigquery.googleapis.com/bigquery/v2/projects/portfolio-402/datasets/dbt_prod/tables/INFORMATION_SCHEMA.TABLES?prettyPrint=false: Illegal operation on INFORMATION_SCHEMA view: portfolio-402:dbt_prod.INFORMATION_SCHEMA.TABLES
+📊 Table has 24,417,603 rows
+🔍 Sampling 10,000 rows from table
+✅ Loaded 10,000 rows into memory
+
+============================================================
+Auditing: fct_avaibility
+Total rows in table: 24,417,603
+Analyzing sample: 10,000 rows
+============================================================
+
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+station_code                   Int64           - NOT_CHECKED 0 (0.0%)        1,499          
+station_name                   String          ✗ ERROR      0 (0.0%)        1,496          
+capacity                       Int64           - NOT_CHECKED 8 (0.1%)        73             
+docks_available                Int64           - NOT_CHECKED 0 (0.0%)        66             
+mechanical                     Int64           - NOT_CHECKED 0 (0.0%)        61             
+ebike                          Int64           - NOT_CHECKED 0 (0.0%)        40             
+duedate                        Datetime(time_unit='ns', time_zone='UTC') ✓ OK         0 (0.0%)        9,986          
+bikes_available                Int64           - NOT_CHECKED 0 (0.0%)        70             
+rate_bike_available            Float64         - NOT_CHECKED 1,018 (10.2%)   1,043          
+rate_dock_available            Float64         - NOT_CHECKED 1,018 (10.2%)   1,050          
+bikes_out_of_order             Int64           - NOT_CHECKED 8 (0.1%)        95             
+collected_at                   Datetime(time_unit='ns', time_zone=None) ✓ OK         0 (0.0%)        7,566          
+rounded_collected_at           Datetime(time_unit='ns', time_zone=None) ✓ OK         0 (0.0%)        7,566          
+====================================================================================================
+
+🔍 Issues Found:
+
+📊 Column: station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,496
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 3,831 rows (38.3%)
+      Found chars: ['û', "'", 'â', 'é', 'ô', 'è', 'à', 'ê', 'ç', 'É']
+      Examples: ['Capitaine Glarner - Gabriel Péri', 'Gambetta - Père Lachaise']
+
+⏱️  Audit duration: 0.02 seconds
+
+🔒 Closed BIGQUERY connection
+📄 HTML report saved to: audit_results/audit_run_20251020_160635/audit_fct_avaibility.html
+📄 Results saved to: audit_results/audit_run_20251020_160635/audit_fct_avaibility.json
+📄 CSV saved to: audit_results/audit_run_20251020_160635/audit_fct_avaibility.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251020_160635/audit_fct_avaibility_summary.csv
+
+======================================================================
+🔍 Auditing table: dim_station
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+⚠️  Could not get table metadata from INFORMATION_SCHEMA: 400 GET https://bigquery.googleapis.com/bigquery/v2/projects/portfolio-402/datasets/dbt_prod/tables/INFORMATION_SCHEMA.TABLES?prettyPrint=false: Illegal operation on INFORMATION_SCHEMA view: portfolio-402:dbt_prod.INFORMATION_SCHEMA.TABLES
+🔑 Primary key from config: station_code
+📊 Table has 1,587 rows
+✅ Loaded 1,587 rows into memory
+
+============================================================
+Auditing: dim_station
+Total rows in table: 1,587
+============================================================
+
+
+🔑 Potential primary key column(s): station_code, lat
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+station_code                   Int64           - NOT_CHECKED 0 (0.0%)        1,587          
+station_name                   String          ✗ ERROR      0 (0.0%)        1,570          
+capacity                       Int64           - NOT_CHECKED 0 (0.0%)        72             
+lon                            Float64         - NOT_CHECKED 0 (0.0%)        1,586          
+lat                            Float64         - NOT_CHECKED 0 (0.0%)        1,587          
+city                           String          ✗ ERROR      0 (0.0%)        68             
+is_renting                     Boolean         - NOT_CHECKED 0 (0.0%)        2              
+is_returning                   Boolean         - NOT_CHECKED 0 (0.0%)        2              
+station_plus                   Boolean         - NOT_CHECKED 0 (0.0%)        2              
+====================================================================================================
+
+🔍 Issues Found:
+
+📊 Column: station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,570
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 605 rows (38.1%)
+      Found chars: ['î', "'", 'â', 'é', 'è', 'ô', 'ï', 'ç', 'û']
+      Examples: ["Quai de l'Horloge - Pont Neuf [station_code=1001]", 'Turbigo - Française [station_code=1007]']
+
+📊 Column: city (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 68
+   ⚠️  SPECIAL CHARS: 57 rows (3.6%)
+      Found chars: ['â', "'", 'é', 'è', 'ê', 'Î']
+      Examples: ['Saint-Mandé [station_code=12041]', 'Sèvres [station_code=23101]']
+
+⏱️  Audit duration: 0.01 seconds
+
+🔒 Closed BIGQUERY connection
+📄 HTML report saved to: audit_results/audit_run_20251020_160635/audit_dim_station.html
+📄 Results saved to: audit_results/audit_run_20251020_160635/audit_dim_station.json
+📄 CSV saved to: audit_results/audit_run_20251020_160635/audit_dim_station.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251020_160635/audit_dim_station_summary.csv
+
+======================================================================
+✅ Audit completed! Results saved to: audit_results/audit_run_20251020_160635
+⏱️  Total duration: 14.62 seconds
+📝 Logs saved to: audit_results/audit_run_20251020_160635/audit.log
+======================================================================

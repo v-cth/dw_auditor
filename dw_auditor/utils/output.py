@@ -5,8 +5,45 @@ Output and display utilities for audit results
 from typing import Dict
 
 
+def print_column_summary(results: Dict):
+    """Print summary statistics for all columns"""
+    if 'column_summary' not in results or not results['column_summary']:
+        return
+
+    # Display table type if available
+    if 'table_metadata' in results and 'table_type' in results['table_metadata']:
+        table_type = results['table_metadata']['table_type']
+        print(f"\n📑 Table Type: {table_type}")
+
+    print("\n📋 Column Summary (All Columns):")
+    print("=" * 100)
+    print(f"{'Column Name':<30} {'Type':<15} {'Status':<12} {'Nulls':<15} {'Distinct':<15}")
+    print("-" * 100)
+
+    for col_name, col_data in results['column_summary'].items():
+        null_display = f"{col_data['null_count']:,} ({col_data['null_pct']:.1f}%)"
+        distinct_display = f"{col_data['distinct_count']:,}"
+        status = col_data.get('status', 'UNKNOWN')
+
+        # Color code status for terminal
+        if status == 'OK':
+            status_display = f"✓ {status}"
+        elif status == 'ERROR':
+            status_display = f"✗ {status}"
+        else:
+            status_display = f"- {status}"
+
+        print(f"{col_name:<30} {col_data['dtype']:<15} {status_display:<12} {null_display:<15} {distinct_display:<15}")
+
+    print("=" * 100)
+    print()
+
+
 def print_results(results: Dict):
     """Pretty print audit results"""
+    # First print column summary for all columns
+    print_column_summary(results)
+
     has_issues = any(col_data['issues'] for col_data in results['columns'].values())
 
     if not has_issues:
@@ -20,8 +57,8 @@ def print_results(results: Dict):
             continue
 
         print(f"📊 Column: {col_name} ({col_data['dtype']})")
-        if col_data['null_count'] > 0:
-            print(f"   Nulls: {col_data['null_count']:,} ({col_data['null_pct']:.1f}%)")
+        print(f"   Nulls: {col_data['null_count']:,} ({col_data['null_pct']:.1f}%)")
+        print(f"   Distinct values: {col_data.get('distinct_count', 'N/A'):,}")
 
         for issue in col_data['issues']:
             issue_type = issue['type']
