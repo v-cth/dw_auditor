@@ -39,6 +39,7 @@ tables:
   - name: fct_avaibility
   - name: dim_station
     primary_key: station_code  # Optional: specify primary key column(s)
+  - name: dtm_station_distance
 
   # Table with custom query (for filtering or joining)
   # - name: custom_table
@@ -103,8 +104,14 @@ column_insights:
       min_date: true
       max_date: true
       date_range_days: true
+      # Timezone info (for timezone-aware columns)
+      most_common_timezones: 1
       # Most common dates with counts
       most_common_dates: 5
+      # Most common days of week
+      most_common_days: 7
+      # Most common hours (0-23)
+      most_common_hours: 10
 
   # Per-table, per-column overrides
   tables:

@@ -1,0 +1,3 @@
+table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
+fct_avaibility,24417603,10000,true,station_name,String,0,0.0,1489,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place Du Général De Gaulle', 'Place du Général de Gaulle'])]",2025-10-20T16:59:17.778644
+fct_avaibility,24417603,10000,true,station_name,String,0,0.0,1489,SPECIAL_CHARACTERS,3945,39.45,"","['Charles Tillon - Cimetière Communal', 'Général Leclerc - République']",2025-10-20T16:59:17.778644

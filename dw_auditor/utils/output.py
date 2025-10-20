@@ -89,10 +89,23 @@ def print_insights(results: Dict):
                 parts.append(f"({insights['date_range_days']} days)")
             print(f"   Date Range: {' '.join(parts)}")
 
+        if 'timezone' in insights:
+            print(f"   Timezone: {insights['timezone']}")
+
         if 'most_common_dates' in insights:
             print(f"   Most Common Dates:")
             for item in insights['most_common_dates']:
                 print(f"      • {item['date']} ({item['count']:,}x, {item['percentage']:.1f}%)")
+
+        if 'most_common_days' in insights:
+            print(f"   Most Common Days of Week:")
+            for item in insights['most_common_days']:
+                print(f"      • {item['day']} ({item['count']:,}x, {item['percentage']:.1f}%)")
+
+        if 'most_common_hours' in insights:
+            print(f"   Most Common Hours:")
+            for item in insights['most_common_hours']:
+                print(f"      • {item['hour']:02d}:00 ({item['count']:,}x, {item['percentage']:.1f}%)")
 
         print()
 

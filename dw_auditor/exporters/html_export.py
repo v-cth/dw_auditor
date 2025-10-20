@@ -428,6 +428,17 @@ def export_to_html(results: Dict, file_path: str = "audit_report.html") -> str:
             </div>
 """
 
+            # DateTime - timezone
+            if 'timezone' in insights:
+                html += f"""
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Timezone:</h4>
+                <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                    {insights['timezone']}
+                </div>
+            </div>
+"""
+
             # DateTime - most common dates
             if 'most_common_dates' in insights and insights['most_common_dates']:
                 html += """
@@ -448,6 +459,68 @@ def export_to_html(results: Dict, file_path: str = "audit_report.html") -> str:
                     html += f"""
                             <tr style="border-bottom: 1px solid #e5e7eb;">
                                 <td style="padding: 8px; border: 1px solid #d1d5db;">{item['date']}</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['count']:,}</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['percentage']:.1f}%</td>
+                            </tr>
+"""
+                html += """
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+"""
+
+            # DateTime - most common days of week
+            if 'most_common_days' in insights and insights['most_common_days']:
+                html += """
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Days of Week:</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; background: white;">
+                        <thead>
+                            <tr style="background: #e5e7eb;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Day</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Count</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+"""
+                for item in insights['most_common_days']:
+                    html += f"""
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 8px; border: 1px solid #d1d5db;">{item['day']}</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['count']:,}</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['percentage']:.1f}%</td>
+                            </tr>
+"""
+                html += """
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+"""
+
+            # DateTime - most common hours
+            if 'most_common_hours' in insights and insights['most_common_hours']:
+                html += """
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Hours:</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; background: white;">
+                        <thead>
+                            <tr style="background: #e5e7eb;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Hour</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Count</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+"""
+                for item in insights['most_common_hours']:
+                    html += f"""
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 8px; border: 1px solid #d1d5db;">{item['hour']:02d}:00</td>
                                 <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['count']:,}</td>
                                 <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['percentage']:.1f}%</td>
                             </tr>

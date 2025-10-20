@@ -1,0 +1,381 @@
+{
+  "table_name": "dtm_station_distance",
+  "total_rows": 2516982,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1566,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3729,
+          "pct": 37.29,
+          "special_chars": [
+            "\u00e7",
+            "\u00ea",
+            "\u00f4",
+            "\u00c9",
+            "\u00e8",
+            "\u00e2",
+            "'",
+            "\u00e9"
+          ],
+          "examples": [
+            "Gare de l'Est - Verdun",
+            "Jean Moulin - Place Victor et H\u00e9l\u00e8ne Basch"
+          ]
+        }
+      ]
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1563,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place du G\u00e9n\u00e9ral de Gaulle",
+                "Place Du G\u00e9n\u00e9ral De Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3863,
+          "pct": 38.629999999999995,
+          "special_chars": [
+            "\u00e7",
+            "\u00ea",
+            "\u00f4",
+            "\u00c9",
+            "\u00e8",
+            "\u00fc",
+            "\u00e2",
+            "/",
+            "\u00ce",
+            "'"
+          ],
+          "examples": [
+            "Cimeti\u00e8re de Montmartre",
+            "Square d'Anvers"
+          ]
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "origin_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1583,
+      "status": "NOT_CHECKED"
+    },
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1566,
+      "status": "ERROR"
+    },
+    "dest_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1580,
+      "status": "NOT_CHECKED"
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1563,
+      "status": "ERROR"
+    },
+    "distance_meters": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9981,
+      "status": "NOT_CHECKED"
+    }
+  },
+  "column_insights": {
+    "origin_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 18981.1024,
+      "median": 17004.5,
+      "quantiles": {
+        "p25": 11044.0,
+        "p50": 17005.0,
+        "p75": 22304.0
+      },
+      "top_values": [
+        {
+          "value": 8025.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 12033.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 4015.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 15041.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 16006.0,
+          "count": 13,
+          "percentage": 0.13
+        }
+      ]
+    },
+    "origin_station_name": {
+      "top_values": [
+        {
+          "value": "Verdun - Carnot",
+          "count": 21,
+          "percentage": 0.21
+        },
+        {
+          "value": "Gare RER - Canadiens",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "Place des Marseillais",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "Square Bela Bartok",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "Rocher - Laborde",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Paul Bodin - Clichy",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Miromesnil - La Bo\u00e9tie",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Franquet - Labrouste",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Ch\u00e2teau - R\u00e9publique",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Fran\u00e7ois Truffaut - Saint Emilion",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.82
+      }
+    },
+    "dest_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 19097.9369,
+      "median": 16615.0,
+      "quantiles": {
+        "p25": 11048.0,
+        "p50": 16615.0,
+        "p75": 22302.0
+      },
+      "top_values": [
+        {
+          "value": 40006.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 10020.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 19041.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 20111.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 22603.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ]
+    },
+    "dest_station_name": {
+      "top_values": [
+        {
+          "value": "R\u00e9aumur - Montmartre",
+          "count": 20,
+          "percentage": 0.2
+        },
+        {
+          "value": "Verdun - Carnot",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Ren\u00e9 Boulanger - Lancry",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Les Plan\u00e8tes",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Ch\u00e2teau - R\u00e9publique",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Paul Bodin - Clichy",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Place de la Gare",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Gaston Roussel - Commune de Paris",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Gare RER - Canadiens",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Chabrol - d'Hauteville",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.91
+      }
+    },
+    "distance_meters": {
+      "min": 78.48816440447482,
+      "max": 23138.376292337496,
+      "mean": 6920.5692,
+      "median": 6417.708419117107,
+      "quantiles": {
+        "p25": 4103.506096750794,
+        "p50": 6417.772330890577,
+        "p75": 9216.243937162453
+      },
+      "top_values": [
+        {
+          "value": 6736.912843904008,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 1653.4936113201088,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 4608.875863710973,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 20165.88367647421,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 11059.606669328383,
+          "count": 2,
+          "percentage": 0.02
+        }
+      ]
+    }
+  },
+  "timestamp": "2025-10-20T16:59:36.732163",
+  "start_time": "2025-10-20T16:59:36.732163",
+  "check_durations": {
+    "string_checks": 0.026293999999999998
+  },
+  "end_time": "2025-10-20T16:59:36.770296",
+  "duration_seconds": 0.04,
+  "table_metadata": {
+    "table_name": "dtm_station_distance",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-20 01:00:57.852000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.dtm_station_distance",
+    "row_count": 2516982
+  },
+  "phase_timings": {
+    "connection": 0.222219,
+    "metadata": 5.9632,
+    "data_loading": 3.949642,
+    "audit_checks": 0.039503
+  }
+}

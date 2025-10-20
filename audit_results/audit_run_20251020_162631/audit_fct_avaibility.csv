@@ -1,3 +1,0 @@
-table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
-fct_avaibility,24417603,10000,true,station_name,String,0,0.0,1487,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place du Général de Gaulle', 'Place Du Général De Gaulle'])]",2025-10-20T16:26:42.751722
-fct_avaibility,24417603,10000,true,station_name,String,0,0.0,1487,SPECIAL_CHARACTERS,3780,37.8,"","['Béranger - Félix Faure', 'Mairie du 9ème']",2025-10-20T16:26:42.751722
