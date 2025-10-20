@@ -39,10 +39,71 @@ def print_column_summary(results: Dict):
     print()
 
 
+def print_insights(results: Dict):
+    """Print column insights"""
+    if 'column_insights' not in results or not results['column_insights']:
+        return
+
+    print("\n💡 Column Insights:\n")
+
+    for col_name, insights in results['column_insights'].items():
+        print(f"📊 {col_name}:")
+
+        # String insights
+        if 'top_values' in insights:
+            print(f"   Top {len(insights['top_values'])} Values:")
+            for item in insights['top_values']:
+                value_str = str(item['value'])[:50]  # Truncate long values
+                print(f"      • '{value_str}' ({item['count']:,}x, {item['percentage']:.1f}%)")
+
+        if 'length_stats' in insights:
+            stats = insights['length_stats']
+            stats_str = ", ".join([f"{k}={v}" for k, v in stats.items()])
+            print(f"   Length: {stats_str}")
+
+        # Numeric insights
+        if 'min' in insights or 'max' in insights or 'mean' in insights:
+            parts = []
+            if 'min' in insights:
+                parts.append(f"min={insights['min']:.2f}")
+            if 'max' in insights:
+                parts.append(f"max={insights['max']:.2f}")
+            if 'mean' in insights:
+                parts.append(f"mean={insights['mean']:.2f}")
+            if 'median' in insights:
+                parts.append(f"median={insights['median']:.2f}")
+            print(f"   Stats: {', '.join(parts)}")
+
+        if 'quantiles' in insights:
+            q_str = ", ".join([f"{k}={v:.2f}" for k, v in insights['quantiles'].items()])
+            print(f"   Quantiles: {q_str}")
+
+        # DateTime insights
+        if 'min_date' in insights or 'max_date' in insights:
+            parts = []
+            if 'min_date' in insights:
+                parts.append(f"from {insights['min_date']}")
+            if 'max_date' in insights:
+                parts.append(f"to {insights['max_date']}")
+            if 'date_range_days' in insights:
+                parts.append(f"({insights['date_range_days']} days)")
+            print(f"   Date Range: {' '.join(parts)}")
+
+        if 'most_common_dates' in insights:
+            print(f"   Most Common Dates:")
+            for item in insights['most_common_dates']:
+                print(f"      • {item['date']} ({item['count']:,}x, {item['percentage']:.1f}%)")
+
+        print()
+
+
 def print_results(results: Dict):
     """Pretty print audit results"""
     # First print column summary for all columns
     print_column_summary(results)
+
+    # Print insights if available
+    print_insights(results)
 
     has_issues = any(col_data['issues'] for col_data in results['columns'].values())
 

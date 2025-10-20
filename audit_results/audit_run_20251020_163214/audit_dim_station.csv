@@ -1,0 +1,2 @@
+table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
+dim_station,1587,1587,false,station_name,String,0,0.0,1570,SPECIAL_CHARACTERS,605,38.12224322621298,"","[""Quai de l'Horloge - Pont Neuf [station_code=1001]"", 'Turbigo - Française [station_code=1007]']",2025-10-20T16:32:34.242975

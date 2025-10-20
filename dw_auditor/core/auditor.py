@@ -21,6 +21,7 @@ from ..exporters.json_export import export_to_json
 from ..exporters.html_export import export_to_html
 from ..exporters.summary_export import export_column_summary_to_dataframe
 from .database import DatabaseConnection
+from ..insights import generate_column_insights
 
 
 class SecureTableAuditor:
@@ -59,7 +60,8 @@ class SecureTableAuditor:
         sample_in_db: bool = True,
         custom_query: Optional[str] = None,
         custom_pii_keywords: List[str] = None,
-        user_primary_key: Optional[List[str]] = None
+        user_primary_key: Optional[List[str]] = None,
+        column_check_config: Optional[any] = None
     ) -> Dict:
         """
         Audit table directly from database using Ibis (RECOMMENDED)
@@ -98,12 +100,18 @@ class SecureTableAuditor:
 
         print(f"🔐 Secure audit mode: Direct database query via Ibis (no file export)")
 
+        # Track timing for different phases
+        phase_timings = {}
+        phase_start = datetime.now()
+
         # Create database connection
         db_conn = DatabaseConnection(backend, **connection_params)
         db_conn.connect()
+        phase_timings['connection'] = (datetime.now() - phase_start).total_seconds()
 
         try:
             # Get table metadata (including UID and row count)
+            phase_start = datetime.now()
             table_metadata = {}
             row_count = None
             primary_key_columns = []
@@ -151,6 +159,8 @@ class SecureTableAuditor:
                     print(f"⚠️  Could not get row count: {e}")
                     print(f"   Will load full table")
 
+            phase_timings['metadata'] = (datetime.now() - phase_start).total_seconds()
+
             # Determine if we should sample
             should_sample = sample_in_db and row_count and row_count > self.sample_threshold
 
@@ -158,12 +168,14 @@ class SecureTableAuditor:
                 print(f"🔍 Sampling {self.sample_size:,} rows from table")
 
             # Execute query
+            phase_start = datetime.now()
             df = db_conn.execute_query(
                 table_name=table_name,
                 schema=schema,
                 custom_query=custom_query,
                 sample_size=self.sample_size if should_sample else None
             )
+            phase_timings['data_loading'] = (datetime.now() - phase_start).total_seconds()
 
             print(f"✅ Loaded {len(df):,} rows into memory")
 
@@ -171,17 +183,21 @@ class SecureTableAuditor:
             if mask_pii:
                 df = mask_pii_columns(df, custom_pii_keywords)
 
-            # Run audit - pass the actual row count, metadata, and primary key columns
+            # Run audit - pass the actual row count, metadata, primary key columns, and check config
+            phase_start = datetime.now()
             results = self.audit_table(
                 df,
                 table_name,
                 total_row_count=row_count,
-                primary_key_columns=primary_key_columns
+                primary_key_columns=primary_key_columns,
+                column_check_config=column_check_config
             )
+            phase_timings['audit_checks'] = (datetime.now() - phase_start).total_seconds()
 
-            # Add table metadata to results
+            # Add table metadata and phase timings to results
             if table_metadata:
                 results['table_metadata'] = table_metadata
+            results['phase_timings'] = phase_timings
 
             # Clear from memory
             del df
@@ -235,7 +251,8 @@ class SecureTableAuditor:
         table_name: str = "table",
         check_config: Optional[Dict] = None,
         total_row_count: Optional[int] = None,
-        primary_key_columns: Optional[List[str]] = None
+        primary_key_columns: Optional[List[str]] = None,
+        column_check_config: Optional[any] = None
     ) -> Dict:
         """
         Main audit function - runs all checks on a Polars DataFrame
@@ -278,6 +295,7 @@ class SecureTableAuditor:
             'analyzed_rows': analyzed_rows,
             'columns': {},
             'column_summary': {},  # Summary for ALL columns
+            'column_insights': {},  # Insights for columns
             'timestamp': start_time.isoformat(),
             'start_time': start_time.isoformat()
         }
@@ -293,16 +311,32 @@ class SecureTableAuditor:
                 'date_outliers': True
             }
 
-        # Analyze each column
+        # Analyze each column and track check durations
         potential_keys = []
+        check_durations = {}
+
         for col in df.columns:
-            col_results = self._audit_column(df, col, check_config, primary_key_columns)
+            col_start = datetime.now()
+
+            # Get column-specific check configuration
+            col_dtype = str(df[col].dtype)
+            if column_check_config and hasattr(column_check_config, 'get_column_checks'):
+                # Use column-specific config from the matrix
+                col_check_config = column_check_config.get_column_checks(table_name, col, col_dtype)
+            else:
+                # Fallback to global check_config
+                col_check_config = check_config or {}
+
+            col_results = self._audit_column(df, col, col_check_config, primary_key_columns)
+            col_duration = (datetime.now() - col_start).total_seconds()
 
             # Determine status based on column type and issues found
             dtype = df[col].dtype
             if dtype in [pl.Utf8, pl.String, pl.Datetime, pl.Date]:
                 # Columns that are checked for quality issues
                 status = 'ERROR' if col_results['issues'] else 'OK'
+                check_type = 'string_checks' if dtype in [pl.Utf8, pl.String] else 'date_checks'
+                check_durations[check_type] = check_durations.get(check_type, 0) + col_duration
             else:
                 # Columns not checked (numeric, boolean, etc.)
                 status = 'NOT_CHECKED'
@@ -324,6 +358,17 @@ class SecureTableAuditor:
             if col_results['issues']:
                 results['columns'][col] = col_results
 
+            # Generate column insights
+            if column_check_config and hasattr(column_check_config, 'get_column_insights'):
+                col_insights_config = column_check_config.get_column_insights(table_name, col, col_dtype)
+                if col_insights_config:
+                    insights = generate_column_insights(df, col, col_insights_config)
+                    if insights:
+                        results['column_insights'][col] = insights
+
+        # Store check durations
+        results['check_durations'] = check_durations
+
         # Store potential primary key columns
         if potential_keys:
             results['potential_primary_keys'] = potential_keys
@@ -336,7 +381,13 @@ class SecureTableAuditor:
         results['duration_seconds'] = round(duration, 2)
 
         print_results(results)
-        print(f"⏱️  Audit duration: {duration:.2f} seconds\n")
+
+        # Print duration breakdown
+        print(f"\n⏱️  Audit Duration Breakdown:")
+        if 'check_durations' in results and results['check_durations']:
+            for check_type, check_duration in results['check_durations'].items():
+                print(f"   • {check_type}: {check_duration:.3f}s")
+        print(f"   • Total: {duration:.2f}s\n")
 
         return results
 

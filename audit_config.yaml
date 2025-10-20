@@ -46,6 +46,82 @@ tables:
   #   primary_key: id
 
 
+# Column-Level Check Configuration Matrix
+# ----------------------------------------------------------------------------
+# Configure which checks to run on which columns
+column_checks:
+  # Global defaults per data type
+  defaults:
+    string:
+      trailing_spaces: true
+      case_duplicates: true
+      special_chars: true
+      numeric_strings: true
+    datetime:
+      timestamp_patterns: true
+      date_outliers: true
+
+  # Per-table, per-column overrides
+  tables:
+    dim_station:
+      # Skip special chars check for city column (we expect French accents)
+      city:
+        special_chars: false
+      # Skip case duplicates and special chars for station_name (expected variation & French accents)
+      station_name:
+        case_duplicates: false
+        special_chars: false  # Skip - French accents are expected
+
+# Column Insights Configuration
+# ----------------------------------------------------------------------------
+# Configure data profiling insights (separate from quality checks)
+column_insights:
+  # Global defaults per data type
+  defaults:
+    string:
+      # Show top N most frequent values with counts and percentages
+      top_values: 10
+      # String length statistics
+      min_length: true
+      max_length: true
+      avg_length: true
+
+    numeric:
+      # Basic statistics
+      min: true
+      max: true
+      mean: true
+      median: true
+      std: false  # Standard deviation (can be noisy)
+      # Percentile breakdowns
+      quantiles: [0.25, 0.5, 0.75]
+      # Show top N most frequent values
+      top_values: 5
+
+    datetime:
+      # Date range information
+      min_date: true
+      max_date: true
+      date_range_days: true
+      # Most common dates with counts
+      most_common_dates: 5
+
+  # Per-table, per-column overrides
+  tables:
+    dim_station:
+      # Get detailed distribution for capacity column
+      capacity:
+        top_values: 5
+        quantiles: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95, 0.99]
+      # Minimal insights for station_code (primary key)
+      station_code:
+        top_values: 0  # Disable - primary key
+
+    fct_avaibility:
+      # Detailed date analysis for timestamp columns
+      last_reported:
+        most_common_dates: 3
+
 # Sampling Configuration
 # ----------------------------------------------------------------------------
 sampling:

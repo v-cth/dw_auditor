@@ -86,8 +86,17 @@ def main():
                     schema=config.schema,
                     mask_pii=config.mask_pii,
                     custom_pii_keywords=config.custom_pii_keywords,
-                    user_primary_key=user_defined_primary_key
+                    user_primary_key=user_defined_primary_key,
+                    column_check_config=config  # Pass entire config for column-level checks
                 )
+
+                # Print phase timings if available
+                if 'phase_timings' in results:
+                    print(f"\n⏱️  Table Audit Phase Breakdown:")
+                    for phase, duration in results['phase_timings'].items():
+                        print(f"   • {phase.replace('_', ' ').title()}: {duration:.3f}s")
+                    total_table_duration = results.get('duration_seconds', 0)
+                    print(f"   • Total Table Audit: {total_table_duration:.2f}s")
 
                 # Export results to run directory
                 if 'html' in config.export_formats:

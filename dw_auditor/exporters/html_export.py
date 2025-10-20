@@ -277,6 +277,196 @@ def export_to_html(results: Dict, file_path: str = "audit_report.html") -> str:
     </div>
 """
 
+    # Add Column Insights section if available
+    if 'column_insights' in results and results['column_insights']:
+        html += """
+    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #1f2937;">💡 Column Insights</h2>
+        <p style="color: #666; margin-bottom: 20px;">Data profiling and distribution analysis</p>
+"""
+        for col_name, insights in results['column_insights'].items():
+            html += f"""
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <h3 style="margin-top: 0; color: #4b5563;">📊 {col_name}</h3>
+"""
+
+            # String insights - top values
+            if 'top_values' in insights and insights['top_values']:
+                html += """
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; background: white;">
+                        <thead>
+                            <tr style="background: #e5e7eb;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Value</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Count</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+"""
+                for item in insights['top_values']:
+                    value_str = str(item['value'])[:50]
+                    if len(str(item['value'])) > 50:
+                        value_str += '...'
+                    html += f"""
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 8px; border: 1px solid #d1d5db;"><code>{value_str}</code></td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['count']:,}</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['percentage']:.1f}%</td>
+                            </tr>
+"""
+                html += """
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+"""
+
+            # String insights - length stats
+            if 'length_stats' in insights:
+                stats = insights['length_stats']
+                html += f"""
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">String Length Statistics:</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+"""
+                for stat_name, stat_value in stats.items():
+                    html += f"""
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">{stat_name}</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: #667eea;">{stat_value}</div>
+                    </div>
+"""
+                html += """
+                </div>
+            </div>
+"""
+
+            # Numeric insights - basic stats
+            if 'min' in insights or 'max' in insights or 'mean' in insights:
+                html += """
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Numeric Statistics:</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+"""
+                if 'min' in insights:
+                    html += f"""
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">Min</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: #667eea;">{insights['min']:.2f}</div>
+                    </div>
+"""
+                if 'max' in insights:
+                    html += f"""
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">Max</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: #667eea;">{insights['max']:.2f}</div>
+                    </div>
+"""
+                if 'mean' in insights:
+                    html += f"""
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">Mean</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: #667eea;">{insights['mean']:.2f}</div>
+                    </div>
+"""
+                if 'median' in insights:
+                    html += f"""
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">Median</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: #667eea;">{insights['median']:.2f}</div>
+                    </div>
+"""
+                if 'std' in insights:
+                    html += f"""
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">Std Dev</div>
+                        <div style="font-size: 1.2em; font-weight: bold; color: #667eea;">{insights['std']:.2f}</div>
+                    </div>
+"""
+                html += """
+                </div>
+            </div>
+"""
+
+            # Numeric insights - quantiles
+            if 'quantiles' in insights:
+                html += """
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Quantiles:</h4>
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 10px;">
+"""
+                for q_label, q_value in insights['quantiles'].items():
+                    html += f"""
+                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
+                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">{q_label}</div>
+                        <div style="font-size: 1.1em; font-weight: bold; color: #667eea;">{q_value:.2f}</div>
+                    </div>
+"""
+                html += """
+                </div>
+            </div>
+"""
+
+            # DateTime insights
+            if 'min_date' in insights or 'max_date' in insights:
+                html += """
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Date Range:</h4>
+                <div style="background: white; padding: 15px; border-radius: 4px; border: 1px solid #e5e7eb;">
+"""
+                if 'min_date' in insights:
+                    html += f"""<strong>From:</strong> {insights['min_date']}<br>"""
+                if 'max_date' in insights:
+                    html += f"""<strong>To:</strong> {insights['max_date']}<br>"""
+                if 'date_range_days' in insights:
+                    html += f"""<strong>Range:</strong> {insights['date_range_days']:,} days"""
+                html += """
+                </div>
+            </div>
+"""
+
+            # DateTime - most common dates
+            if 'most_common_dates' in insights and insights['most_common_dates']:
+                html += """
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Dates:</h4>
+                <div style="overflow-x: auto;">
+                    <table style="width: 100%; border-collapse: collapse; font-size: 0.9em; background: white;">
+                        <thead>
+                            <tr style="background: #e5e7eb;">
+                                <th style="padding: 8px; text-align: left; border: 1px solid #d1d5db;">Date</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Count</th>
+                                <th style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">Percentage</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+"""
+                for item in insights['most_common_dates']:
+                    html += f"""
+                            <tr style="border-bottom: 1px solid #e5e7eb;">
+                                <td style="padding: 8px; border: 1px solid #d1d5db;">{item['date']}</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['count']:,}</td>
+                                <td style="padding: 8px; text-align: right; border: 1px solid #d1d5db;">{item['percentage']:.1f}%</td>
+                            </tr>
+"""
+                html += """
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+"""
+
+            html += """
+        </div>
+"""
+
+        html += """
+    </div>
+"""
+
     if not has_issues:
         html += """
     <div class="summary success">

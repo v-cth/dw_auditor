@@ -86,6 +86,119 @@ class AuditConfig:
         self.include_columns = filters.get('include_columns', [])
         self.exclude_columns = filters.get('exclude_columns', [])
 
+        # Column-level check configuration matrix
+        column_checks_config = config_dict.get('column_checks', {})
+
+        # Global defaults per data type
+        self.column_check_defaults = column_checks_config.get('defaults', {
+            'string': {
+                'trailing_spaces': True,
+                'case_duplicates': True,
+                'special_chars': True,
+                'numeric_strings': True
+            },
+            'datetime': {
+                'timestamp_patterns': True,
+                'date_outliers': True
+            }
+        })
+
+        # Per-table, per-column overrides
+        self.column_check_overrides = column_checks_config.get('tables', {})
+
+        # Column-level insights configuration
+        column_insights_config = config_dict.get('column_insights', {})
+
+        # Global defaults per data type for insights
+        self.column_insights_defaults = column_insights_config.get('defaults', {
+            'string': {
+                'top_values': 10,
+                'min_length': True,
+                'max_length': True,
+                'avg_length': True
+            },
+            'numeric': {
+                'min': True,
+                'max': True,
+                'mean': True,
+                'median': True,
+                'std': False,
+                'quantiles': [0.25, 0.5, 0.75],
+                'top_values': 5
+            },
+            'datetime': {
+                'min_date': True,
+                'max_date': True,
+                'date_range_days': True,
+                'most_common_dates': 5
+            }
+        })
+
+        # Per-table, per-column insights overrides
+        self.column_insights_overrides = column_insights_config.get('tables', {})
+
+    def get_column_checks(self, table_name: str, column_name: str, column_dtype: str) -> Dict:
+        """
+        Get check configuration for a specific column
+
+        Args:
+            table_name: Name of the table
+            column_name: Name of the column
+            column_dtype: Data type of the column (string, datetime, numeric, etc.)
+
+        Returns:
+            Dictionary with check configuration for this column
+        """
+        # Start with global defaults for this data type
+        dtype_key = column_dtype.lower()
+        if 'string' in dtype_key or 'utf8' in dtype_key:
+            base_config = self.column_check_defaults.get('string', {}).copy()
+        elif 'datetime' in dtype_key or 'date' in dtype_key:
+            base_config = self.column_check_defaults.get('datetime', {}).copy()
+        else:
+            base_config = {}
+
+        # Apply table-level overrides
+        if table_name in self.column_check_overrides:
+            table_config = self.column_check_overrides[table_name]
+            if column_name in table_config:
+                column_overrides = table_config[column_name]
+                base_config.update(column_overrides)
+
+        return base_config
+
+    def get_column_insights(self, table_name: str, column_name: str, column_dtype: str) -> Dict:
+        """
+        Get insights configuration for a specific column
+
+        Args:
+            table_name: Name of the table
+            column_name: Name of the column
+            column_dtype: Data type of the column (string, datetime, numeric, etc.)
+
+        Returns:
+            Dictionary with insights configuration for this column
+        """
+        # Start with global defaults for this data type
+        dtype_key = column_dtype.lower()
+        if 'string' in dtype_key or 'utf8' in dtype_key:
+            base_config = self.column_insights_defaults.get('string', {}).copy()
+        elif 'datetime' in dtype_key or 'date' in dtype_key:
+            base_config = self.column_insights_defaults.get('datetime', {}).copy()
+        elif 'int' in dtype_key or 'float' in dtype_key:
+            base_config = self.column_insights_defaults.get('numeric', {}).copy()
+        else:
+            base_config = {}
+
+        # Apply table-level overrides
+        if table_name in self.column_insights_overrides:
+            table_config = self.column_insights_overrides[table_name]
+            if column_name in table_config:
+                column_overrides = table_config[column_name]
+                base_config.update(column_overrides)
+
+        return base_config
+
     @classmethod
     def from_yaml(cls, yaml_path: Union[str, Path]) -> 'AuditConfig':
         """Load configuration from YAML file"""

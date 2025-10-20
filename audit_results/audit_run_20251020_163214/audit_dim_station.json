@@ -1,0 +1,129 @@
+{
+  "table_name": "dim_station",
+  "total_rows": 1587,
+  "sampled": false,
+  "analyzed_rows": 1587,
+  "columns": {
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "issues": [
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 605,
+          "pct": 38.12224322621298,
+          "special_chars": [
+            "\u00e2",
+            "\u00fb",
+            "\u00e8",
+            "\u00f4",
+            "\u00ef",
+            "\u00ee",
+            "\u00e7",
+            "'",
+            "\u00e9"
+          ],
+          "examples": [
+            "Quai de l'Horloge - Pont Neuf [station_code=1001]",
+            "Turbigo - Fran\u00e7aise [station_code=1007]"
+          ]
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1587,
+      "status": "NOT_CHECKED"
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "status": "ERROR"
+    },
+    "capacity": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 72,
+      "status": "NOT_CHECKED"
+    },
+    "lon": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1586,
+      "status": "NOT_CHECKED"
+    },
+    "lat": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1587,
+      "status": "NOT_CHECKED"
+    },
+    "city": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 68,
+      "status": "OK"
+    },
+    "is_renting": {
+      "dtype": "Boolean",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2,
+      "status": "NOT_CHECKED"
+    },
+    "is_returning": {
+      "dtype": "Boolean",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2,
+      "status": "NOT_CHECKED"
+    },
+    "station_plus": {
+      "dtype": "Boolean",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2,
+      "status": "NOT_CHECKED"
+    }
+  },
+  "timestamp": "2025-10-20T16:32:34.242975",
+  "start_time": "2025-10-20T16:32:34.242975",
+  "check_durations": {
+    "string_checks": 0.007692
+  },
+  "potential_primary_keys": [
+    "station_code",
+    "lat"
+  ],
+  "end_time": "2025-10-20T16:32:34.252228",
+  "duration_seconds": 0.01,
+  "table_metadata": {
+    "table_name": "dim_station",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-20 01:00:51.500000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.dim_station",
+    "row_count": 1587,
+    "primary_key_columns": [
+      "station_code"
+    ],
+    "primary_key_source": "user_config"
+  },
+  "phase_timings": {
+    "connection": 0.224648,
+    "metadata": 6.268588,
+    "data_loading": 2.356372,
+    "audit_checks": 0.009677
+  }
+}
