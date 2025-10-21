@@ -1,0 +1,769 @@
+{
+  "table_name": "blocks",
+  "total_rows": 2000,
+  "sampled": false,
+  "analyzed_rows": 2000,
+  "columns": {},
+  "column_summary": {
+    "hash": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2000,
+      "status": "OK"
+    },
+    "size": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1991,
+      "status": "NOT_CHECKED"
+    },
+    "stripped_size": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1984,
+      "status": "NOT_CHECKED"
+    },
+    "weight": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 977,
+      "status": "NOT_CHECKED"
+    },
+    "number": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2000,
+      "status": "NOT_CHECKED"
+    },
+    "version": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1584,
+      "status": "NOT_CHECKED"
+    },
+    "merkle_root": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2000,
+      "status": "OK"
+    },
+    "timestamp": {
+      "dtype": "Datetime(time_unit='ns', time_zone='UTC')",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2000,
+      "status": "OK"
+    },
+    "timestamp_month": {
+      "dtype": "Date",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1,
+      "status": "OK"
+    },
+    "nonce": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2000,
+      "status": "OK"
+    },
+    "bits": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2,
+      "status": "OK"
+    },
+    "coinbase_param": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2000,
+      "status": "OK"
+    },
+    "transaction_count": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1484,
+      "status": "NOT_CHECKED"
+    }
+  },
+  "column_insights": {
+    "hash": {
+      "top_values": [
+        {
+          "value": "00000000000000000001f9e9623b605cffe0eec665977b71b9d0d027f5872464",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000003c691825b53966ece6334794f19624bd070e34318ad74",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000002596e81e46268c57e47bd810f09162565e30c58a4fdb6",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000002a951a060d12262059af2c8b2eae24ced575711c37959",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000003d406f9cab5919717759cd7e6500ace91375704d88ddb",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "000000000000000000030e9b051d1cae940943d8cad93974116a74000f332654",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000003dca4f40e98c70c51e50e89eff850cac2704427e9f763",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000003233d4f83510105089726f1e7f31a9287b18651dead6b",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000001767ea403fe8b7c771683e255b9878ee5f4e553c4ae49",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "00000000000000000002ec63cb8b910b3c8face04313bfeb8cc1572411fd4bbb",
+          "count": 1,
+          "percentage": 0.05
+        }
+      ],
+      "length_stats": {
+        "min": 64,
+        "max": 64,
+        "avg": 64.0
+      }
+    },
+    "size": {
+      "min": 204.0,
+      "max": 3478201.0,
+      "mean": 1712603.645,
+      "median": 1699708.0,
+      "quantiles": {
+        "p25": 1612096.0,
+        "p50": 1699897.0,
+        "p75": 1813118.0
+      },
+      "top_values": [
+        {
+          "value": 441.0,
+          "count": 7,
+          "percentage": 0.35000000000000003
+        },
+        {
+          "value": 1759226.0,
+          "count": 2,
+          "percentage": 0.1
+        },
+        {
+          "value": 1866508.0,
+          "count": 2,
+          "percentage": 0.1
+        },
+        {
+          "value": 443.0,
+          "count": 2,
+          "percentage": 0.1
+        },
+        {
+          "value": 1658709.0,
+          "count": 1,
+          "percentage": 0.05
+        }
+      ]
+    },
+    "stripped_size": {
+      "min": 204.0,
+      "max": 985769.0,
+      "mean": 751686.6745,
+      "median": 763910.0,
+      "quantiles": {
+        "p25": 725743.0,
+        "p50": 763953.0,
+        "p75": 793301.0
+      },
+      "top_values": [
+        {
+          "value": 405.0,
+          "count": 7,
+          "percentage": 0.35000000000000003
+        },
+        {
+          "value": 757017.0,
+          "count": 2,
+          "percentage": 0.1
+        },
+        {
+          "value": 745573.0,
+          "count": 2,
+          "percentage": 0.1
+        },
+        {
+          "value": 691491.0,
+          "count": 2,
+          "percentage": 0.1
+        },
+        {
+          "value": 714431.0,
+          "count": 2,
+          "percentage": 0.1
+        }
+      ]
+    },
+    "weight": {
+      "min": 816.0,
+      "max": 3997919.0,
+      "mean": 3967663.6685,
+      "median": 3993283.0,
+      "quantiles": {
+        "p25": 3992989.0,
+        "p50": 3993283.0,
+        "p75": 3993531.0
+      },
+      "top_values": [
+        {
+          "value": 3993069.0,
+          "count": 9,
+          "percentage": 0.44999999999999996
+        },
+        {
+          "value": 3993593.0,
+          "count": 8,
+          "percentage": 0.4
+        },
+        {
+          "value": 3993658.0,
+          "count": 7,
+          "percentage": 0.35000000000000003
+        },
+        {
+          "value": 1656.0,
+          "count": 7,
+          "percentage": 0.35000000000000003
+        },
+        {
+          "value": 3993063.0,
+          "count": 7,
+          "percentage": 0.35000000000000003
+        }
+      ]
+    },
+    "number": {
+      "min": 816481.0,
+      "max": 819186.0,
+      "mean": 817971.9435,
+      "median": 818034.5,
+      "quantiles": {
+        "p25": 817289.0,
+        "p50": 818035.0,
+        "p75": 818686.0
+      },
+      "top_values": [
+        {
+          "value": 818641.0,
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": 818370.0,
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": 816768.0,
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": 817051.0,
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": 818998.0,
+          "count": 1,
+          "percentage": 0.05
+        }
+      ]
+    },
+    "version": {
+      "min": 536870912.0,
+      "max": 1073733632.0,
+      "mean": 683774431.388,
+      "median": 661233664.0,
+      "quantiles": {
+        "p25": 568229888.0,
+        "p50": 661282816.0,
+        "p75": 777093120.0
+      },
+      "top_values": [
+        {
+          "value": 536870912.0,
+          "count": 38,
+          "percentage": 1.9
+        },
+        {
+          "value": 536928256.0,
+          "count": 17,
+          "percentage": 0.8500000000000001
+        },
+        {
+          "value": 637534208.0,
+          "count": 16,
+          "percentage": 0.8
+        },
+        {
+          "value": 1073676288.0,
+          "count": 16,
+          "percentage": 0.8
+        },
+        {
+          "value": 545259520.0,
+          "count": 15,
+          "percentage": 0.75
+        }
+      ]
+    },
+    "merkle_root": {
+      "top_values": [
+        {
+          "value": "8baee08fbc2d3f015d0f17f1ca411e23f0df7d1ec6df6a770c34556bf382efc1",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "9a4b639fd5f4b892d493f34d0fce4c9f08d68bb5ccd589b9f987d94d558f2ece",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "48c366491f339428f691d25a4e11aeb4f00db2f6e74109c3730563b334dbe1b8",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "bf3ec3254e4043708616cd3c9246b211f20bd995905d655d8f9b795849a86b78",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "6cfa78b570cbb6dfb23aa8015e15c18962e87fc0f264859a436fc2e16379da78",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "26ea4e0d6242425b156b9d2b5d25da4ddef98900fb88c290e71dd46bab063e3b",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "fe8b7a9494afac3b08d160b5fc0dd5e00329cde05b8ab90b6199860dc01c11d4",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "d2f27b60fd865e4319c6dd8953972499ee5aee20e09a319afef3c59680ae4b1b",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "92709bd54f1b08b2bd608a496023188f24380d50d18554f6800ce8401fb7f087",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "6399bad51f207bac51babf6838408e1430b19c7f9a3f4b1e36fdc56bc92be580",
+          "count": 1,
+          "percentage": 0.05
+        }
+      ],
+      "length_stats": {
+        "min": 64,
+        "max": 64,
+        "avg": 64.0
+      }
+    },
+    "timestamp": {
+      "min_date": "2023-11-12 16:31:17+00:00",
+      "max_date": "2023-11-30 23:58:01+00:00",
+      "date_range_days": 18,
+      "most_common_dates": [
+        {
+          "date": "2023-11-28",
+          "count": 147,
+          "percentage": 7.35
+        },
+        {
+          "date": "2023-11-26",
+          "count": 145,
+          "percentage": 7.249999999999999
+        },
+        {
+          "date": "2023-11-29",
+          "count": 136,
+          "percentage": 6.800000000000001
+        },
+        {
+          "date": "2023-11-30",
+          "count": 134,
+          "percentage": 6.7
+        },
+        {
+          "date": "2023-11-27",
+          "count": 130,
+          "percentage": 6.5
+        }
+      ],
+      "most_common_hours": [
+        {
+          "hour": 5,
+          "count": 99,
+          "percentage": 4.95
+        },
+        {
+          "hour": 7,
+          "count": 97,
+          "percentage": 4.8500000000000005
+        },
+        {
+          "hour": 20,
+          "count": 94,
+          "percentage": 4.7
+        },
+        {
+          "hour": 16,
+          "count": 92,
+          "percentage": 4.6
+        },
+        {
+          "hour": 23,
+          "count": 91,
+          "percentage": 4.55
+        },
+        {
+          "hour": 17,
+          "count": 90,
+          "percentage": 4.5
+        },
+        {
+          "hour": 15,
+          "count": 90,
+          "percentage": 4.5
+        },
+        {
+          "hour": 13,
+          "count": 89,
+          "percentage": 4.45
+        },
+        {
+          "hour": 3,
+          "count": 89,
+          "percentage": 4.45
+        },
+        {
+          "hour": 10,
+          "count": 85,
+          "percentage": 4.25
+        }
+      ],
+      "most_common_days": [
+        {
+          "day": "Tuesday",
+          "weekday": 2,
+          "count": 337,
+          "percentage": 16.85
+        },
+        {
+          "day": "Wednesday",
+          "weekday": 3,
+          "count": 330,
+          "percentage": 16.5
+        },
+        {
+          "day": "Thursday",
+          "weekday": 4,
+          "count": 313,
+          "percentage": 15.65
+        },
+        {
+          "day": "Monday",
+          "weekday": 1,
+          "count": 311,
+          "percentage": 15.55
+        },
+        {
+          "day": "Sunday",
+          "weekday": 7,
+          "count": 280,
+          "percentage": 14.000000000000002
+        },
+        {
+          "day": "Friday",
+          "weekday": 5,
+          "count": 226,
+          "percentage": 11.3
+        },
+        {
+          "day": "Saturday",
+          "weekday": 6,
+          "count": 203,
+          "percentage": 10.15
+        }
+      ],
+      "timezone": "UTC"
+    },
+    "timestamp_month": {
+      "min_date": "2023-11-01",
+      "max_date": "2023-11-01",
+      "date_range_days": 0,
+      "most_common_dates": [
+        {
+          "date": "2023-11-01",
+          "count": 2000,
+          "percentage": 100.0
+        }
+      ],
+      "most_common_days": [
+        {
+          "day": "Wednesday",
+          "weekday": 3,
+          "count": 2000,
+          "percentage": 100.0
+        }
+      ],
+      "timezone": "None (timezone-naive)"
+    },
+    "nonce": {
+      "top_values": [
+        {
+          "value": "113eb828",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "875941a",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "d1ac228a",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "f06dac11",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "df6d6009",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "9dde4658",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "90588d14",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "bba3bc2f",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "e057f6c5",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "6c829d44",
+          "count": 1,
+          "percentage": 0.05
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 8,
+        "avg": 7.92
+      }
+    },
+    "bits": {
+      "top_values": [
+        {
+          "value": "17045a12",
+          "count": 1309,
+          "percentage": 65.45
+        },
+        {
+          "value": "17042450",
+          "count": 691,
+          "percentage": 34.55
+        }
+      ],
+      "length_stats": {
+        "min": 8,
+        "max": 8,
+        "avg": 8.0
+      }
+    },
+    "coinbase_param": {
+      "top_values": [
+        {
+          "value": "03047b0c0469c05d652f466f756e6472792055534120506f6f6c202364726f70676f6c642f1cf4f3690900000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "03257b0c04f7085e652f466f756e6472792055534120506f6f6c202364726f70676f6c642f294ae67c3583000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "034c790c04c9ed59652f466f756e6472792055534120506f6f6c202364726f70676f6c642f227a8e8d2a7ba6d700000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "03337f0c1b4d696e656420627920416e74506f6f6c38323904010600a0c24d17fabe6d6d585efbbc57ce9206a931f1999ad733bbf95801623727f45d213bab08d844a2f7100000000000000000003c2ed284000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "03c67d0c1b4d696e656420627920416e74506f6f6c393731020006035b46d858fabe6d6d8497bb0f8fc94de5af6125e8cdca05eeaef524167882564f1624f484aff9024b1000000000000000d9cf00006300000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "03d0780c142f756c74696d75732f37383790006a0000a9abfdfabe6d6dd304871e9136b4cd3499c97e4ee3af317e25356a1079c4441986d343aca51024100000000000000000004aac4401000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "030c7f0c194d696e656420627920416e74506f6f6c2002008507fedafab1fabe6d6d5d390d7575077d9f341eca8fe0a1177dc2efc93d56d68a5718e57e84c3a857601000000000000000000056e66cb1000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "03d0760c194d696e656420627920416e74506f6f6c2078007f06083126eafabe6d6d2d3358a59c99a06addbbf500aa4eaa83c8539e1ed4090068ec3acb7bc3452d231000000000000000000096f83370000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "03b27f0c048c8868652f466f756e6472792055534120506f6f6c202364726f70676f6c642f1e4b9546d514000000000000",
+          "count": 1,
+          "percentage": 0.05
+        },
+        {
+          "value": "03b27d0c042b9463652f466f756e6472792055534120506f6f6c202364726f70676f6c642f17619b884092a70000000000",
+          "count": 1,
+          "percentage": 0.05
+        }
+      ],
+      "length_stats": {
+        "min": 52,
+        "max": 200,
+        "avg": 148.28
+      }
+    },
+    "transaction_count": {
+      "min": 1.0,
+      "max": 6268.0,
+      "mean": 3658.0645,
+      "median": 3693.0,
+      "quantiles": {
+        "p25": 3182.0,
+        "p50": 3693.0,
+        "p75": 4292.0
+      },
+      "top_values": [
+        {
+          "value": 1.0,
+          "count": 13,
+          "percentage": 0.65
+        },
+        {
+          "value": 3697.0,
+          "count": 6,
+          "percentage": 0.3
+        },
+        {
+          "value": 3922.0,
+          "count": 5,
+          "percentage": 0.25
+        },
+        {
+          "value": 4131.0,
+          "count": 5,
+          "percentage": 0.25
+        },
+        {
+          "value": 4096.0,
+          "count": 5,
+          "percentage": 0.25
+        }
+      ]
+    }
+  },
+  "timestamp": "2025-10-21T16:06:46.117862",
+  "start_time": "2025-10-21T16:06:46.117862",
+  "check_durations": {
+    "string_checks": 0.027863,
+    "date_checks": 0.010232
+  },
+  "potential_primary_keys": [
+    "hash",
+    "number",
+    "merkle_root",
+    "timestamp",
+    "nonce",
+    "coinbase_param"
+  ],
+  "end_time": "2025-10-21T16:06:46.170150",
+  "duration_seconds": 0.05,
+  "table_metadata": {
+    "table_name": "blocks",
+    "table_type": "BASE TABLE",
+    "created_time": "2019-01-14 18:28:17.012000+00:00",
+    "table_uid": "bigquery-public-data.crypto_bitcoin.blocks",
+    "row_count": 2000,
+    "primary_key_columns": [
+      "block_id"
+    ],
+    "primary_key_source": "user_config",
+    "query_result_count": 2000
+  },
+  "phase_timings": {
+    "connection": 0.369948,
+    "metadata": 7.592646,
+    "data_loading": 4.291697,
+    "audit_checks": 0.053954
+  }
+}

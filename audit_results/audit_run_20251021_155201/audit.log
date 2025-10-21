@@ -1,0 +1,453 @@
+📁 Audit run directory: audit_results/audit_run_20251021_155201
+📝 Logs will be saved to: audit_results/audit_run_20251021_155201/audit.log
+
+======================================================================
+🔍 Auditing table: transactions
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: bigquery-public-data.crypto_bitcoin.transactions
+📑 Table type: BASE TABLE
+📊 Table has 1,259,632,981 rows
+🔑 Primary key from config: transaction_id
+📝 Using custom query - will count rows from query result
+ℹ️  Custom query provided - using query as-is (no additional sampling)
+✅ Loaded 3,000 rows into memory
+📊 Custom query returned 3,000 rows
+
+============================================================
+Auditing: transactions
+Total rows in table: 3,000
+============================================================
+
+
+🔑 Potential primary key column(s): hash
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+hash                           String          ✓ OK         0 (0.0%)        3,000          
+size                           Int64           - NOT_CHECKED 0 (0.0%)        327            
+virtual_size                   Int64           - NOT_CHECKED 0 (0.0%)        268            
+version                        Int64           - NOT_CHECKED 0 (0.0%)        2              
+lock_time                      Int64           - NOT_CHECKED 0 (0.0%)        40             
+block_hash                     String          ✓ OK         0 (0.0%)        1,303          
+block_number                   Int64           - NOT_CHECKED 0 (0.0%)        1,303          
+block_timestamp                Datetime(time_unit='ns', time_zone='UTC') ✓ OK         0 (0.0%)        1,303          
+block_timestamp_month          Date            ✓ OK         0 (0.0%)        2              
+input_count                    Int64           - NOT_CHECKED 0 (0.0%)        23             
+output_count                   Int64           - NOT_CHECKED 0 (0.0%)        31             
+input_value                    Decimal(precision=38, scale=9) - NOT_CHECKED 1,295 (43.2%)   1,605          
+output_value                   Decimal(precision=38, scale=9) - NOT_CHECKED 0 (0.0%)        1,607          
+is_coinbase                    Boolean         - NOT_CHECKED 0 (0.0%)        2              
+fee                            Decimal(precision=38, scale=9) - NOT_CHECKED 0 (0.0%)        530            
+inputs                         List(Struct({'index': Int64, 'spent_transaction_hash': String, 'spent_output_index': Int64, 'script_asm': String, 'script_hex': String, 'sequence': Int64, 'required_signatures': Int64, 'type': String, 'addresses': List(String), 'value': Decimal(precision=38, scale=9)})) - NOT_CHECKED 0 (0.0%)        N/A            
+outputs                        List(Struct({'index': Int64, 'script_asm': String, 'script_hex': String, 'required_signatures': Int64, 'type': String, 'addresses': List(String), 'value': Decimal(precision=38, scale=9)})) - NOT_CHECKED 0 (0.0%)        N/A            
+====================================================================================================
+
+
+💡 Column Insights:
+
+📊 hash:
+   Top 10 Values:
+      • '837ca7dcfb6e56326ad732bdd7799f62bc75b63bca78ebd66e' (1x, 0.0%)
+      • 'e31cfb5ef963aaaed75afb7d8f844c8bfce7601baa54e3d8eb' (1x, 0.0%)
+      • '589aafed087c54e80d75143e2d3c942628eaab60e08631d7cd' (1x, 0.0%)
+      • '4cf4f5f373336501641c4a1c0df085f9d4c41f44aa674ef41e' (1x, 0.0%)
+      • '0482ba71f575b46846bfd3dddaa6adf8792c49896361f612d1' (1x, 0.0%)
+      • '87bfbd278caeec98e4bf36659c28c18b9d07ce46922a7576e0' (1x, 0.0%)
+      • '8c3303b7bc6dd0dba632882e519570636de4ce4abb8f5e3235' (1x, 0.0%)
+      • '536c04c12eaa8c11ff96512101c80fe1fbfb0ce1a783b98fbf' (1x, 0.0%)
+      • '576a6c2a238a0c821e35223210ce990912beba87cf61c744cc' (1x, 0.0%)
+      • '8cf6cc81138f0bace3cdc726f40014cf9e4cc86934b0e5f508' (1x, 0.0%)
+   Length: min=64, max=64, avg=64.0
+
+📊 size:
+   Top 5 Values:
+      • '135.0' (879x, 29.3%)
+      • '134.0' (416x, 13.9%)
+      • '222.0' (238x, 7.9%)
+      • '367.0' (150x, 5.0%)
+      • '223.0' (120x, 4.0%)
+   Stats: min=134.00, max=65017.00, mean=303.64, median=194.00
+   Quantiles: p25=135.00, p50=194.00, p75=258.00
+
+📊 virtual_size:
+   Top 5 Values:
+      • '135.0' (879x, 29.3%)
+      • '134.0' (430x, 14.3%)
+      • '141.0' (256x, 8.5%)
+      • '208.0' (172x, 5.7%)
+      • '140.0' (125x, 4.2%)
+   Stats: min=99.00, max=65017.00, mean=223.57, median=135.00
+   Quantiles: p25=135.00, p50=135.00, p75=177.00
+
+📊 version:
+   Top 2 Values:
+      • '1.0' (1,800x, 60.0%)
+      • '2.0' (1,200x, 40.0%)
+   Stats: min=1.00, max=2.00, mean=1.40, median=1.00
+   Quantiles: p25=1.00, p50=1.00, p75=2.00
+
+📊 lock_time:
+   Top 5 Values:
+      • '0.0' (2,824x, 94.1%)
+      • '920112.0' (119x, 4.0%)
+      • '920110.0' (12x, 0.4%)
+      • '920080.0' (7x, 0.2%)
+      • '920029.0' (2x, 0.1%)
+   Stats: min=0.00, max=553150688.00, mean=2416885.32, median=0.00
+   Quantiles: p25=0.00, p50=0.00, p75=0.00
+
+📊 block_hash:
+   Top 10 Values:
+      • '00000000000000000000cbf194ec44821115b8b43b78d00018' (1,328x, 44.3%)
+      • '0000000000000000000158fb5aad52ea8ac682c88b789c67d6' (201x, 6.7%)
+      • '0000000000000000000041cd9cc8bec598711bd25f167ea155' (63x, 2.1%)
+      • '00000000000000000000b61e0183a2bab598997c83c6389301' (36x, 1.2%)
+      • '0000000000000000000053d2d26f4298fd361b12bfd7f4f535' (35x, 1.2%)
+      • '000000000000000000003954efbb502263251c1237a4642861' (21x, 0.7%)
+      • '00000000000000000000435346fbd242182c450d5c315b1e52' (17x, 0.6%)
+      • '000000000000000000016fac7699add759c08105f4d215b009' (4x, 0.1%)
+      • '0000000056dcab6c66381e61a0f431e90cdb3073a13b45ba5f' (1x, 0.0%)
+      • '00000000fccae24278a054ecf1bc672e39e33588ebb7806334' (1x, 0.0%)
+   Length: min=64, max=64, avg=64.0
+
+📊 block_number:
+   Top 5 Values:
+      • '920113.0' (1,328x, 44.3%)
+      • '920081.0' (201x, 6.7%)
+      • '920082.0' (63x, 2.1%)
+      • '920084.0' (36x, 1.2%)
+      • '920088.0' (35x, 1.2%)
+   Stats: min=21940.00, max=920113.00, mean=532867.76, median=920082.00
+   Quantiles: p25=23211.00, p50=920082.00, p75=920113.00
+
+📊 block_timestamp:
+   Date Range: from 2009-09-01 00:02:13+00:00 to 2025-10-21 13:10:35+00:00 (5894 days)
+   Timezone: UTC
+   Most Common Dates:
+      • 2025-10-21 (1,705x, 56.8%)
+      • 2009-09-26 (79x, 2.6%)
+      • 2009-09-24 (74x, 2.5%)
+      • 2009-09-30 (61x, 2.0%)
+      • 2009-09-25 (53x, 1.8%)
+   Most Common Days of Week:
+      • Tuesday (1,882x, 62.7%)
+      • Saturday (204x, 6.8%)
+      • Thursday (203x, 6.8%)
+      • Wednesday (196x, 6.5%)
+      • Friday (176x, 5.9%)
+      • Monday (172x, 5.7%)
+      • Sunday (167x, 5.6%)
+   Most Common Hours:
+      • 13:00 (1,387x, 46.2%)
+      • 09:00 (367x, 12.2%)
+      • 10:00 (104x, 3.5%)
+      • 03:00 (66x, 2.2%)
+      • 16:00 (64x, 2.1%)
+      • 05:00 (62x, 2.1%)
+      • 19:00 (60x, 2.0%)
+      • 18:00 (59x, 2.0%)
+      • 15:00 (59x, 2.0%)
+      • 02:00 (58x, 1.9%)
+
+📊 block_timestamp_month:
+   Date Range: from 2009-09-01 to 2025-10-01 (5874 days)
+   Timezone: None (timezone-naive)
+   Most Common Dates:
+      • 2025-10-01 (1,705x, 56.8%)
+      • 2009-09-01 (1,295x, 43.2%)
+   Most Common Days of Week:
+      • Wednesday (1,705x, 56.8%)
+      • Tuesday (1,295x, 43.2%)
+
+📊 input_count:
+   Top 5 Values:
+      • '1.0' (1,323x, 44.1%)
+      • '0.0' (1,296x, 43.2%)
+      • '2.0' (214x, 7.1%)
+      • '3.0' (58x, 1.9%)
+      • '4.0' (27x, 0.9%)
+   Stats: min=0.00, max=230.00, mean=1.12, median=1.00
+   Quantiles: p25=0.00, p50=1.00, p75=1.00
+
+📊 output_count:
+   Top 5 Values:
+      • '1.0' (1,759x, 58.6%)
+      • '2.0' (897x, 29.9%)
+      • '3.0' (220x, 7.3%)
+      • '4.0' (30x, 1.0%)
+      • '6.0' (24x, 0.8%)
+   Stats: min=1.00, max=160.00, mean=1.92, median=1.00
+   Quantiles: p25=1.00, p50=1.00, p75=2.00
+
+📊 inputs:
+
+📊 outputs:
+
+✅ No issues found!
+
+
+⏱️  Audit Duration Breakdown:
+   • string_checks: 0.017s
+   • date_checks: 0.006s
+   • Total: 0.03s
+
+🔒 Closed BIGQUERY connection
+
+⏱️  Table Audit Phase Breakdown:
+   • Connection: 1.138s
+   • Metadata: 12.939s
+   • Data Loading: 4.309s
+   • Audit Checks: 0.036s
+   • Total Table Audit: 0.03s
+📄 HTML report saved to: audit_results/audit_run_20251021_155201/transactions/audit.html
+🌐 Opened report in browser
+📄 Results saved to: audit_results/audit_run_20251021_155201/transactions/audit.json
+📄 CSV saved to: audit_results/audit_run_20251021_155201/transactions/audit.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251021_155201/transactions/summary.csv
+
+======================================================================
+🔍 Auditing table: blocks
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: bigquery-public-data.crypto_bitcoin.blocks
+📑 Table type: BASE TABLE
+📊 Table has 920,114 rows
+🔑 Primary key from config: block_id
+📝 Using custom query - will count rows from query result
+ℹ️  Custom query provided - using query as-is (no additional sampling)
+✅ Loaded 2,000 rows into memory
+📊 Custom query returned 2,000 rows
+
+============================================================
+Auditing: blocks
+Total rows in table: 2,000
+============================================================
+
+
+🔑 Potential primary key column(s): hash, number, merkle_root, nonce
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+hash                           String          ✓ OK         0 (0.0%)        2,000          
+size                           Int64           - NOT_CHECKED 0 (0.0%)        132            
+stripped_size                  Int64           - NOT_CHECKED 0 (0.0%)        132            
+weight                         Int64           - NOT_CHECKED 0 (0.0%)        132            
+number                         Int64           - NOT_CHECKED 0 (0.0%)        2,000          
+version                        Int64           - NOT_CHECKED 0 (0.0%)        24             
+merkle_root                    String          ✓ OK         0 (0.0%)        2,000          
+timestamp                      Datetime(time_unit='ns', time_zone='UTC') ✓ OK         0 (0.0%)        1,999          
+timestamp_month                Date            ✓ OK         0 (0.0%)        2              
+nonce                          String          ✓ OK         0 (0.0%)        2,000          
+bits                           String          ✓ OK         0 (0.0%)        4              
+coinbase_param                 String          ✓ OK         0 (0.0%)        729            
+transaction_count              Int64           - NOT_CHECKED 0 (0.0%)        27             
+====================================================================================================
+
+
+💡 Column Insights:
+
+📊 hash:
+   Top 10 Values:
+      • '000000003649bfe1bd1cc0f8a5ec1e063663924d2d09196c58' (1x, 0.1%)
+      • '000000002da3382ca3e6454def19a42c2b815891020a1cfb30' (1x, 0.1%)
+      • '000000002f43c3af499c50d8c92d1ad662331adf3a44467bd3' (1x, 0.1%)
+      • '000000002983fc5d1e550a8712418e5e00c21a6dd34c0f21da' (1x, 0.1%)
+      • '000000002777549261e114d8241db1c79d8e4e551e21b266a0' (1x, 0.1%)
+      • '00000000094aaed946078c8e9ef035234180aaf6172e203ab7' (1x, 0.1%)
+      • '000000001bac24925f27fcda68f03651bf850f16fe818987e9' (1x, 0.1%)
+      • '0000000025bf189a0b8cc87eb21de18e8cbe741b886eac1939' (1x, 0.1%)
+      • '0000000030e2eea516ddc719c88cb095ae7489ca1a4eb61538' (1x, 0.1%)
+      • '00000000098babbafaae7a23f42510841d48ef228675c669b2' (1x, 0.1%)
+   Length: min=64, max=64, avg=64.0
+
+📊 size:
+   Top 5 Values:
+      • '215.0' (1,511x, 75.5%)
+      • '216.0' (304x, 15.2%)
+      • '374.0' (19x, 0.9%)
+      • '449.0' (5x, 0.2%)
+      • '487.0' (4x, 0.2%)
+   Stats: min=215.00, max=2032370.00, mean=15856.47, median=215.00
+   Quantiles: p25=215.00, p50=215.00, p75=215.00
+
+📊 stripped_size:
+   Top 5 Values:
+      • '215.0' (1,511x, 75.5%)
+      • '216.0' (304x, 15.2%)
+      • '374.0' (19x, 0.9%)
+      • '449.0' (5x, 0.2%)
+      • '488.0' (4x, 0.2%)
+   Stats: min=215.00, max=813529.00, mean=7329.85, median=215.00
+   Quantiles: p25=215.00, p50=215.00, p75=215.00
+
+📊 weight:
+   Top 5 Values:
+      • '860.0' (1,511x, 75.5%)
+      • '864.0' (304x, 15.2%)
+      • '1496.0' (19x, 0.9%)
+      • '1796.0' (5x, 0.2%)
+      • '1948.0' (4x, 0.2%)
+   Stats: min=860.00, max=3994104.00, mean=37846.01, median=860.00
+   Quantiles: p25=860.00, p50=860.00, p75=860.00
+
+📊 number:
+   Top 5 Values:
+      • '44091.0' (1x, 0.1%)
+      • '47729.0' (1x, 0.1%)
+      • '43820.0' (1x, 0.1%)
+      • '46547.0' (1x, 0.1%)
+      • '46273.0' (1x, 0.1%)
+   Stats: min=43097.00, max=920112.00, mean=55951.04, median=45988.00
+   Quantiles: p25=44743.00, p50=45989.00, p75=47155.00
+
+📊 version:
+   Top 5 Values:
+      • '1.0' (1,977x, 98.9%)
+      • '606371840.0' (1x, 0.1%)
+      • '537575424.0' (1x, 0.1%)
+      • '572325888.0' (1x, 0.1%)
+      • '537698304.0' (1x, 0.1%)
+   Stats: min=1.00, max=1015758848.00, mean=7227634.65, median=1.00
+   Quantiles: p25=1.00, p50=1.00, p75=1.00
+
+📊 merkle_root:
+   Top 10 Values:
+      • 'c6425b8e359b8392838b19e7049ef4c14f4a7fd8ac1a399377' (1x, 0.1%)
+      • '6216d24ef40415d50ed3886ab0392b927454a46d6a21ad476d' (1x, 0.1%)
+      • 'b4e811a4de13967b02f07710c3bdc9a52a2611aef14e523a79' (1x, 0.1%)
+      • '1f995dbd98897238a9667c6f9ce4413f1db1d447112ebdbf8d' (1x, 0.1%)
+      • '68f7653a1acebfdeb24ea94a8f42b9ecd9e42e5996e7c25a92' (1x, 0.1%)
+      • '848b0a9c89815b2f321166998e5a02349de91798fca5f9eca2' (1x, 0.1%)
+      • 'e28dac80b391704acba22c8399eb4af229861be87cf0fe2e81' (1x, 0.1%)
+      • '25f43d1c395c43d9202f1d9468e01d37cd95b7ac459ae454c9' (1x, 0.1%)
+      • '9bdb09c5cf160e8dcc4b1bff0f4ab9b902eb95c4795f789c18' (1x, 0.1%)
+      • '3806278df554df842c144a9209783a0f9798b89bfcd914ac25' (1x, 0.1%)
+   Length: min=64, max=64, avg=64.0
+
+📊 timestamp:
+   Date Range: from 2010-03-01 00:06:51+00:00 to 2025-10-21 13:04:48+00:00 (5713 days)
+   Timezone: UTC
+   Most Common Dates:
+      • 2010-03-23 (103x, 5.1%)
+      • 2010-03-25 (98x, 4.9%)
+      • 2010-03-30 (96x, 4.8%)
+      • 2010-03-29 (95x, 4.8%)
+      • 2010-03-26 (89x, 4.5%)
+   Most Common Days of Week:
+      • Tuesday (372x, 18.6%)
+      • Monday (332x, 16.6%)
+      • Wednesday (309x, 15.4%)
+      • Thursday (265x, 13.2%)
+      • Friday (264x, 13.2%)
+      • Saturday (234x, 11.7%)
+      • Sunday (224x, 11.2%)
+   Most Common Hours:
+      • 23:00 (122x, 6.1%)
+      • 21:00 (105x, 5.2%)
+      • 18:00 (103x, 5.1%)
+      • 02:00 (100x, 5.0%)
+      • 22:00 (90x, 4.5%)
+      • 04:00 (89x, 4.5%)
+      • 16:00 (89x, 4.5%)
+      • 09:00 (88x, 4.4%)
+      • 00:00 (87x, 4.3%)
+      • 07:00 (84x, 4.2%)
+
+📊 timestamp_month:
+   Date Range: from 2010-03-01 to 2025-10-01 (5693 days)
+   Timezone: None (timezone-naive)
+   Most Common Dates:
+      • 2010-03-01 (1,977x, 98.9%)
+      • 2025-10-01 (23x, 1.1%)
+   Most Common Days of Week:
+      • Monday (1,977x, 98.9%)
+      • Wednesday (23x, 1.1%)
+
+📊 nonce:
+   Top 10 Values:
+      • '30b01c3' (1x, 0.1%)
+      • 'f1d3cc' (1x, 0.1%)
+      • '12c25e65' (1x, 0.1%)
+      • '494d81c' (1x, 0.1%)
+      • 'd350b1' (1x, 0.1%)
+      • '153a482' (1x, 0.1%)
+      • '8daf253' (1x, 0.1%)
+      • '5868101' (1x, 0.1%)
+      • '6eb1cf06' (1x, 0.1%)
+      • 'ee8345' (1x, 0.1%)
+   Length: min=3, max=8, avg=7.13
+
+📊 bits:
+   Top 4 Values:
+      • '1c381375' (860x, 43.0%)
+      • '1c387f6f' (754x, 37.7%)
+      • '1c43b3e5' (363x, 18.1%)
+      • '1701eb21' (23x, 1.1%)
+   Length: min=8, max=8, avg=8.0
+
+📊 coinbase_param:
+   Top 10 Values:
+      • '047513381c0102' (17x, 0.9%)
+      • '046f7f381c0102' (16x, 0.8%)
+      • '046f7f381c0107' (16x, 0.8%)
+      • '046f7f381c0103' (15x, 0.8%)
+      • '046f7f381c010b' (15x, 0.8%)
+      • '046f7f381c0109' (14x, 0.7%)
+      • '046f7f381c0108' (12x, 0.6%)
+      • '047513381c0109' (11x, 0.5%)
+      • '047513381c0103' (11x, 0.5%)
+      • '046f7f381c0113' (10x, 0.5%)
+   Length: min=14, max=200, avg=16.25
+
+📊 transaction_count:
+   Top 5 Values:
+      • '1.0' (1,816x, 90.8%)
+      • '2.0' (134x, 6.7%)
+      • '3.0' (22x, 1.1%)
+      • '4.0' (5x, 0.2%)
+      • '3319.0' (1x, 0.1%)
+   Stats: min=1.00, max=5633.00, mean=36.40, median=1.00
+   Quantiles: p25=1.00, p50=1.00, p75=1.00
+
+✅ No issues found!
+
+
+⏱️  Audit Duration Breakdown:
+   • string_checks: 0.023s
+   • date_checks: 0.008s
+   • Total: 0.05s
+
+🔒 Closed BIGQUERY connection
+
+⏱️  Table Audit Phase Breakdown:
+   • Connection: 0.414s
+   • Metadata: 7.120s
+   • Data Loading: 3.443s
+   • Audit Checks: 0.047s
+   • Total Table Audit: 0.05s
+📄 HTML report saved to: audit_results/audit_run_20251021_155201/blocks/audit.html
+🌐 Opened report in browser
+📄 Results saved to: audit_results/audit_run_20251021_155201/blocks/audit.json
+📄 CSV saved to: audit_results/audit_run_20251021_155201/blocks/audit.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251021_155201/blocks/summary.csv
+
+======================================================================
+📊 Generating run summary reports...
+======================================================================
+📄 Summary HTML saved to: audit_results/audit_run_20251021_155201/summary.html
+📄 Summary JSON saved to: audit_results/audit_run_20251021_155201/summary.json
+📄 Detailed column summary CSV saved to: audit_results/audit_run_20251021_155201/columns.csv
+📄 Table summary CSV saved to: audit_results/audit_run_20251021_155201/tables.csv
+
+======================================================================
+✅ Audit completed! Results saved to: audit_results/audit_run_20251021_155201
+⏱️  Total duration: 29.76 seconds
+📝 Logs saved to: audit_results/audit_run_20251021_155201/audit.log
+======================================================================

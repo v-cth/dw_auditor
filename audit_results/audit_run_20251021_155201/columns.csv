@@ -1,0 +1,31 @@
+table_name,column_name,data_type,status,null_count,null_pct,distinct_count
+transactions,hash,String,OK,0,0.0,3000
+transactions,size,Int64,NOT_CHECKED,0,0.0,327
+transactions,virtual_size,Int64,NOT_CHECKED,0,0.0,268
+transactions,version,Int64,NOT_CHECKED,0,0.0,2
+transactions,lock_time,Int64,NOT_CHECKED,0,0.0,40
+transactions,block_hash,String,OK,0,0.0,1303
+transactions,block_number,Int64,NOT_CHECKED,0,0.0,1303
+transactions,block_timestamp,"Datetime(time_unit='ns', time_zone='UTC')",OK,0,0.0,1303
+transactions,block_timestamp_month,Date,OK,0,0.0,2
+transactions,input_count,Int64,NOT_CHECKED,0,0.0,23
+transactions,output_count,Int64,NOT_CHECKED,0,0.0,31
+transactions,input_value,"Decimal(precision=38, scale=9)",NOT_CHECKED,1295,43.166666666666664,1605
+transactions,output_value,"Decimal(precision=38, scale=9)",NOT_CHECKED,0,0.0,1607
+transactions,is_coinbase,Boolean,NOT_CHECKED,0,0.0,2
+transactions,fee,"Decimal(precision=38, scale=9)",NOT_CHECKED,0,0.0,530
+transactions,inputs,"List(Struct({'index': Int64, 'spent_transaction_hash': String, 'spent_output_index': Int64, 'script_asm': String, 'script_hex': String, 'sequence': Int64, 'required_signatures': Int64, 'type': String, 'addresses': List(String), 'value': Decimal(precision=38, scale=9)}))",NOT_CHECKED,0,0.0,
+transactions,outputs,"List(Struct({'index': Int64, 'script_asm': String, 'script_hex': String, 'required_signatures': Int64, 'type': String, 'addresses': List(String), 'value': Decimal(precision=38, scale=9)}))",NOT_CHECKED,0,0.0,
+blocks,hash,String,OK,0,0.0,2000
+blocks,size,Int64,NOT_CHECKED,0,0.0,132
+blocks,stripped_size,Int64,NOT_CHECKED,0,0.0,132
+blocks,weight,Int64,NOT_CHECKED,0,0.0,132
+blocks,number,Int64,NOT_CHECKED,0,0.0,2000
+blocks,version,Int64,NOT_CHECKED,0,0.0,24
+blocks,merkle_root,String,OK,0,0.0,2000
+blocks,timestamp,"Datetime(time_unit='ns', time_zone='UTC')",OK,0,0.0,1999
+blocks,timestamp_month,Date,OK,0,0.0,2
+blocks,nonce,String,OK,0,0.0,2000
+blocks,bits,String,OK,0,0.0,4
+blocks,coinbase_param,String,OK,0,0.0,729
+blocks,transaction_count,Int64,NOT_CHECKED,0,0.0,27

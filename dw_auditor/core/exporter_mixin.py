@@ -45,18 +45,20 @@ class AuditorExporterMixin:
         """
         return export_to_json(results, file_path)
 
-    def export_results_to_html(self, results: Dict, file_path: str = "audit_report.html") -> str:
+    def export_results_to_html(self, results: Dict, file_path: str = "audit_report.html", thousand_separator: str = ",", decimal_places: int = 1) -> str:
         """
         Export audit results to a beautiful HTML report
 
         Args:
             results: Audit results dictionary
             file_path: Path to save HTML file
+            thousand_separator: Separator for thousands (default: ",")
+            decimal_places: Number of decimal places to display (default: 1)
 
         Returns:
             Path to saved HTML file
         """
-        return export_to_html(results, file_path)
+        return export_to_html(results, file_path, thousand_separator, decimal_places)
 
     def get_summary_stats(self, results: Dict) -> Dict:
         """

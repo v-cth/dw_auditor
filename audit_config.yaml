@@ -280,6 +280,16 @@ output:
   # Automatically open HTML reports in browser after generation
   auto_open_html: true
 
+  # Number formatting for HTML reports
+  number_format:
+    # Thousand separator
+    # Options: "," (American/English), " " (European/International), "_" (underscore)
+    thousand_separator: ","
+
+    # Decimal places for floating point numbers
+    # Options: 0 (integer), 1, 2, etc.
+    decimal_places: 1
+
 # Column Filters (Optional)
 # ----------------------------------------------------------------------------
 # Use these to limit which columns are audited

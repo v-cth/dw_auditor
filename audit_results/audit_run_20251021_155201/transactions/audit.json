@@ -1,0 +1,695 @@
+{
+  "table_name": "transactions",
+  "total_rows": 3000,
+  "sampled": false,
+  "analyzed_rows": 3000,
+  "columns": {},
+  "column_summary": {
+    "hash": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 3000,
+      "status": "OK"
+    },
+    "size": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 327,
+      "status": "NOT_CHECKED"
+    },
+    "virtual_size": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 268,
+      "status": "NOT_CHECKED"
+    },
+    "version": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2,
+      "status": "NOT_CHECKED"
+    },
+    "lock_time": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 40,
+      "status": "NOT_CHECKED"
+    },
+    "block_hash": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1303,
+      "status": "OK"
+    },
+    "block_number": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1303,
+      "status": "NOT_CHECKED"
+    },
+    "block_timestamp": {
+      "dtype": "Datetime(time_unit='ns', time_zone='UTC')",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1303,
+      "status": "OK"
+    },
+    "block_timestamp_month": {
+      "dtype": "Date",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2,
+      "status": "OK"
+    },
+    "input_count": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 23,
+      "status": "NOT_CHECKED"
+    },
+    "output_count": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 31,
+      "status": "NOT_CHECKED"
+    },
+    "input_value": {
+      "dtype": "Decimal(precision=38, scale=9)",
+      "null_count": 1295,
+      "null_pct": 43.166666666666664,
+      "distinct_count": 1605,
+      "status": "NOT_CHECKED"
+    },
+    "output_value": {
+      "dtype": "Decimal(precision=38, scale=9)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1607,
+      "status": "NOT_CHECKED"
+    },
+    "is_coinbase": {
+      "dtype": "Boolean",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2,
+      "status": "NOT_CHECKED"
+    },
+    "fee": {
+      "dtype": "Decimal(precision=38, scale=9)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 530,
+      "status": "NOT_CHECKED"
+    },
+    "inputs": {
+      "dtype": "List(Struct({'index': Int64, 'spent_transaction_hash': String, 'spent_output_index': Int64, 'script_asm': String, 'script_hex': String, 'sequence': Int64, 'required_signatures': Int64, 'type': String, 'addresses': List(String), 'value': Decimal(precision=38, scale=9)}))",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": null,
+      "status": "NOT_CHECKED"
+    },
+    "outputs": {
+      "dtype": "List(Struct({'index': Int64, 'script_asm': String, 'script_hex': String, 'required_signatures': Int64, 'type': String, 'addresses': List(String), 'value': Decimal(precision=38, scale=9)}))",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": null,
+      "status": "NOT_CHECKED"
+    }
+  },
+  "column_insights": {
+    "hash": {
+      "top_values": [
+        {
+          "value": "837ca7dcfb6e56326ad732bdd7799f62bc75b63bca78ebd66eb2e4a04a76c0ab",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "e31cfb5ef963aaaed75afb7d8f844c8bfce7601baa54e3d8eb6de675834beee4",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "589aafed087c54e80d75143e2d3c942628eaab60e08631d7cddb4d0186e5c7a2",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "4cf4f5f373336501641c4a1c0df085f9d4c41f44aa674ef41e96bbe5a29a86aa",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "0482ba71f575b46846bfd3dddaa6adf8792c49896361f612d1129b1c39ffb6f3",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "87bfbd278caeec98e4bf36659c28c18b9d07ce46922a7576e0fa8f2e0af2ca29",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "8c3303b7bc6dd0dba632882e519570636de4ce4abb8f5e3235826d5441b26f7d",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "536c04c12eaa8c11ff96512101c80fe1fbfb0ce1a783b98fbfbd41c37dd97bad",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "576a6c2a238a0c821e35223210ce990912beba87cf61c744cc3cc0a49ca20aca",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "8cf6cc81138f0bace3cdc726f40014cf9e4cc86934b0e5f508c7e662c93166eb",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        }
+      ],
+      "length_stats": {
+        "min": 64,
+        "max": 64,
+        "avg": 64.0
+      }
+    },
+    "size": {
+      "min": 134.0,
+      "max": 65017.0,
+      "mean": 303.6427,
+      "median": 194.0,
+      "quantiles": {
+        "p25": 135.0,
+        "p50": 194.0,
+        "p75": 258.0
+      },
+      "top_values": [
+        {
+          "value": 135.0,
+          "count": 879,
+          "percentage": 29.299999999999997
+        },
+        {
+          "value": 134.0,
+          "count": 416,
+          "percentage": 13.866666666666665
+        },
+        {
+          "value": 222.0,
+          "count": 238,
+          "percentage": 7.933333333333334
+        },
+        {
+          "value": 367.0,
+          "count": 150,
+          "percentage": 5.0
+        },
+        {
+          "value": 223.0,
+          "count": 120,
+          "percentage": 4.0
+        }
+      ]
+    },
+    "virtual_size": {
+      "min": 99.0,
+      "max": 65017.0,
+      "mean": 223.5683,
+      "median": 135.0,
+      "quantiles": {
+        "p25": 135.0,
+        "p50": 135.0,
+        "p75": 177.0
+      },
+      "top_values": [
+        {
+          "value": 135.0,
+          "count": 879,
+          "percentage": 29.299999999999997
+        },
+        {
+          "value": 134.0,
+          "count": 430,
+          "percentage": 14.333333333333334
+        },
+        {
+          "value": 141.0,
+          "count": 256,
+          "percentage": 8.533333333333333
+        },
+        {
+          "value": 208.0,
+          "count": 172,
+          "percentage": 5.733333333333333
+        },
+        {
+          "value": 140.0,
+          "count": 125,
+          "percentage": 4.166666666666666
+        }
+      ]
+    },
+    "version": {
+      "min": 1.0,
+      "max": 2.0,
+      "mean": 1.4,
+      "median": 1.0,
+      "quantiles": {
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 2.0
+      },
+      "top_values": [
+        {
+          "value": 1.0,
+          "count": 1800,
+          "percentage": 60.0
+        },
+        {
+          "value": 2.0,
+          "count": 1200,
+          "percentage": 40.0
+        }
+      ]
+    },
+    "lock_time": {
+      "min": 0.0,
+      "max": 553150688.0,
+      "mean": 2416885.317,
+      "median": 0.0,
+      "quantiles": {
+        "p25": 0.0,
+        "p50": 0.0,
+        "p75": 0.0
+      },
+      "top_values": [
+        {
+          "value": 0.0,
+          "count": 2824,
+          "percentage": 94.13333333333334
+        },
+        {
+          "value": 920112.0,
+          "count": 119,
+          "percentage": 3.966666666666667
+        },
+        {
+          "value": 920110.0,
+          "count": 12,
+          "percentage": 0.4
+        },
+        {
+          "value": 920080.0,
+          "count": 7,
+          "percentage": 0.23333333333333336
+        },
+        {
+          "value": 920029.0,
+          "count": 2,
+          "percentage": 0.06666666666666667
+        }
+      ]
+    },
+    "block_hash": {
+      "top_values": [
+        {
+          "value": "00000000000000000000cbf194ec44821115b8b43b78d00018fb8e17736eaa1b",
+          "count": 1328,
+          "percentage": 44.266666666666666
+        },
+        {
+          "value": "0000000000000000000158fb5aad52ea8ac682c88b789c67d6dfae04ab377ce2",
+          "count": 201,
+          "percentage": 6.7
+        },
+        {
+          "value": "0000000000000000000041cd9cc8bec598711bd25f167ea15548cbc5abf32598",
+          "count": 63,
+          "percentage": 2.1
+        },
+        {
+          "value": "00000000000000000000b61e0183a2bab598997c83c6389301628dee0e6f8aa4",
+          "count": 36,
+          "percentage": 1.2
+        },
+        {
+          "value": "0000000000000000000053d2d26f4298fd361b12bfd7f4f535e1fb964367c3f7",
+          "count": 35,
+          "percentage": 1.1666666666666667
+        },
+        {
+          "value": "000000000000000000003954efbb502263251c1237a46428614e1c0afe18d7d5",
+          "count": 21,
+          "percentage": 0.7000000000000001
+        },
+        {
+          "value": "00000000000000000000435346fbd242182c450d5c315b1e52b1ccc46ee01d5e",
+          "count": 17,
+          "percentage": 0.5666666666666667
+        },
+        {
+          "value": "000000000000000000016fac7699add759c08105f4d215b0098c85c363221d8d",
+          "count": 4,
+          "percentage": 0.13333333333333333
+        },
+        {
+          "value": "0000000056dcab6c66381e61a0f431e90cdb3073a13b45ba5fe372e8ef55d91c",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        },
+        {
+          "value": "00000000fccae24278a054ecf1bc672e39e33588ebb7806334ff5272d2a6efe2",
+          "count": 1,
+          "percentage": 0.03333333333333333
+        }
+      ],
+      "length_stats": {
+        "min": 64,
+        "max": 64,
+        "avg": 64.0
+      }
+    },
+    "block_number": {
+      "min": 21940.0,
+      "max": 920113.0,
+      "mean": 532867.7643,
+      "median": 920082.0,
+      "quantiles": {
+        "p25": 23211.0,
+        "p50": 920082.0,
+        "p75": 920113.0
+      },
+      "top_values": [
+        {
+          "value": 920113.0,
+          "count": 1328,
+          "percentage": 44.266666666666666
+        },
+        {
+          "value": 920081.0,
+          "count": 201,
+          "percentage": 6.7
+        },
+        {
+          "value": 920082.0,
+          "count": 63,
+          "percentage": 2.1
+        },
+        {
+          "value": 920084.0,
+          "count": 36,
+          "percentage": 1.2
+        },
+        {
+          "value": 920088.0,
+          "count": 35,
+          "percentage": 1.1666666666666667
+        }
+      ]
+    },
+    "block_timestamp": {
+      "min_date": "2009-09-01 00:02:13+00:00",
+      "max_date": "2025-10-21 13:10:35+00:00",
+      "date_range_days": 5894,
+      "most_common_dates": [
+        {
+          "date": "2025-10-21",
+          "count": 1705,
+          "percentage": 56.833333333333336
+        },
+        {
+          "date": "2009-09-26",
+          "count": 79,
+          "percentage": 2.6333333333333333
+        },
+        {
+          "date": "2009-09-24",
+          "count": 74,
+          "percentage": 2.466666666666667
+        },
+        {
+          "date": "2009-09-30",
+          "count": 61,
+          "percentage": 2.033333333333333
+        },
+        {
+          "date": "2009-09-25",
+          "count": 53,
+          "percentage": 1.7666666666666668
+        }
+      ],
+      "most_common_hours": [
+        {
+          "hour": 13,
+          "count": 1387,
+          "percentage": 46.233333333333334
+        },
+        {
+          "hour": 9,
+          "count": 367,
+          "percentage": 12.233333333333334
+        },
+        {
+          "hour": 10,
+          "count": 104,
+          "percentage": 3.4666666666666663
+        },
+        {
+          "hour": 3,
+          "count": 66,
+          "percentage": 2.1999999999999997
+        },
+        {
+          "hour": 16,
+          "count": 64,
+          "percentage": 2.1333333333333333
+        },
+        {
+          "hour": 5,
+          "count": 62,
+          "percentage": 2.0666666666666664
+        },
+        {
+          "hour": 19,
+          "count": 60,
+          "percentage": 2.0
+        },
+        {
+          "hour": 18,
+          "count": 59,
+          "percentage": 1.9666666666666666
+        },
+        {
+          "hour": 15,
+          "count": 59,
+          "percentage": 1.9666666666666666
+        },
+        {
+          "hour": 2,
+          "count": 58,
+          "percentage": 1.9333333333333333
+        }
+      ],
+      "most_common_days": [
+        {
+          "day": "Tuesday",
+          "weekday": 2,
+          "count": 1882,
+          "percentage": 62.73333333333333
+        },
+        {
+          "day": "Saturday",
+          "weekday": 6,
+          "count": 204,
+          "percentage": 6.800000000000001
+        },
+        {
+          "day": "Thursday",
+          "weekday": 4,
+          "count": 203,
+          "percentage": 6.766666666666667
+        },
+        {
+          "day": "Wednesday",
+          "weekday": 3,
+          "count": 196,
+          "percentage": 6.533333333333332
+        },
+        {
+          "day": "Friday",
+          "weekday": 5,
+          "count": 176,
+          "percentage": 5.866666666666666
+        },
+        {
+          "day": "Monday",
+          "weekday": 1,
+          "count": 172,
+          "percentage": 5.733333333333333
+        },
+        {
+          "day": "Sunday",
+          "weekday": 7,
+          "count": 167,
+          "percentage": 5.566666666666667
+        }
+      ],
+      "timezone": "UTC"
+    },
+    "block_timestamp_month": {
+      "min_date": "2009-09-01",
+      "max_date": "2025-10-01",
+      "date_range_days": 5874,
+      "most_common_dates": [
+        {
+          "date": "2025-10-01",
+          "count": 1705,
+          "percentage": 56.833333333333336
+        },
+        {
+          "date": "2009-09-01",
+          "count": 1295,
+          "percentage": 43.166666666666664
+        }
+      ],
+      "most_common_days": [
+        {
+          "day": "Wednesday",
+          "weekday": 3,
+          "count": 1705,
+          "percentage": 56.833333333333336
+        },
+        {
+          "day": "Tuesday",
+          "weekday": 2,
+          "count": 1295,
+          "percentage": 43.166666666666664
+        }
+      ],
+      "timezone": "None (timezone-naive)"
+    },
+    "input_count": {
+      "min": 0.0,
+      "max": 230.0,
+      "mean": 1.1183,
+      "median": 1.0,
+      "quantiles": {
+        "p25": 0.0,
+        "p50": 1.0,
+        "p75": 1.0
+      },
+      "top_values": [
+        {
+          "value": 1.0,
+          "count": 1323,
+          "percentage": 44.1
+        },
+        {
+          "value": 0.0,
+          "count": 1296,
+          "percentage": 43.2
+        },
+        {
+          "value": 2.0,
+          "count": 214,
+          "percentage": 7.133333333333333
+        },
+        {
+          "value": 3.0,
+          "count": 58,
+          "percentage": 1.9333333333333333
+        },
+        {
+          "value": 4.0,
+          "count": 27,
+          "percentage": 0.8999999999999999
+        }
+      ]
+    },
+    "output_count": {
+      "min": 1.0,
+      "max": 160.0,
+      "mean": 1.9183,
+      "median": 1.0,
+      "quantiles": {
+        "p25": 1.0,
+        "p50": 1.0,
+        "p75": 2.0
+      },
+      "top_values": [
+        {
+          "value": 1.0,
+          "count": 1759,
+          "percentage": 58.63333333333334
+        },
+        {
+          "value": 2.0,
+          "count": 897,
+          "percentage": 29.9
+        },
+        {
+          "value": 3.0,
+          "count": 220,
+          "percentage": 7.333333333333333
+        },
+        {
+          "value": 4.0,
+          "count": 30,
+          "percentage": 1.0
+        },
+        {
+          "value": 6.0,
+          "count": 24,
+          "percentage": 0.8
+        }
+      ]
+    },
+    "inputs": {
+      "note": "Complex type - insights not supported"
+    },
+    "outputs": {
+      "note": "Complex type - insights not supported"
+    }
+  },
+  "timestamp": "2025-10-21T15:52:19.726502",
+  "start_time": "2025-10-21T15:52:19.726502",
+  "check_durations": {
+    "string_checks": 0.016593,
+    "date_checks": 0.006252
+  },
+  "potential_primary_keys": [
+    "hash"
+  ],
+  "end_time": "2025-10-21T15:52:19.760682",
+  "duration_seconds": 0.03,
+  "table_metadata": {
+    "table_name": "transactions",
+    "table_type": "BASE TABLE",
+    "created_time": "2019-01-14 18:48:06.807000+00:00",
+    "table_uid": "bigquery-public-data.crypto_bitcoin.transactions",
+    "row_count": 3000,
+    "primary_key_columns": [
+      "transaction_id"
+    ],
+    "primary_key_source": "user_config",
+    "query_result_count": 3000
+  },
+  "phase_timings": {
+    "connection": 1.137558,
+    "metadata": 12.939315,
+    "data_loading": 4.309329,
+    "audit_checks": 0.035733
+  }
+}
