@@ -1,0 +1,264 @@
+📁 Audit run directory: audit_results/audit_run_20251022_103515
+📝 Logs will be saved to: audit_results/audit_run_20251022_103515/audit.log
+🔍 Full audit mode: Running quality checks and profiling/insights
+
+======================================================================
+💰 Estimating BigQuery scan costs...
+======================================================================
+✅ Connected to BIGQUERY
+   🔍 Estimating query: SELECT station_code, station_name, capacity, docks_available, mechanical, ebike, bikes_available, rate_bike_available, rate_dock_available, bikes_out_of_order, collected_at, rounded_collected_at FROM ...
+   🔍 Estimating query: SELECT station_code, station_name, capacity, lon, lat, city FROM `dbt_prod.dim_station`
+   🔍 Estimating query: SELECT origin_station_code, origin_station_name, dest_station_code, dest_station_name, distance_meters FROM `dbt_prod.dtm_station_distance` ORDER BY RAND() LIMIT 10000
+🔒 Closed BIGQUERY connection
+
+📊 Estimated bytes to scan per table:
+   • fct_avaibility_part: 2.76 GB (sampled)
+   • dim_station: 107.53 KB
+   • dtm_station_distance: 192.91 MB (sampled)
+
+💾 Total estimated data to scan: 2.95 GB (0.0030 TB)
+💵 Estimated cost (on-demand): $0.02 USD
+   (Note: First 1 TB/month is free; pricing may vary by region)
+
+⚠️  Do you want to proceed with the audit?
+   Type 'y' or 'yes' to continue, or 'n' to cancel: 
+⚠️  Running in non-interactive mode, proceeding with audit...
+   (Use --yes flag in future to skip this prompt)
+
+✅ Proceeding with audit...
+
+======================================================================
+🔍 Auditing table: fct_avaibility_part
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: portfolio-402.dbt_prod.fct_avaibility_part
+📑 Table type: BASE TABLE
+📊 Table has 24,487,775 rows
+🔹 Partitioned by: collected_at (TIME)
+🔸 Clustered by: station_code
+📊 Optimized column loading: selecting 12/13 columns
+🔍 Sampling 10,000 rows from table using 'random' method
+✅ Loaded 10,000 rows into memory
+
+============================================================
+Auditing: fct_avaibility_part
+Total rows in table: 24,487,775
+Analyzing sample: 10,000 rows
+============================================================
+
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+station_code                   Int64           - NOT_CHECKED 0 (0.0%)        1,498          
+station_name                   String          ✗ ERROR      0 (0.0%)        1,495          
+capacity                       Int64           - NOT_CHECKED 10 (0.1%)       73             
+docks_available                Int64           - NOT_CHECKED 0 (0.0%)        66             
+mechanical                     Int64           - NOT_CHECKED 0 (0.0%)        64             
+ebike                          Int64           - NOT_CHECKED 0 (0.0%)        34             
+🔒 Closed BIGQUERY connection
+❌ Error auditing table 'fct_avaibility_part': Cannot specify ',' with 's'.
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 324, in main
+    results = auditor.audit_from_database(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 438, in audit_from_database
+    results = self.audit_table(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 662, in audit_table
+    print_results(results)
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/utils/output.py", line 118, in print_results
+    print_column_summary(results)
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/utils/output.py", line 24, in print_column_summary
+    null_display = f"{col_data['null_count']:,} ({col_data['null_pct']:.1f}%)"
+ValueError: Cannot specify ',' with 's'.
+
+======================================================================
+🔍 Auditing table: dim_station
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: portfolio-402.dbt_prod.dim_station
+📑 Table type: BASE TABLE
+📊 Table has 1,587 rows
+🔑 Primary key from config: station_code
+📊 Optimized column loading: selecting 6/9 columns
+✅ Loaded 1,587 rows into memory
+
+============================================================
+Auditing: dim_station
+Total rows in table: 1,587
+============================================================
+
+
+🔑 Potential primary key column(s): station_code, lat
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+station_code                   Int64           - NOT_CHECKED 0 (0.0%)        1,587          
+station_name                   String          ✗ ERROR      0 (0.0%)        1,570          
+capacity                       Int64           - NOT_CHECKED 0 (0.0%)        72             
+lon                            Float64         - NOT_CHECKED 0 (0.0%)        1,586          
+lat                            Float64         - NOT_CHECKED 0 (0.0%)        1,587          
+city                           String          ✗ ERROR      0 (0.0%)        68             
+🔒 Closed BIGQUERY connection
+❌ Error auditing table 'dim_station': Cannot specify ',' with 's'.
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 324, in main
+    results = auditor.audit_from_database(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 438, in audit_from_database
+    results = self.audit_table(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 662, in audit_table
+    print_results(results)
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/utils/output.py", line 118, in print_results
+    print_column_summary(results)
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/utils/output.py", line 24, in print_column_summary
+    null_display = f"{col_data['null_count']:,} ({col_data['null_pct']:.1f}%)"
+ValueError: Cannot specify ',' with 's'.
+
+======================================================================
+🔍 Auditing table: dtm_station_distance
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: portfolio-402.dbt_prod.dtm_station_distance
+📑 Table type: BASE TABLE
+📊 Table has 2,516,982 rows
+📊 Optimized column loading: selecting 5/5 columns
+🔍 Sampling 10,000 rows from table using 'random' method
+✅ Loaded 10,000 rows into memory
+
+============================================================
+Auditing: dtm_station_distance
+Total rows in table: 2,516,982
+Analyzing sample: 10,000 rows
+============================================================
+
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+origin_station_code            Int64           - NOT_CHECKED 0 (0.0%)        1,587          
+origin_station_name            String          ✗ ERROR      0 (0.0%)        1,570          
+dest_station_code              Int64           - NOT_CHECKED 0 (0.0%)        1,584          
+dest_station_name              String          ✗ ERROR      0 (0.0%)        1,567          
+distance_meters                Float64         - NOT_CHECKED 0 (0.0%)        9,983          
+====================================================================================================
+
+
+💡 Column Insights:
+
+📊 origin_station_code:
+   Top 5 Values:
+      • '11027.0' (14x, 0.1%)
+      • '13019.0' (14x, 0.1%)
+      • '48003.0' (13x, 0.1%)
+      • '16200.0' (13x, 0.1%)
+      • '12002.0' (13x, 0.1%)
+   Stats: min=1001.00, max=92008.00, mean=19088.36, median=17009.50
+   Quantiles: p25=11041.00, p50=17010.00, p75=22409.00
+
+📊 origin_station_name:
+   Top 10 Values:
+      • 'Gaston Roussel - Commune de Paris' (20x, 0.2%)
+      • 'Buisson Saint-Louis - Saint-Maur' (18x, 0.2%)
+      • 'Réaumur - Montmartre' (17x, 0.2%)
+      • 'Rocher - Laborde' (16x, 0.2%)
+      • 'Simon Bolivar - Henri Turot' (15x, 0.1%)
+      • 'Place des Marseillais' (15x, 0.1%)
+      • 'Place Nelson Mandela' (14x, 0.1%)
+      • 'Gare RER - Canadiens' (14x, 0.1%)
+      • 'Saint-Ambroise - Parmentier' (14x, 0.1%)
+      • 'Square Bela Bartok' (14x, 0.1%)
+   Length: min=6, max=58, avg=23.9
+
+📊 dest_station_code:
+   Top 5 Values:
+      • '20203.0' (18x, 0.2%)
+      • '14034.0' (15x, 0.1%)
+      • '42504.0' (14x, 0.1%)
+      • '15003.0' (14x, 0.1%)
+      • '5202.0' (14x, 0.1%)
+   Stats: min=1001.00, max=92008.00, mean=19000.63, median=17001.00
+   Quantiles: p25=11035.00, p50=17001.00, p75=22209.00
+
+📊 dest_station_name:
+   Top 10 Values:
+      • 'Evariste Galois' (28x, 0.3%)
+      • 'Paul Bodin - Clichy' (20x, 0.2%)
+      • 'Place des Marseillais' (19x, 0.2%)
+      • 'Ouest - Château' (15x, 0.1%)
+      • 'Gare Montparnasse - Vaugirard' (14x, 0.1%)
+      • 'Verdun - Carnot' (14x, 0.1%)
+      • 'Claude Decaen - Cannebière' (14x, 0.1%)
+      • 'Route de Sèvres - Porte de Bagatelle' (14x, 0.1%)
+      • 'Jean de la Fontaine - Boulainvilliers' (14x, 0.1%)
+      • 'Arbalète - Claude Bernard' (14x, 0.1%)
+   Length: min=6, max=58, avg=23.97
+
+📊 distance_meters:
+   Top 5 Values:
+      • '5786.028926781349' (2x, 0.0%)
+      • '2460.9363742382025' (2x, 0.0%)
+      • '4146.570246692988' (2x, 0.0%)
+      • '7044.751393489857' (2x, 0.0%)
+      • '4623.592038010757' (2x, 0.0%)
+   Stats: min=41.87, max=26985.29, mean=6917.93, median=6388.88
+   Quantiles: p25=4054.14, p50=6389.45, p75=9201.53
+
+🔍 Issues Found:
+
+📊 Column: origin_station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,570
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 3,836 rows (38.4%)
+      Found chars: ['î', 'É', "'", 'â', 'ê', 'ô', 'Î', 'è', 'é', 'ç']
+      Examples: ['Général Martial Valin - Pont du Garigliano', "Saint-Lazare - Place d'Estienne d'Orves"]
+
+📊 Column: dest_station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,567
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 3,783 rows (37.8%)
+      Found chars: ['î', "'", 'â', 'ê', 'ô', 'è', 'é', 'ç']
+      Examples: ['Alouettes - Maréchal de Lattre de Tassigny', 'Nanterre - Université']
+
+
+⏱️  Audit Duration Breakdown:
+   • string_checks: 0.022s
+   • Total: 0.03s
+
+🔒 Closed BIGQUERY connection
+
+⏱️  Table Audit Phase Breakdown:
+   • Connection: 0.215s
+   • Metadata: 8.055s
+   • Column Selection: 2.327s
+   • Data Loading: 3.412s
+   • Audit Checks: 0.033s
+   • Total Table Audit: 0.03s
+📄 HTML report saved to: audit_results/audit_run_20251022_103515/dtm_station_distance/audit.html
+🌐 Opened report in browser
+📄 Results saved to: audit_results/audit_run_20251022_103515/dtm_station_distance/audit.json
+📄 CSV saved to: audit_results/audit_run_20251022_103515/dtm_station_distance/audit.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251022_103515/dtm_station_distance/summary.csv
+
+======================================================================
+📊 Generating run summary reports...
+======================================================================
+📄 Summary HTML saved to: audit_results/audit_run_20251022_103515/summary.html
+📄 Summary JSON saved to: audit_results/audit_run_20251022_103515/summary.json
+📄 Detailed column summary CSV saved to: audit_results/audit_run_20251022_103515/columns.csv
+📄 Table summary CSV saved to: audit_results/audit_run_20251022_103515/tables.csv
+
+======================================================================
+✅ Audit completed! Results saved to: audit_results/audit_run_20251022_103515
+⏱️  Total duration: 127.21 seconds
+📝 Logs saved to: audit_results/audit_run_20251022_103515/audit.log
+======================================================================

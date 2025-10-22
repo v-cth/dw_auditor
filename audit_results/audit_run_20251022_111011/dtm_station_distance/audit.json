@@ -1,0 +1,384 @@
+{
+  "table_name": "dtm_station_distance",
+  "total_rows": 2516982,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1568,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place du G\u00e9n\u00e9ral de Gaulle",
+                "Place Du G\u00e9n\u00e9ral De Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3709,
+          "pct": 37.09,
+          "special_chars": [
+            "\u00ee",
+            "\u00ea",
+            "'",
+            "\u00eb",
+            "\u00e8",
+            "\u00f4",
+            "\u00c9",
+            "\u00fc",
+            "\u00e0",
+            "\u00e9"
+          ],
+          "examples": [
+            "Quai de S\u00e8vres - Manufacture Nationale",
+            "H\u00f4tel de Ville - Adrienne Bolland"
+          ]
+        }
+      ]
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1568,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3790,
+          "pct": 37.9,
+          "special_chars": [
+            "\u00ee",
+            "\u00ce",
+            "\u00ea",
+            "'",
+            "\u00eb",
+            "\u00e8",
+            "\u00fb",
+            "\u00f4",
+            "\u00c9",
+            "\u00e9"
+          ],
+          "examples": [
+            "S\u00e9nat - Cond\u00e9",
+            "Place de l'Insurrection d'Ao\u00fbt 1944"
+          ]
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "origin_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1585,
+      "status": "NOT_CHECKED"
+    },
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1568,
+      "status": "ERROR"
+    },
+    "dest_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1585,
+      "status": "NOT_CHECKED"
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1568,
+      "status": "ERROR"
+    },
+    "distance_meters": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9984,
+      "status": "NOT_CHECKED"
+    }
+  },
+  "column_insights": {
+    "origin_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 18989.2263,
+      "median": 17006.5,
+      "quantiles": {
+        "p25": 11043.0,
+        "p50": 17007.0,
+        "p75": 22304.0
+      },
+      "top_values": [
+        {
+          "value": 7201.0,
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": 15027.0,
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": 23203.0,
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": 14003.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 6004.0,
+          "count": 15,
+          "percentage": 0.15
+        }
+      ]
+    },
+    "origin_station_name": {
+      "top_values": [
+        {
+          "value": "Paul Bodin - Clichy",
+          "count": 20,
+          "percentage": 0.2
+        },
+        {
+          "value": "Place De Fontenoy - Saxe",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Verdun - Carnot",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Quai des C\u00e9lestins - Henri IV",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Rocher - Laborde",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Division Leclerc - Kl\u00e9ber",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Duhamel - Andr\u00e9 Gide",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Schoelcher - Raspail",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Simon Bolivar - Henri Turot",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Regard - Rennes",
+          "count": 15,
+          "percentage": 0.15
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.89
+      }
+    },
+    "dest_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 19059.0167,
+      "median": 17015.0,
+      "quantiles": {
+        "p25": 11046.0,
+        "p50": 17015.0,
+        "p75": 22303.0
+      },
+      "top_values": [
+        {
+          "value": 7024.0,
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": 21022.0,
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": 4002.0,
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": 48005.0,
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": 18137.0,
+          "count": 16,
+          "percentage": 0.16
+        }
+      ]
+    },
+    "dest_station_name": {
+      "top_values": [
+        {
+          "value": "Ch\u00e2teau - R\u00e9publique",
+          "count": 19,
+          "percentage": 0.19
+        },
+        {
+          "value": "Place Nelson Mandela",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "Quai des C\u00e9lestins - Henri IV",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "Place de la Gare",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Evariste Galois",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Rapp - Place du G\u00e9n\u00e9ral Gouraud",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "D\u00f4me - R\u00e9publique",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Poissonniers - Nord",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Paul Bodin - Clichy",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Place des Marseillais",
+          "count": 16,
+          "percentage": 0.16
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.84
+      }
+    },
+    "distance_meters": {
+      "min": 191.96001866540274,
+      "max": 24108.61351490585,
+      "mean": 6953.2906,
+      "median": 6420.495766077282,
+      "quantiles": {
+        "p25": 4110.58445806161,
+        "p50": 6420.773458269797,
+        "p75": 9271.685507997883
+      },
+      "top_values": [
+        {
+          "value": 7379.61272303851,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 7766.507950770436,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 4991.8360387188495,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 4913.165264674194,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 2833.226131404858,
+          "count": 2,
+          "percentage": 0.02
+        }
+      ]
+    }
+  },
+  "timestamp": "2025-10-22T11:12:18.620278",
+  "start_time": "2025-10-22T11:12:18.620278",
+  "check_durations": {
+    "string_checks": 0.023218000000000003
+  },
+  "end_time": "2025-10-22T11:12:18.654448",
+  "duration_seconds": 0.03,
+  "table_metadata": {
+    "table_name": "dtm_station_distance",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-22 01:00:56.165000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.dtm_station_distance",
+    "row_count": 2516982
+  },
+  "phase_timings": {
+    "connection": 0.350052,
+    "metadata": 8.321532,
+    "column_selection": 2.767415,
+    "data_loading": 3.199593,
+    "audit_checks": 0.035433
+  }
+}

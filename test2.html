@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Data Quality Audit Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: #f5f7fa;
+      color: #222;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .report-header {
+      background: linear-gradient(135deg, #4f46e5, #6d28d9);
+      border-radius: 14px;
+      padding: 18px 24px;
+      color: white;
+      box-shadow: 0 6px 18px rgba(0, 0, 0, 0.15);
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      max-width: 800px;
+      margin: 0 auto 20px;
+    }
+
+    .report-header h1 {
+      font-size: 1.4rem;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0;
+    }
+
+    .report-header .meta {
+      font-size: 0.85rem;
+      opacity: 0.9;
+      line-height: 1.4;
+    }
+
+    .meta strong {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .meta .tag {
+      background: rgba(255, 255, 255, 0.15);
+      border-radius: 6px;
+      padding: 2px 6px;
+      margin-left: 6px;
+      font-size: 0.75rem;
+    }
+
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 12px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      color: #4f46e5;
+      margin: 0 0 4px;
+    }
+
+    .card p {
+      font-size: 0.9rem;
+      color: #555;
+      margin: 0;
+    }
+
+    .status {
+      color: #d97706;
+      font-weight: 600;
+    }
+
+  </style>
+</head>
+<body>
+
+  <div class="report-header">
+    <h1>📊 Data Quality Audit Report</h1>
+    <div class="meta">
+      Table: <strong>fct_availability_part</strong> <span class="tag">BASE TABLE</span><br>
+      Partitioned by: <strong>collected_at (TIME)</strong> | Clustered by: <strong>station_code</strong><br>
+      Generated: <strong>2025-10-22 11:24:16</strong> | Duration: <strong>0.07s</strong>
+    </div>
+  </div>
+
+  <div class="summary-cards">
+    <div class="card">
+      <h2>3,877,353</h2>
+      <p>Total Rows</p>
+    </div>
+    <div class="card">
+      <h2>10,000</h2>
+      <p>Analyzed Rows</p>
+    </div>
+    <div class="card">
+      <h2>1</h2>
+      <p>Columns Audited</p>
+    </div>
+    <div class="card">
+      <h2 class="status">⚠️ Issues Found</h2>
+      <p>Status</p>
+    </div>
+  </div>
+
+</body>
+</html>

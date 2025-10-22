@@ -1,0 +1,30 @@
+📁 Audit run directory: audit_results/audit_run_20251021_225039
+📝 Logs will be saved to: audit_results/audit_run_20251021_225039/audit.log
+
+======================================================================
+💰 Estimating BigQuery scan costs...
+======================================================================
+✅ Connected to BIGQUERY
+   🔍 Estimating query: SELECT * FROM `bigquery-public-data.crypto_bitcoin.transactions` LIMIT 3000
+   🔍 Estimating query: SELECT * FROM `bigquery-public-data.crypto_bitcoin.blocks` LIMIT 2000
+🔒 Closed BIGQUERY connection
+
+📊 Estimated bytes to scan per table:
+   • transactions: 2.36 TB
+   • blocks: 309.16 MB
+
+💾 Total estimated data to scan: 2364.41 GB (2.3644 TB)
+💵 Estimated cost (on-demand): $14.78 USD
+   (Note: First 1 TB/month is free; pricing may vary by region)
+
+⚠️  Do you want to proceed with the audit?
+   Type 'y' or 'yes' to continue, or 'n' to cancel: 
+⚠️  Running in non-interactive mode, proceeding with audit...
+   (Use --yes flag in future to skip this prompt)
+
+✅ Proceeding with audit...
+
+======================================================================
+🔍 Auditing table: transactions
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)

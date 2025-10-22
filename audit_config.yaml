@@ -21,12 +21,12 @@ database:
 
     # Example: Querying public datasets
     project_id: "portfolio-402"  # Your project (you have bigquery.jobs.create here)
-    source_project_id: "bigquery-public-data"  # Public dataset project (read-only)
-    dataset_id: "crypto_bitcoin"  # Dataset to query
+    #source_project_id: "bigquery-public-data"  # Public dataset project (read-only)
+    #dataset_id: "crypto_bitcoin"  # Dataset to query, very heavy !!!!!!!
 
     # Example: Querying your own datasets (no source_project_id needed)
     # project_id: "portfolio-402"
-    # dataset_id: "dbt_prod"
+    dataset_id: "dbt_prod"
 
     #credentials_path: "/path/to/service-account-key.json"
     # Or use credentials_json for JSON string/dict
@@ -48,18 +48,18 @@ database:
 # ----------------------------------------------------------------------------
 # Option 1: Explicit list of tables (recommended for small number of tables)
 tables:
-  # - name: fct_avaibility
-  # - name: dim_station
-  #   primary_key: station_code  # Optional: specify primary key column(s)
-  # - name: dtm_station_distance
-  - name: transactions
-    primary_key: transaction_id 
-    query: "SELECT * FROM transactions LIMIT 3000"
+  - name: fct_avaibility_part
+  - name: dim_station
+    primary_key: station_code  # Optional: specify primary key column(s)
+  - name: dtm_station_distance
+  # - name: transactions
+  #   primary_key: transaction_id 
+  #   query: "SELECT * FROM transactions LIMIT 3000"
 
 
-  - name: blocks
-    primary_key: block_id 
-    query: "SELECT * FROM blocks LIMIT 2000"
+  # - name: blocks
+  #   primary_key: block_id 
+  #   query: "SELECT * FROM blocks LIMIT 2000"
 
 # Option 2: Auto-discover tables and apply filters
 # ----------------------------------------------------------------------------
@@ -94,7 +94,7 @@ column_checks:
       date_outliers: true
       future_dates: true
 
-  # Per-table, per-column overrides
+  # Per-table, per-column overrides and numeric range validation
   # tables:
   #   dim_station:
   #     # Skip special chars check for city column (we expect French accents)
@@ -104,6 +104,23 @@ column_checks:
   #     station_name:
   #       case_duplicates: false
   #       special_chars: false  # Skip - French accents are expected
+  #
+  #     # Numeric range validation (supports 6 boundary operators)
+  #     capacity:
+  #       min: 1                      # Inclusive: capacity >= 1
+  #       max: 100                    # Inclusive: capacity <= 100
+  #     latitude:
+  #       greater_than_or_equal: -90  # Inclusive: latitude >= -90
+  #       less_than_or_equal: 90      # Inclusive: latitude <= 90
+  #     longitude:
+  #       greater_than: -180          # Exclusive: longitude > -180
+  #       less_than: 180              # Exclusive: longitude < 180
+  #
+  #   fct_avaibility_part:
+  #     available_bikes:
+  #       min: 0                      # No negative bikes
+  #     available_docks:
+  #       greater_than_or_equal: 0    # Same as min: 0
 
 # Column Insights Configuration
 # ----------------------------------------------------------------------------
@@ -252,7 +269,7 @@ thresholds:
 
   # Date outlier detection thresholds
   # Minimum reasonable year (dates before this are flagged)
-  min_year: 1950
+  min_year: 2020
 
   # Maximum reasonable year (dates after this are flagged)
   max_year: 2100

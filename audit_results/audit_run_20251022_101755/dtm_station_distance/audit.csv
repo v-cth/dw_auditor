@@ -1,0 +1,5 @@
+table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
+dtm_station_distance,2516982,10000,true,origin_station_name,String,0,0.0,1568,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place Du Général De Gaulle', 'Place du Général de Gaulle'])]",2025-10-22T10:19:55.618855
+dtm_station_distance,2516982,10000,true,origin_station_name,String,0,0.0,1568,SPECIAL_CHARACTERS,3854,38.54,"","['Véron - Lepic', 'Pavé des Gardes - Charles Vaillant']",2025-10-22T10:19:55.618855
+dtm_station_distance,2516982,10000,true,dest_station_name,String,0,0.0,1569,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place Du Général De Gaulle', 'Place du Général de Gaulle'])]",2025-10-22T10:19:55.618855
+dtm_station_distance,2516982,10000,true,dest_station_name,String,0,0.0,1569,SPECIAL_CHARACTERS,3850,38.5,"","['Place Jean-Baptiste Clément', ""Place des Droits de l'Enfant""]",2025-10-22T10:19:55.618855

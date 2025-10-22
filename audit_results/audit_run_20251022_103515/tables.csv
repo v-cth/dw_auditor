@@ -1,0 +1,2 @@
+table_name,total_rows,sampled,analyzed_rows,column_count,issues_found,columns_with_issues,status,duration_seconds,audit_timestamp,table_type,created_time,partition_column,partition_type,clustering_columns
+dtm_station_distance,2516982,true,10000,5,4,2,WARNING,0.03,2025-10-22T10:37:22.182441,BASE TABLE,2025-10-22 01:00:56.165000+00:00,"","",""

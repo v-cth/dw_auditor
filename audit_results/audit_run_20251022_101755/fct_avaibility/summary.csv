@@ -1,0 +1,4 @@
+table_name,column_name,data_type,status,null_count,null_pct,distinct_count
+fct_avaibility,station_name,String,ERROR,0,0.0,1493
+fct_avaibility,collected_at,"Datetime(time_unit='ns', time_zone=None)",OK,0,0.0,7583
+fct_avaibility,rounded_collected_at,"Datetime(time_unit='ns', time_zone=None)",OK,0,0.0,7581

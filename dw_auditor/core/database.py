@@ -150,7 +150,8 @@ class DatabaseConnection:
         custom_query: Optional[str] = None,
         sample_size: Optional[int] = None,
         sampling_method: str = 'random',
-        sampling_key_column: Optional[str] = None
+        sampling_key_column: Optional[str] = None,
+        columns: Optional[List[str]] = None
     ) -> pl.DataFrame:
         """
         Execute query and return Polars DataFrame
@@ -163,6 +164,7 @@ class DatabaseConnection:
             sample_size: Sample size for large tables
             sampling_method: Sampling strategy ('random', 'recent', 'top', 'systematic')
             sampling_key_column: Column to use for non-random sampling methods
+            columns: Optional list of column names to SELECT (default: all columns with SELECT *)
 
         Returns:
             Polars DataFrame with query results
@@ -206,6 +208,10 @@ class DatabaseConnection:
         else:
             # Get table reference
             table = self.get_table(table_name, schema)
+
+            # Select specific columns if provided
+            if columns:
+                table = table.select(columns)
 
             # Apply sampling if specified
             if sample_size:
@@ -418,6 +424,39 @@ class DatabaseConnection:
                 except:
                     pass
 
+                # Get partition and clustering information from INFORMATION_SCHEMA.COLUMNS
+                try:
+                    info_schema_columns = f"`{project_for_metadata}.{dataset}.INFORMATION_SCHEMA.COLUMNS`"
+
+                    partition_cluster_result = self.conn.sql(
+                        f"SELECT column_name, is_partitioning_column, clustering_ordinal_position "
+                        f"FROM {info_schema_columns} "
+                        f"WHERE table_name = '{table_name}' "
+                        f"AND (is_partitioning_column = 'YES' OR clustering_ordinal_position IS NOT NULL) "
+                        f"ORDER BY clustering_ordinal_position"
+                    ).to_polars()
+
+                    if len(partition_cluster_result) > 0:
+                        # Extract partition column
+                        partition_cols = partition_cluster_result.filter(
+                            pl.col('is_partitioning_column') == 'YES'
+                        )
+                        if len(partition_cols) > 0:
+                            metadata['partition_column'] = str(partition_cols['column_name'][0])
+                            # Note: partition_type (DAY, HOUR, etc.) is not in INFORMATION_SCHEMA.COLUMNS
+                            # Would need to query table options or DDL for this
+                            metadata['partition_type'] = 'TIME'  # Default assumption for BigQuery
+
+                        # Extract clustering columns
+                        cluster_cols = partition_cluster_result.filter(
+                            pl.col('clustering_ordinal_position').is_not_null()
+                        ).sort('clustering_ordinal_position')
+
+                        if len(cluster_cols) > 0:
+                            metadata['clustering_columns'] = cluster_cols['column_name'].to_list()
+                except Exception as e:
+                    print(f"⚠️  Could not get partition/cluster info: {e}")
+
             elif self.backend == 'snowflake':
                 # Snowflake INFORMATION_SCHEMA.TABLES
                 database = self.connection_params.get('database')
@@ -430,7 +469,7 @@ class DatabaseConnection:
                         (info_schema.table_schema == schema_name) &
                         (info_schema.table_name == table_name.upper())
                     )
-                    .select(['table_name', 'row_count', 'created', 'table_type'])
+                    .select(['table_name', 'row_count', 'created', 'table_type', 'clustering_key'])
                     .to_polars()
                 )
 
@@ -442,6 +481,12 @@ class DatabaseConnection:
                     metadata['table_type'] = str(result['TABLE_TYPE'][0]) if result['TABLE_TYPE'][0] is not None else None
                     # Snowflake table UID is database.schema.table
                     metadata['table_uid'] = f"{database}.{schema_name}.{table_name}"
+
+                    # Extract clustering key if present
+                    if 'CLUSTERING_KEY' in result.columns and result['CLUSTERING_KEY'][0] is not None:
+                        clustering_key = str(result['CLUSTERING_KEY'][0])
+                        if clustering_key and clustering_key != 'null':
+                            metadata['clustering_key'] = clustering_key
 
         except Exception as e:
             print(f"⚠️  Could not get table metadata from INFORMATION_SCHEMA: {e}")
@@ -510,6 +555,179 @@ class DatabaseConnection:
             print(f"⚠️  Could not get primary key from INFORMATION_SCHEMA: {e}")
 
         return primary_keys
+
+    def get_table_schema(self, table_name: str, schema: Optional[str] = None) -> Dict[str, str]:
+        """
+        Get table column names and their data types (lightweight metadata query)
+
+        Args:
+            table_name: Name of the table
+            schema: Optional schema name
+
+        Returns:
+            Dictionary mapping column names to their data types (as strings)
+        """
+        if self.conn is None:
+            self.connect()
+
+        column_schema = {}
+
+        try:
+            if self.backend == 'bigquery':
+                # BigQuery INFORMATION_SCHEMA.COLUMNS
+                dataset = schema or self.connection_params.get('dataset_id')
+                if not dataset:
+                    return column_schema
+
+                # Use source_project_id if querying external data
+                project_for_metadata = self.source_project_id or self.connection_params.get('project_id')
+
+                # Query INFORMATION_SCHEMA.COLUMNS
+                info_schema_table = f"`{project_for_metadata}.{dataset}.INFORMATION_SCHEMA.COLUMNS`"
+
+                result = self.conn.sql(
+                    f"SELECT column_name, data_type "
+                    f"FROM {info_schema_table} "
+                    f"WHERE table_name = '{table_name}' "
+                    f"ORDER BY ordinal_position"
+                ).to_polars()
+
+                if len(result) > 0:
+                    for row in result.iter_rows(named=True):
+                        column_schema[row['column_name']] = row['data_type']
+
+            elif self.backend == 'snowflake':
+                # Snowflake INFORMATION_SCHEMA.COLUMNS
+                database = self.connection_params.get('database')
+                schema_name = schema or self.connection_params.get('schema', 'PUBLIC')
+
+                if not database or not schema_name:
+                    return column_schema
+
+                result = self.conn.sql(
+                    f"SELECT column_name, data_type "
+                    f"FROM {database}.INFORMATION_SCHEMA.COLUMNS "
+                    f"WHERE table_schema = '{schema_name}' "
+                    f"AND table_name = '{table_name.upper()}' "
+                    f"ORDER BY ordinal_position"
+                ).to_polars()
+
+                if len(result) > 0:
+                    for row in result.iter_rows(named=True):
+                        # Snowflake returns uppercase column names
+                        column_schema[str(row['COLUMN_NAME']).lower()] = str(row['DATA_TYPE'])
+
+        except Exception as e:
+            print(f"⚠️  Could not get table schema from INFORMATION_SCHEMA: {e}")
+
+        return column_schema
+
+    def estimate_bytes_scanned(
+        self,
+        table_name: str,
+        schema: Optional[str] = None,
+        custom_query: Optional[str] = None,
+        sample_size: Optional[int] = None,
+        sampling_method: str = 'random',
+        sampling_key_column: Optional[str] = None,
+        columns: Optional[List[str]] = None
+    ) -> Optional[int]:
+        """
+        Estimate bytes that will be scanned by a query (BigQuery only)
+        Uses dry_run to get accurate estimate without executing
+
+        Args:
+            table_name: Name of the table
+            schema: Optional schema name
+            custom_query: Custom SQL query (overrides table_name)
+            sample_size: Sample size if sampling will be applied
+            sampling_method: Sampling strategy
+            sampling_key_column: Column for non-random sampling
+            columns: Optional list of column names to SELECT (default: all columns with SELECT *)
+
+        Returns:
+            Estimated bytes to be scanned, or None if estimation not available
+        """
+        if self.backend != 'bigquery':
+            # Only BigQuery supports dry run estimation
+            return None
+
+        if self.conn is None:
+            self.connect()
+
+        try:
+            from google.cloud import bigquery
+
+            # Get the underlying BigQuery client from Ibis connection
+            # Ibis wraps the google-cloud-bigquery client
+            bq_client = self.conn.client
+
+            # Build the query we'll actually run
+            if custom_query:
+                # Use custom query
+                dataset = schema or self.connection_params.get('dataset_id')
+
+                # Handle cross-project references
+                if self.source_project_id and dataset:
+                    full_table_name = f"`{self.source_project_id}.{dataset}.{table_name}`"
+                    import re
+                    pattern = r'\bFROM\s+' + re.escape(table_name) + r'\b'
+                    query = re.sub(pattern, f'FROM {full_table_name}', custom_query, flags=re.IGNORECASE)
+                    pattern = r'\bJOIN\s+' + re.escape(table_name) + r'\b'
+                    query = re.sub(pattern, f'JOIN {full_table_name}', query, flags=re.IGNORECASE)
+                elif dataset:
+                    import re
+                    pattern = r'\bFROM\s+' + re.escape(table_name) + r'\b'
+                    query = re.sub(pattern, f'FROM `{dataset}.{table_name}`', custom_query, flags=re.IGNORECASE)
+                    pattern = r'\bJOIN\s+' + re.escape(table_name) + r'\b'
+                    query = re.sub(pattern, f'JOIN `{dataset}.{table_name}`', query, flags=re.IGNORECASE)
+                else:
+                    query = custom_query
+            else:
+                # Build query from table reference
+                dataset = schema or self.connection_params.get('dataset_id')
+
+                if self.source_project_id and dataset:
+                    full_table_name = f"`{self.source_project_id}.{dataset}.{table_name}`"
+                elif dataset:
+                    full_table_name = f"`{dataset}.{table_name}`"
+                else:
+                    full_table_name = table_name
+
+                # Build column list for SELECT
+                column_list = ", ".join(columns) if columns else "*"
+
+                # Build SELECT query with sampling if needed
+                if sample_size:
+                    if sampling_method == 'random':
+                        query = f"SELECT {column_list} FROM {full_table_name} ORDER BY RAND() LIMIT {sample_size}"
+                    elif sampling_method == 'recent' and sampling_key_column:
+                        query = f"SELECT {column_list} FROM {full_table_name} ORDER BY {sampling_key_column} DESC LIMIT {sample_size}"
+                    elif sampling_method == 'top' and sampling_key_column:
+                        query = f"SELECT {column_list} FROM {full_table_name} ORDER BY {sampling_key_column} ASC LIMIT {sample_size}"
+                    elif sampling_method == 'systematic' and sampling_key_column:
+                        # For systematic, we'll approximate with modulo
+                        query = f"SELECT {column_list} FROM {full_table_name} WHERE MOD({sampling_key_column}, 10) = 0 LIMIT {sample_size}"
+                    else:
+                        query = f"SELECT {column_list} FROM {full_table_name} LIMIT {sample_size}"
+                else:
+                    query = f"SELECT {column_list} FROM {full_table_name}"
+
+            # Configure dry run
+            job_config = bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)
+
+            # Debug: Print the query being estimated
+            print(f"   🔍 Estimating query: {query[:200]}..." if len(query) > 200 else f"   🔍 Estimating query: {query}")
+
+            # Run dry run
+            query_job = bq_client.query(query, job_config=job_config)
+
+            # Get estimated bytes
+            return query_job.total_bytes_processed
+
+        except Exception as e:
+            print(f"⚠️  Could not estimate bytes for BigQuery query: {e}")
+            return None
 
     def get_row_count(self, table_name: str, schema: Optional[str] = None, approximate: bool = True) -> int:
         """

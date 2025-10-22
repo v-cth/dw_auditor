@@ -40,10 +40,11 @@ def main():
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python audit.py                         # Use default config (audit_config.yaml)
+  python audit.py                         # Full audit (checks + insights)
   python audit.py my_config.yaml          # Use custom config
-  python audit.py --discover              # Discovery mode (metadata only, no checks)
-  python audit.py my_config.yaml --discover
+  python audit.py --check                 # Check mode (quality checks only)
+  python audit.py --insight               # Insight mode (profiling only)
+  python audit.py --discover              # Discovery mode (metadata only)
         """
     )
     parser.add_argument(
@@ -52,15 +53,37 @@ Examples:
         default='audit_config.yaml',
         help='Path to YAML configuration file (default: audit_config.yaml)'
     )
-    parser.add_argument(
+
+    # Create mutually exclusive group for audit modes
+    mode_group = parser.add_mutually_exclusive_group()
+    mode_group.add_argument(
+        '--check', '-c',
+        action='store_true',
+        help='Check mode: run quality checks only (skip profiling/insights)'
+    )
+    mode_group.add_argument(
+        '--insight', '-i',
+        action='store_true',
+        help='Insight mode: run profiling/insights only (skip quality checks)'
+    )
+    mode_group.add_argument(
         '--discover',
         action='store_true',
-        help='Discovery mode: collect metadata only (skip quality checks and insights)'
+        help='Discovery mode: collect metadata only (skip checks and insights)'
     )
 
     args = parser.parse_args()
     config_file = args.config_file
-    discover_mode = args.discover
+
+    # Determine audit mode
+    if args.discover:
+        audit_mode = 'discover'
+    elif args.check:
+        audit_mode = 'checks'
+    elif args.insight:
+        audit_mode = 'insights'
+    else:
+        audit_mode = 'full'
 
     # Start total timing
     total_start_time = datetime.now()
@@ -89,8 +112,14 @@ Examples:
     print(f"📝 Logs will be saved to: {log_file}")
 
     # Show mode
-    if discover_mode:
+    if audit_mode == 'discover':
         print(f"🔍 Discovery mode: Collecting metadata only (skipping quality checks and insights)")
+    elif audit_mode == 'checks':
+        print(f"✓ Check mode: Running quality checks only (skipping profiling/insights)")
+    elif audit_mode == 'insights':
+        print(f"📊 Insight mode: Running profiling/insights only (skipping quality checks)")
+    else:
+        print(f"🔍 Full audit mode: Running quality checks and profiling/insights")
 
     # Create auditor
     auditor = SecureTableAuditor(
@@ -138,6 +167,142 @@ Examples:
             print(f"⚠️  No tables match the filter criteria")
             sys.exit(0)
 
+    # Estimate BigQuery bytes scanned and get user confirmation (BigQuery only)
+    if config.backend == 'bigquery' and audit_mode != 'discover':
+        print(f"\n{'='*70}")
+        print(f"💰 Estimating BigQuery scan costs...")
+        print(f"{'='*70}")
+
+        # Create temporary connection for estimation
+        from dw_auditor.core.database import DatabaseConnection
+        db_conn = DatabaseConnection(config.backend, **config.connection_params)
+        db_conn.connect()
+
+        total_bytes = 0
+        table_estimates = []
+
+        try:
+            for table in tables_to_audit:
+                # Get table-specific configuration
+                sampling_config = config.get_table_sampling_config(table)
+                custom_query = config.table_queries.get(table, None)
+
+                # Determine if we'll sample based on same logic as audit
+                row_count = None
+                is_cross_project = hasattr(db_conn, 'source_project_id') and db_conn.source_project_id
+
+                if not custom_query and not is_cross_project:
+                    try:
+                        row_count = db_conn.get_row_count(table, config.schema)
+                    except:
+                        pass
+
+                # Determine sample size for estimation
+                should_sample = False
+                sample_size = None
+
+                if custom_query:
+                    should_sample = False
+                elif is_cross_project:
+                    should_sample = (row_count is None or row_count > config.sample_threshold)
+                    sample_size = config.sample_size if should_sample else None
+                elif row_count and row_count > config.sample_threshold:
+                    should_sample = True
+                    sample_size = config.sample_size
+
+                # Determine which columns will be loaded (optimization)
+                columns_to_load = None
+                try:
+                    # Get primary key from config
+                    user_defined_primary_key = config.table_primary_keys.get(table, None)
+
+                    # Get table schema
+                    table_schema = db_conn.get_table_schema(table, config.schema)
+
+                    if table_schema:
+                        # Determine columns using same logic as audit
+                        columns_to_load = auditor.determine_columns_to_load(
+                            table_schema=table_schema,
+                            table_name=table,
+                            column_check_config=config,
+                            primary_key_columns=user_defined_primary_key,
+                            include_columns=getattr(config, 'include_columns', None),
+                            exclude_columns=getattr(config, 'exclude_columns', None),
+                            audit_mode=audit_mode
+                        )
+                except Exception as e:
+                    # If column determination fails, estimate will use all columns
+                    pass
+
+                # Estimate bytes for this table
+                bytes_estimate = db_conn.estimate_bytes_scanned(
+                    table_name=table,
+                    schema=config.schema,
+                    custom_query=custom_query,
+                    sample_size=sample_size,
+                    sampling_method=sampling_config['method'],
+                    sampling_key_column=sampling_config['key_column'],
+                    columns=columns_to_load if columns_to_load else None
+                )
+
+                if bytes_estimate is not None:
+                    total_bytes += bytes_estimate
+                    table_estimates.append({
+                        'table': table,
+                        'bytes': bytes_estimate,
+                        'sampled': should_sample
+                    })
+
+        finally:
+            db_conn.close()
+
+        # Display estimates
+        if table_estimates:
+            print(f"\n📊 Estimated bytes to scan per table:")
+            for est in table_estimates:
+                bytes_val = est['bytes']
+                if bytes_val >= 1_000_000_000_000:  # TB
+                    size_str = f"{bytes_val / 1_000_000_000_000:.2f} TB"
+                elif bytes_val >= 1_000_000_000:  # GB
+                    size_str = f"{bytes_val / 1_000_000_000:.2f} GB"
+                elif bytes_val >= 1_000_000:  # MB
+                    size_str = f"{bytes_val / 1_000_000:.2f} MB"
+                else:
+                    size_str = f"{bytes_val / 1_000:.2f} KB"
+
+                sample_indicator = " (sampled)" if est['sampled'] else ""
+                print(f"   • {est['table']}: {size_str}{sample_indicator}")
+
+            # Calculate total and cost
+            total_gb = total_bytes / 1_000_000_000
+            total_tb = total_bytes / 1_000_000_000_000
+
+            # BigQuery on-demand pricing: $6.25 per TB (as of 2024)
+            # First 1 TB per month is free
+            estimated_cost = max(0, total_tb * 6.25)
+
+            print(f"\n💾 Total estimated data to scan: {total_gb:.2f} GB ({total_tb:.4f} TB)")
+            print(f"💵 Estimated cost (on-demand): ${estimated_cost:.2f} USD")
+            print(f"   (Note: First 1 TB/month is free; pricing may vary by region)")
+
+            # Ask for confirmation
+            print(f"\n⚠️  Do you want to proceed with the audit?")
+            try:
+                response = input(f"   Type 'y' or 'yes' to continue, or 'n' to cancel: ").strip().lower()
+            except (EOFError, KeyboardInterrupt):
+                # Handle non-interactive environments or Ctrl+C
+                print(f"\n⚠️  Running in non-interactive mode, proceeding with audit...")
+                print(f"   (Use --yes flag in future to skip this prompt)")
+                response = 'yes'
+
+            if response not in ['y', 'yes']:
+                print(f"\n❌ Audit cancelled by user")
+                sys.exit(0)
+
+            print(f"\n✅ Proceeding with audit...")
+        else:
+            print(f"⚠️  Could not estimate bytes (will proceed without confirmation)")
+
     # Audit tables
     all_table_results = []
     try:
@@ -168,7 +333,7 @@ Examples:
                     sampling_method=sampling_config['method'],
                     sampling_key_column=sampling_config['key_column'],
                     custom_query=custom_query,
-                    discover_mode=discover_mode
+                    audit_mode=audit_mode
                 )
 
                 # Store results for summary generation

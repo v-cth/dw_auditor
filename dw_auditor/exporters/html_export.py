@@ -291,6 +291,24 @@ def _generate_header(results: Dict) -> str:
             html += f"""
         <p style="margin: 5px 0; opacity: 0.9;">Table UID: <strong>{results['table_metadata']['table_uid']}</strong></p>"""
 
+        # Add partition information
+        if 'partition_column' in results['table_metadata'] and results['table_metadata']['partition_column']:
+            partition_col = results['table_metadata']['partition_column']
+            partition_type = results['table_metadata'].get('partition_type', 'UNKNOWN')
+            html += f"""
+        <p style="margin: 5px 0; opacity: 0.9;">🔹 Partitioned by: <strong>{partition_col}</strong> ({partition_type})</p>"""
+
+        # Add clustering information (BigQuery style)
+        if 'clustering_columns' in results['table_metadata'] and results['table_metadata']['clustering_columns']:
+            cluster_cols = ', '.join(results['table_metadata']['clustering_columns'])
+            html += f"""
+        <p style="margin: 5px 0; opacity: 0.9;">🔸 Clustered by: <strong>{cluster_cols}</strong></p>"""
+
+        # Add clustering information (Snowflake style)
+        elif 'clustering_key' in results['table_metadata'] and results['table_metadata']['clustering_key']:
+            html += f"""
+        <p style="margin: 5px 0; opacity: 0.9;">🔸 Clustering key: <strong>{results['table_metadata']['clustering_key']}</strong></p>"""
+
     html += f"""
         <p style="margin: 5px 0; opacity: 0.9;">Generated: {results.get('timestamp', 'N/A')}</p>
         <p style="margin: 5px 0; opacity: 0.9;">Duration: {results.get('duration_seconds', 0):.2f} seconds</p>
@@ -367,15 +385,35 @@ def _generate_column_summary_table(results: Dict) -> str:
 """
     for col_name, col_data in results['column_summary'].items():
         null_pct = col_data['null_pct']
+        null_count = col_data['null_count']
+        distinct_count = col_data['distinct_count']
         is_primary_key = col_name in primary_keys
         status = col_data.get('status', 'UNKNOWN')
+
+        # Handle N/A values for unloaded columns
+        if null_pct == 'N/A' or null_count == 'N/A':
+            null_display = "N/A"
+            null_pct_display = "N/A"
+            null_pct_numeric = 0  # For comparison purposes, treat N/A as 0
+        else:
+            null_display = f"{null_count:,}"
+            null_pct_display = f"{null_pct:.1f}%"
+            null_pct_numeric = null_pct
+
+        # Handle distinct_count (can be 'N/A' or None)
+        if distinct_count == 'N/A':
+            distinct_display = "N/A"
+        elif distinct_count is not None:
+            distinct_display = f"{distinct_count:,}"
+        else:
+            distinct_display = "N/A"
 
         # Determine row color based on status and other factors
         if status == 'ERROR':
             row_color = '#fef2f2'
         elif is_primary_key:
             row_color = '#ecfdf5'
-        elif null_pct > 10:
+        elif null_pct_numeric > 10:
             row_color = '#fef2f2'
         else:
             row_color = 'white'
@@ -387,19 +425,24 @@ def _generate_column_summary_table(results: Dict) -> str:
             status_badge = '<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">✗ ERROR</span>'
         elif status == 'SKIPPED_COMPLEX_TYPE':
             status_badge = '<span style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">⊘ SKIPPED</span>'
+        elif status == 'NOT_LOADED':
+            status_badge = '<span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">⊗ NOT LOADED</span>'
         else:
             status_badge = '<span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">- N/A</span>'
 
         col_name_display = f"🔑 {col_name}" if is_primary_key else col_name
-        distinct_display = f"{col_data['distinct_count']:,}" if col_data['distinct_count'] is not None else "N/A"
+
+        # Determine null percentage cell styling
+        null_pct_color = '#dc2626' if null_pct_numeric > 10 else '#6b7280'
+        null_pct_weight = 'bold' if null_pct_numeric > 10 else 'normal'
 
         html += f"""
                     <tr style="border-bottom: 1px solid #e5e7eb; background: {row_color};">
                         <td style="padding: 10px; font-weight: {'bold' if is_primary_key else '500'};">{col_name_display}</td>
                         <td style="padding: 10px; color: #6b7280;">{col_data['dtype']}</td>
                         <td style="padding: 10px; text-align: center;">{status_badge}</td>
-                        <td style="padding: 10px; text-align: right; color: #6b7280;">{col_data['null_count']:,}</td>
-                        <td style="padding: 10px; text-align: right; color: {'#dc2626' if null_pct > 10 else '#6b7280'}; font-weight: {'bold' if null_pct > 10 else 'normal'};">{null_pct:.1f}%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">{null_display}</td>
+                        <td style="padding: 10px; text-align: right; color: {null_pct_color}; font-weight: {null_pct_weight};">{null_pct_display}</td>
                         <td style="padding: 10px; text-align: right; color: #6b7280;">{distinct_display}</td>
                     </tr>
 """
@@ -458,19 +501,12 @@ def _render_string_insights(insights: Dict) -> str:
     if 'length_stats' in insights:
         stats = insights['length_stats']
         html += """
-            <div style="margin-bottom: 15px;">
-                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">String Length Statistics:</h4>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px;">
+            <div style="margin-bottom: 10px;">
+                <span style="color: #6b7280; font-size: 0.9em; margin-right: 8px;">Length:</span>
 """
         for stat_name, stat_value in stats.items():
-            html += f"""
-                    <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #e5e7eb;">
-                        <div style="color: #9ca3af; font-size: 0.85em; text-transform: uppercase;">{stat_name}</div>
-                        <div style="font-size: 1.2em; font-weight: bold; color: #667eea;">{stat_value}</div>
-                    </div>
-"""
+            html += f"""<span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">{stat_name}:</span> <span style="font-weight: 600; color: #667eea;">{stat_value}</span></span>"""
         html += """
-                </div>
             </div>
 """
 
@@ -963,6 +999,35 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
             <div class="collapsible-content" id="{col_id}">
 """
 
+        # Add checks performed section if available
+        col_data = results.get('columns', {}).get(col_name, {})
+        if 'checks_run' in col_data and col_data['checks_run']:
+            html += """
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+"""
+            for check in col_data['checks_run']:
+                if check['status'] == 'PASSED':
+                    badge_color = '#dcfce7'
+                    text_color = '#166534'
+                    icon = '✓'
+                else:
+                    badge_color = '#fee2e2'
+                    text_color = '#991b1b'
+                    icon = '✗'
+
+                html += f"""
+                        <span style="display: inline-block; background: {badge_color}; color: {text_color}; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            {icon} {check['name']} <span style="color: #6b7280;">({check['issues_count']} issues)</span>
+                        </span>
+"""
+
+            html += """
+                    </div>
+                </div>
+"""
+
         # Render different insight types
         html += _render_string_insights(insights)
         html += _render_numeric_insights(insights, thousand_separator, decimal_places)
@@ -1047,6 +1112,37 @@ def _generate_issues_section(results: Dict, has_issues: bool) -> str:
         </div>
 """
 
+            # Add checks performed section if available
+            if 'checks_run' in col_data and col_data['checks_run']:
+                html += """
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+"""
+                for check in col_data['checks_run']:
+                    if check['status'] == 'PASSED':
+                        badge_color = '#dcfce7'
+                        text_color = '#166534'
+                        icon = '✓'
+                    else:
+                        badge_color = '#fee2e2'
+                        text_color = '#991b1b'
+                        icon = '✗'
+
+                    html += f"""
+                <span style="display: inline-block; background: {badge_color}; color: {text_color}; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    {icon} {check['name']} <span style="color: #6b7280;">({check['issues_count']} issues)</span>
+                </span>
+"""
+
+                html += """
+            </div>
+        </div>
+"""
+
+            html += """
+"""
+
             for issue in col_data['issues']:
                 issue_type = issue['type'].replace('_', ' ').title()
                 html += f"""
@@ -1081,6 +1177,14 @@ def _generate_issues_section(results: Dict, has_issues: bool) -> str:
                     html += f"""
             <div class="examples">
                 <strong>Special characters found:</strong> {', '.join(issue['special_chars'])}
+            </div>
+"""
+
+                # Display threshold and operator for numeric range violations
+                if 'threshold' in issue and 'operator' in issue:
+                    html += f"""
+            <div class="issue-stats">
+                <strong>Expected:</strong> value {issue['operator']} {issue['threshold']}
             </div>
 """
 

@@ -1,0 +1,382 @@
+{
+  "table_name": "dtm_station_distance",
+  "total_rows": 2516982,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3836,
+          "pct": 38.36,
+          "special_chars": [
+            "\u00ee",
+            "\u00c9",
+            "'",
+            "\u00e2",
+            "\u00ea",
+            "\u00f4",
+            "\u00ce",
+            "\u00e8",
+            "\u00e9",
+            "\u00e7"
+          ],
+          "examples": [
+            "G\u00e9n\u00e9ral Martial Valin - Pont du Garigliano",
+            "Saint-Lazare - Place d'Estienne d'Orves"
+          ]
+        }
+      ]
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1567,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3783,
+          "pct": 37.830000000000005,
+          "special_chars": [
+            "\u00ee",
+            "'",
+            "\u00e2",
+            "\u00ea",
+            "\u00f4",
+            "\u00e8",
+            "\u00e9",
+            "\u00e7"
+          ],
+          "examples": [
+            "Alouettes - Mar\u00e9chal de Lattre de Tassigny",
+            "Nanterre - Universit\u00e9"
+          ]
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "origin_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1587,
+      "status": "NOT_CHECKED"
+    },
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "status": "ERROR"
+    },
+    "dest_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1584,
+      "status": "NOT_CHECKED"
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1567,
+      "status": "ERROR"
+    },
+    "distance_meters": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9983,
+      "status": "NOT_CHECKED"
+    }
+  },
+  "column_insights": {
+    "origin_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 19088.3623,
+      "median": 17009.5,
+      "quantiles": {
+        "p25": 11041.0,
+        "p50": 17010.0,
+        "p75": 22409.0
+      },
+      "top_values": [
+        {
+          "value": 11027.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 13019.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 48003.0,
+          "count": 13,
+          "percentage": 0.13
+        },
+        {
+          "value": 16200.0,
+          "count": 13,
+          "percentage": 0.13
+        },
+        {
+          "value": 12002.0,
+          "count": 13,
+          "percentage": 0.13
+        }
+      ]
+    },
+    "origin_station_name": {
+      "top_values": [
+        {
+          "value": "Gaston Roussel - Commune de Paris",
+          "count": 20,
+          "percentage": 0.2
+        },
+        {
+          "value": "Buisson Saint-Louis - Saint-Maur",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "R\u00e9aumur - Montmartre",
+          "count": 17,
+          "percentage": 0.16999999999999998
+        },
+        {
+          "value": "Rocher - Laborde",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Simon Bolivar - Henri Turot",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Place des Marseillais",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Place Nelson Mandela",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Gare RER - Canadiens",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Saint-Ambroise - Parmentier",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Square Bela Bartok",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.9
+      }
+    },
+    "dest_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 19000.6268,
+      "median": 17001.0,
+      "quantiles": {
+        "p25": 11035.0,
+        "p50": 17001.0,
+        "p75": 22209.0
+      },
+      "top_values": [
+        {
+          "value": 20203.0,
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": 14034.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 42504.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 15003.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 5202.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ]
+    },
+    "dest_station_name": {
+      "top_values": [
+        {
+          "value": "Evariste Galois",
+          "count": 28,
+          "percentage": 0.27999999999999997
+        },
+        {
+          "value": "Paul Bodin - Clichy",
+          "count": 20,
+          "percentage": 0.2
+        },
+        {
+          "value": "Place des Marseillais",
+          "count": 19,
+          "percentage": 0.19
+        },
+        {
+          "value": "Ouest - Ch\u00e2teau",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Gare Montparnasse - Vaugirard",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Verdun - Carnot",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Claude Decaen - Cannebi\u00e8re",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Route de S\u00e8vres - Porte de Bagatelle",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Jean de la Fontaine - Boulainvilliers",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Arbal\u00e8te - Claude Bernard",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.97
+      }
+    },
+    "distance_meters": {
+      "min": 41.86835469531649,
+      "max": 26985.288391094797,
+      "mean": 6917.927,
+      "median": 6388.884638664169,
+      "quantiles": {
+        "p25": 4054.143065735127,
+        "p50": 6389.449344155262,
+        "p75": 9201.531653119619
+      },
+      "top_values": [
+        {
+          "value": 5786.028926781349,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 2460.9363742382025,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 4146.570246692988,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 7044.751393489857,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 4623.592038010757,
+          "count": 2,
+          "percentage": 0.02
+        }
+      ]
+    }
+  },
+  "timestamp": "2025-10-22T10:37:22.182441",
+  "start_time": "2025-10-22T10:37:22.182441",
+  "check_durations": {
+    "string_checks": 0.021502
+  },
+  "end_time": "2025-10-22T10:37:22.214254",
+  "duration_seconds": 0.03,
+  "table_metadata": {
+    "table_name": "dtm_station_distance",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-22 01:00:56.165000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.dtm_station_distance",
+    "row_count": 2516982
+  },
+  "phase_timings": {
+    "connection": 0.214699,
+    "metadata": 8.055106,
+    "column_selection": 2.326851,
+    "data_loading": 3.412061,
+    "audit_checks": 0.033064
+  }
+}

@@ -21,10 +21,23 @@ def print_column_summary(results: Dict):
     print("-" * 100)
 
     for col_name, col_data in results['column_summary'].items():
-        null_display = f"{col_data['null_count']:,} ({col_data['null_pct']:.1f}%)"
+        # Handle N/A values for unloaded columns
+        null_count = col_data['null_count']
+        null_pct = col_data['null_pct']
+        if null_count == 'N/A' or null_pct == 'N/A':
+            null_display = "N/A"
+        else:
+            null_display = f"{null_count:,} ({null_pct:.1f}%)"
+
         # Handle None for distinct_count (complex types)
         distinct_count = col_data['distinct_count']
-        distinct_display = f"{distinct_count:,}" if distinct_count is not None else "N/A"
+        if distinct_count == 'N/A':
+            distinct_display = "N/A"
+        elif distinct_count is not None:
+            distinct_display = f"{distinct_count:,}"
+        else:
+            distinct_display = "N/A"
+
         status = col_data.get('status', 'UNKNOWN')
 
         # Color code status for terminal
@@ -186,6 +199,43 @@ def print_results(results: Dict):
                 print(f"   ⚠️  SUSPICIOUS YEAR {issue['year']}: {issue['count']:,} rows ({issue['pct']:.1f}%)")
                 print(f"      💡 {issue['suggestion']}")
                 print(f"      Examples: {issue['examples'][:3]}")
+
+            # Numeric range violations
+            elif issue_type == 'VALUE_BELOW_MIN':
+                print(f"   ⚠️  VALUES BELOW MIN: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Expected: value {issue['operator']} {issue['threshold']}")
+                print(f"      💡 {issue['suggestion']}")
+                print(f"      Examples: {issue['examples'][:5]}")
+
+            elif issue_type == 'VALUE_ABOVE_MAX':
+                print(f"   ⚠️  VALUES ABOVE MAX: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Expected: value {issue['operator']} {issue['threshold']}")
+                print(f"      💡 {issue['suggestion']}")
+                print(f"      Examples: {issue['examples'][:5]}")
+
+            elif issue_type == 'VALUE_NOT_GREATER_THAN':
+                print(f"   ⚠️  VALUES NOT GREATER THAN: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Expected: value {issue['operator']} {issue['threshold']}")
+                print(f"      💡 {issue['suggestion']}")
+                print(f"      Examples: {issue['examples'][:5]}")
+
+            elif issue_type == 'VALUE_NOT_GREATER_OR_EQUAL':
+                print(f"   ⚠️  VALUES NOT GREATER OR EQUAL: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Expected: value {issue['operator']} {issue['threshold']}")
+                print(f"      💡 {issue['suggestion']}")
+                print(f"      Examples: {issue['examples'][:5]}")
+
+            elif issue_type == 'VALUE_NOT_LESS_THAN':
+                print(f"   ⚠️  VALUES NOT LESS THAN: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Expected: value {issue['operator']} {issue['threshold']}")
+                print(f"      💡 {issue['suggestion']}")
+                print(f"      Examples: {issue['examples'][:5]}")
+
+            elif issue_type == 'VALUE_NOT_LESS_OR_EQUAL':
+                print(f"   ⚠️  VALUES NOT LESS OR EQUAL: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Expected: value {issue['operator']} {issue['threshold']}")
+                print(f"      💡 {issue['suggestion']}")
+                print(f"      Examples: {issue['examples'][:5]}")
 
         print()
 

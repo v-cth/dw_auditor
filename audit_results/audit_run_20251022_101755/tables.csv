@@ -1,0 +1,4 @@
+table_name,total_rows,sampled,analyzed_rows,column_count,issues_found,columns_with_issues,status,duration_seconds,audit_timestamp,table_type,created_time
+fct_avaibility,24487775,true,10000,3,2,1,WARNING,0.06,2025-10-22T10:19:31.706469,BASE TABLE,2025-10-22 01:00:52.948000+00:00
+dim_station,1587,false,1587,3,3,2,ERROR,0.01,2025-10-22T10:19:43.919833,BASE TABLE,2025-10-22 01:00:49.805000+00:00
+dtm_station_distance,2516982,true,10000,2,4,2,ERROR,0.02,2025-10-22T10:19:55.618855,BASE TABLE,2025-10-22 01:00:56.165000+00:00

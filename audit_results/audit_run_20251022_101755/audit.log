@@ -1,0 +1,236 @@
+📁 Audit run directory: audit_results/audit_run_20251022_101755
+📝 Logs will be saved to: audit_results/audit_run_20251022_101755/audit.log
+✓ Check mode: Running quality checks only (skipping profiling/insights)
+
+======================================================================
+💰 Estimating BigQuery scan costs...
+======================================================================
+✅ Connected to BIGQUERY
+   🔍 Estimating query: SELECT station_name, collected_at, rounded_collected_at FROM `dbt_prod.fct_avaibility` ORDER BY RAND() LIMIT 10000
+   🔍 Estimating query: SELECT station_code, station_name, city FROM `dbt_prod.dim_station`
+   🔍 Estimating query: SELECT origin_station_name, dest_station_name FROM `dbt_prod.dtm_station_distance` ORDER BY RAND() LIMIT 10000
+🔒 Closed BIGQUERY connection
+
+📊 Estimated bytes to scan per table:
+   • fct_avaibility: 1.04 GB (sampled)
+   • dim_station: 69.44 KB
+   • dtm_station_distance: 132.50 MB (sampled)
+
+💾 Total estimated data to scan: 1.17 GB (0.0012 TB)
+💵 Estimated cost (on-demand): $0.01 USD
+   (Note: First 1 TB/month is free; pricing may vary by region)
+
+⚠️  Do you want to proceed with the audit?
+   Type 'y' or 'yes' to continue, or 'n' to cancel: 
+⚠️  Running in non-interactive mode, proceeding with audit...
+   (Use --yes flag in future to skip this prompt)
+
+✅ Proceeding with audit...
+
+======================================================================
+🔍 Auditing table: fct_avaibility
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: portfolio-402.dbt_prod.fct_avaibility
+📑 Table type: BASE TABLE
+📊 Table has 24,487,775 rows
+📊 Optimized column loading: selecting 3/13 columns
+🔍 Sampling 10,000 rows from table using 'random' method
+✅ Loaded 10,000 rows into memory
+
+============================================================
+Auditing: fct_avaibility
+Total rows in table: 24,487,775
+Analyzing sample: 10,000 rows
+============================================================
+
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+station_name                   String          ✗ ERROR      0 (0.0%)        1,493          
+collected_at                   Datetime(time_unit='ns', time_zone=None) ✓ OK         0 (0.0%)        7,583          
+rounded_collected_at           Datetime(time_unit='ns', time_zone=None) ✓ OK         0 (0.0%)        7,581          
+====================================================================================================
+
+🔍 Issues Found:
+
+📊 Column: station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,493
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 3,810 rows (38.1%)
+      Found chars: ['ë', 'ç', 'â', 'è', 'î', "'", 'é', 'ê', 'É', 'à']
+      Examples: ['Galilée - Kléber', 'Carnot - Pâquerettes']
+
+
+⏱️  Audit Duration Breakdown:
+   • string_checks: 0.040s
+   • date_checks: 0.015s
+   • Total: 0.06s
+
+🔒 Closed BIGQUERY connection
+
+⏱️  Table Audit Phase Breakdown:
+   • Connection: 62.889s
+   • Metadata: 6.383s
+   • Column Selection: 2.655s
+   • Data Loading: 3.919s
+   • Audit Checks: 0.055s
+   • Total Table Audit: 0.06s
+📄 HTML report saved to: audit_results/audit_run_20251022_101755/fct_avaibility/audit.html
+🌐 Opened report in browser
+📄 Results saved to: audit_results/audit_run_20251022_101755/fct_avaibility/audit.json
+📄 CSV saved to: audit_results/audit_run_20251022_101755/fct_avaibility/audit.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251022_101755/fct_avaibility/summary.csv
+
+======================================================================
+🔍 Auditing table: dim_station
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: portfolio-402.dbt_prod.dim_station
+📑 Table type: BASE TABLE
+📊 Table has 1,587 rows
+🔑 Primary key from config: station_code
+📊 Optimized column loading: selecting 3/9 columns
+✅ Loaded 1,587 rows into memory
+
+============================================================
+Auditing: dim_station
+Total rows in table: 1,587
+============================================================
+
+
+🔑 Potential primary key column(s): station_code
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+station_code                   Int64           - NOT_CHECKED 0 (0.0%)        1,587          
+station_name                   String          ✗ ERROR      0 (0.0%)        1,570          
+city                           String          ✗ ERROR      0 (0.0%)        68             
+====================================================================================================
+
+🔍 Issues Found:
+
+📊 Column: station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,570
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 605 rows (38.1%)
+      Found chars: ['ç', 'è', 'â', 'î', 'é', "'", 'ï', 'û', 'ô']
+      Examples: ["Quai de l'Horloge - Pont Neuf [station_code=1001]", 'Turbigo - Française [station_code=1007]']
+
+📊 Column: city (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 68
+   ⚠️  SPECIAL CHARS: 57 rows (3.6%)
+      Found chars: ['è', 'â', "'", 'é', 'ê', 'Î']
+      Examples: ['Saint-Mandé [station_code=12041]', 'Sèvres [station_code=23101]']
+
+
+⏱️  Audit Duration Breakdown:
+   • string_checks: 0.012s
+   • Total: 0.01s
+
+🔒 Closed BIGQUERY connection
+
+⏱️  Table Audit Phase Breakdown:
+   • Connection: 0.344s
+   • Metadata: 5.672s
+   • Column Selection: 2.849s
+   • Data Loading: 3.138s
+   • Audit Checks: 0.014s
+   • Total Table Audit: 0.01s
+📄 HTML report saved to: audit_results/audit_run_20251022_101755/dim_station/audit.html
+🌐 Opened report in browser
+📄 Results saved to: audit_results/audit_run_20251022_101755/dim_station/audit.json
+📄 CSV saved to: audit_results/audit_run_20251022_101755/dim_station/audit.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251022_101755/dim_station/summary.csv
+
+======================================================================
+🔍 Auditing table: dtm_station_distance
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+✅ Connected to BIGQUERY
+🔖 Table UID: portfolio-402.dbt_prod.dtm_station_distance
+📑 Table type: BASE TABLE
+📊 Table has 2,516,982 rows
+📊 Optimized column loading: selecting 2/5 columns
+🔍 Sampling 10,000 rows from table using 'random' method
+✅ Loaded 10,000 rows into memory
+
+============================================================
+Auditing: dtm_station_distance
+Total rows in table: 2,516,982
+Analyzing sample: 10,000 rows
+============================================================
+
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+origin_station_name            String          ✗ ERROR      0 (0.0%)        1,568          
+dest_station_name              String          ✗ ERROR      0 (0.0%)        1,569          
+====================================================================================================
+
+🔍 Issues Found:
+
+📊 Column: origin_station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,568
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 3,854 rows (38.5%)
+      Found chars: ['ç', 'â', 'è', 'î', "'", 'é', 'à', 'ô']
+      Examples: ['Véron - Lepic', 'Pavé des Gardes - Charles Vaillant']
+
+📊 Column: dest_station_name (String)
+   Nulls: 0 (0.0%)
+   Distinct values: 1,569
+   ⚠️  CASE DUPLICATES: 1 unique values with case variations
+      'place du général de gaulle' → ['Place Du Général De Gaulle', 'Place du Général de Gaulle']
+   ⚠️  SPECIAL CHARS: 3,850 rows (38.5%)
+      Found chars: ['ü', 'ç', 'â', 'è', 'î', "'", 'é', 'ê', 'É', 'û']
+      Examples: ['Place Jean-Baptiste Clément', "Place des Droits de l'Enfant"]
+
+
+⏱️  Audit Duration Breakdown:
+   • string_checks: 0.025s
+   • Total: 0.02s
+
+🔒 Closed BIGQUERY connection
+
+⏱️  Table Audit Phase Breakdown:
+   • Connection: 0.252s
+   • Metadata: 5.982s
+   • Column Selection: 2.359s
+   • Data Loading: 2.937s
+   • Audit Checks: 0.026s
+   • Total Table Audit: 0.02s
+📄 HTML report saved to: audit_results/audit_run_20251022_101755/dtm_station_distance/audit.html
+🌐 Opened report in browser
+📄 Results saved to: audit_results/audit_run_20251022_101755/dtm_station_distance/audit.json
+📄 CSV saved to: audit_results/audit_run_20251022_101755/dtm_station_distance/audit.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251022_101755/dtm_station_distance/summary.csv
+
+======================================================================
+📊 Generating run summary reports...
+======================================================================
+📄 Summary HTML saved to: audit_results/audit_run_20251022_101755/summary.html
+📄 Summary JSON saved to: audit_results/audit_run_20251022_101755/summary.json
+📄 Detailed column summary CSV saved to: audit_results/audit_run_20251022_101755/columns.csv
+📄 Table summary CSV saved to: audit_results/audit_run_20251022_101755/tables.csv
+
+======================================================================
+✅ Audit completed! Results saved to: audit_results/audit_run_20251022_101755
+⏱️  Total duration: 120.20 seconds
+📝 Logs saved to: audit_results/audit_run_20251022_101755/audit.log
+======================================================================

@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Data Quality Audit Report</title>
+  <style>
+    :root {
+      --bg-gradient: linear-gradient(135deg, #5B5BD6, #8F5BD6);
+      --card-bg: rgba(255, 255, 255, 0.08);
+      --border-color: rgba(255, 255, 255, 0.15);
+      --text-light: #ffffffcc;
+      --text-bright: #fff;
+      --accent: #FFD166;
+    }
+
+    body {
+      font-family: "Inter", system-ui, sans-serif;
+      background: #0f111a;
+      margin: 0;
+      padding: 0;
+      color: var(--text-light);
+    }
+
+    .header {
+      background: var(--bg-gradient);
+      padding: 1.2rem 1.6rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+
+    .title-section {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .title-section h1 {
+      margin: 0;
+      font-size: 1.4rem;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+
+    .meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      font-size: 0.85rem;
+      color: var(--text-light);
+    }
+
+    .meta-item {
+      display: flex;
+      gap: 0.4rem;
+      align-items: center;
+    }
+
+    .status-badge {
+      background: var(--accent);
+      color: #000;
+      font-weight: 600;
+      padding: 0.25rem 0.6rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+    }
+
+    .content-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+      gap: 1rem;
+      padding: 1.2rem 1.6rem;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .grid-item {
+      text-align: center;
+    }
+
+    .grid-item .value {
+      font-size: 1.3rem;
+      font-weight: 600;
+      color: var(--text-bright);
+    }
+
+    .grid-item .label {
+      font-size: 0.75rem;
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+
+  <header class="header">
+    <div class="title-section">
+      📊
+      <h1>Data Quality Audit Report</h1>
+    </div>
+    <div class="meta">
+      <div class="meta-item">Table: <strong>fct_availability_part</strong></div>
+      <div class="meta-item">Type: BASE TABLE</div>
+      <div class="meta-item">Partitioned by: <strong>collected_at</strong></div>
+      <div class="meta-item">Clustered by: <strong>station_code</strong></div>
+      <div class="meta-item status-badge">⚠ Issues Found</div>
+    </div>
+  </header>
+
+  <section class="content-grid">
+    <div class="grid-item">
+      <div class="value">3,877,353</div>
+      <div class="label">Total Rows</div>
+    </div>
+    <div class="grid-item">
+      <div class="value">10,000</div>
+      <div class="label">Analyzed Rows</div>
+    </div>
+    <div class="grid-item">
+      <div class="value">1</div>
+      <div class="label">Columns Audited</div>
+    </div>
+    <div class="grid-item">
+      <div class="value">0.07s</div>
+      <div class="label">Duration</div>
+    </div>
+  </section>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+table_name,column_name,data_type,status,null_count,null_pct,distinct_count
+dtm_station_distance,origin_station_code,Int64,NOT_CHECKED,0,0.0,1585
+dtm_station_distance,origin_station_name,String,ERROR,0,0.0,1568
+dtm_station_distance,dest_station_code,Int64,NOT_CHECKED,0,0.0,1584
+dtm_station_distance,dest_station_name,String,ERROR,0,0.0,1567
+dtm_station_distance,distance_meters,Float64,NOT_CHECKED,0,0.0,9978

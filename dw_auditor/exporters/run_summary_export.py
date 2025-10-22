@@ -41,6 +41,11 @@ def export_run_summary_to_dataframe(all_results: List[Dict]) -> pl.DataFrame:
         # Get table metadata
         table_metadata = results.get('table_metadata', {})
 
+        # Extract partition and clustering info
+        partition_col = table_metadata.get('partition_column', '')
+        partition_type = table_metadata.get('partition_type', '')
+        clustering_cols = ', '.join(table_metadata.get('clustering_columns', [])) if 'clustering_columns' in table_metadata else table_metadata.get('clustering_key', '')
+
         summary_rows.append({
             'table_name': results.get('table_name', 'unknown'),
             'total_rows': results.get('total_rows', 0),
@@ -53,7 +58,10 @@ def export_run_summary_to_dataframe(all_results: List[Dict]) -> pl.DataFrame:
             'duration_seconds': results.get('duration_seconds', 0.0),
             'audit_timestamp': results.get('timestamp', ''),
             'table_type': table_metadata.get('table_type', ''),
-            'created_time': str(table_metadata.get('created_time', ''))
+            'created_time': str(table_metadata.get('created_time', '')),
+            'partition_column': partition_col,
+            'partition_type': partition_type,
+            'clustering_columns': clustering_cols
         })
 
     return pl.DataFrame(summary_rows)

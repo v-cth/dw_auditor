@@ -1,0 +1,831 @@
+{
+  "table_name": "fct_avaibility_part",
+  "total_rows": 24487775,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1483,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3895,
+          "pct": 38.95,
+          "special_chars": [
+            "\u00ea",
+            "\u00c9",
+            "'",
+            "\u00e7",
+            "\u00f4",
+            "\u00eb",
+            "\u00e9",
+            "\u00e0",
+            "\u00e8",
+            "\u00fb"
+          ],
+          "examples": [
+            "Manin - Crim\u00e9e",
+            "Ren\u00e9 Binet - Porte de Montmartre"
+          ]
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1487,
+      "status": "NOT_CHECKED"
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1483,
+      "status": "ERROR"
+    },
+    "capacity": {
+      "dtype": "Int64",
+      "null_count": 9,
+      "null_pct": 0.09,
+      "distinct_count": 75,
+      "status": "NOT_CHECKED"
+    },
+    "docks_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 71,
+      "status": "NOT_CHECKED"
+    },
+    "mechanical": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 64,
+      "status": "NOT_CHECKED"
+    },
+    "ebike": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 37,
+      "status": "NOT_CHECKED"
+    },
+    "duedate": {
+      "dtype": "TIMESTAMP",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "bikes_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 70,
+      "status": "NOT_CHECKED"
+    },
+    "rate_bike_available": {
+      "dtype": "Float64",
+      "null_count": 1019,
+      "null_pct": 10.190000000000001,
+      "distinct_count": 1040,
+      "status": "NOT_CHECKED"
+    },
+    "rate_dock_available": {
+      "dtype": "Float64",
+      "null_count": 1019,
+      "null_pct": 10.190000000000001,
+      "distinct_count": 1053,
+      "status": "NOT_CHECKED"
+    },
+    "bikes_out_of_order": {
+      "dtype": "Int64",
+      "null_count": 9,
+      "null_pct": 0.09,
+      "distinct_count": 93,
+      "status": "NOT_CHECKED"
+    },
+    "collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 7546,
+      "status": "OK"
+    },
+    "rounded_collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 7545,
+      "status": "OK"
+    }
+  },
+  "column_insights": {
+    "station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 18707.7925,
+      "median": 16116.0,
+      "quantiles": {
+        "p25": 11025.0,
+        "p50": 16116.0,
+        "p75": 22012.0
+      },
+      "top_values": [
+        {
+          "value": 19026.0,
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": 41101.0,
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": 16027.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 22302.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 1024.0,
+          "count": 15,
+          "percentage": 0.15
+        }
+      ]
+    },
+    "station_name": {
+      "top_values": [
+        {
+          "value": "Place de la Gare",
+          "count": 19,
+          "percentage": 0.19
+        },
+        {
+          "value": "Place de Rhin et Danube",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "Paul Doumer - Stalingrad",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "H\u00f4pital Piti\u00e9 Salp\u00eatri\u00e8re",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Coquilli\u00e8re - Louvre",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Gare RER - G\u00e9n\u00e9ral de Gaulle",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Mozart - Jasmin",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Place Edmond Michelet",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Pelleport - Belgrand",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Lac\u00e9p\u00e8de - Monge",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ],
+      "length_stats": {
+        "min": 0,
+        "max": 50,
+        "avg": 24.04
+      }
+    },
+    "capacity": {
+      "min": 0.0,
+      "max": 78.0,
+      "mean": 28.3355,
+      "median": 28.0,
+      "quantiles": {
+        "p25": 21.0,
+        "p50": 28.0,
+        "p75": 36.0
+      },
+      "top_values": [
+        {
+          "value": 0.0,
+          "count": 1010,
+          "percentage": 10.109098188369533
+        },
+        {
+          "value": 30.0,
+          "count": 551,
+          "percentage": 5.514963467120408
+        },
+        {
+          "value": 20.0,
+          "count": 492,
+          "percentage": 4.924431988789911
+        },
+        {
+          "value": 22.0,
+          "count": 404,
+          "percentage": 4.043639275347813
+        },
+        {
+          "value": 25.0,
+          "count": 401,
+          "percentage": 4.013612251025924
+        }
+      ]
+    },
+    "docks_available": {
+      "min": 0.0,
+      "max": 75.0,
+      "mean": 18.6959,
+      "median": 17.0,
+      "quantiles": {
+        "p25": 10.0,
+        "p50": 17.0,
+        "p75": 26.0
+      },
+      "top_values": [
+        {
+          "value": 17.0,
+          "count": 373,
+          "percentage": 3.73
+        },
+        {
+          "value": 16.0,
+          "count": 355,
+          "percentage": 3.55
+        },
+        {
+          "value": 18.0,
+          "count": 354,
+          "percentage": 3.54
+        },
+        {
+          "value": 19.0,
+          "count": 330,
+          "percentage": 3.3000000000000003
+        },
+        {
+          "value": 20.0,
+          "count": 328,
+          "percentage": 3.2800000000000002
+        }
+      ]
+    },
+    "mechanical": {
+      "min": 0.0,
+      "max": 63.0,
+      "mean": 7.6053,
+      "median": 4.0,
+      "quantiles": {
+        "p25": 1.0,
+        "p50": 4.0,
+        "p75": 11.0
+      },
+      "top_values": [
+        {
+          "value": 0.0,
+          "count": 1752,
+          "percentage": 17.52
+        },
+        {
+          "value": 1.0,
+          "count": 1303,
+          "percentage": 13.03
+        },
+        {
+          "value": 2.0,
+          "count": 977,
+          "percentage": 9.77
+        },
+        {
+          "value": 3.0,
+          "count": 671,
+          "percentage": 6.710000000000001
+        },
+        {
+          "value": 4.0,
+          "count": 520,
+          "percentage": 5.2
+        }
+      ]
+    },
+    "ebike": {
+      "min": 0.0,
+      "max": 56.0,
+      "mean": 4.4539,
+      "median": 3.0,
+      "quantiles": {
+        "p25": 1.0,
+        "p50": 3.0,
+        "p75": 6.0
+      },
+      "top_values": [
+        {
+          "value": 1.0,
+          "count": 1550,
+          "percentage": 15.5
+        },
+        {
+          "value": 2.0,
+          "count": 1474,
+          "percentage": 14.74
+        },
+        {
+          "value": 3.0,
+          "count": 1272,
+          "percentage": 12.72
+        },
+        {
+          "value": 0.0,
+          "count": 1024,
+          "percentage": 10.24
+        },
+        {
+          "value": 4.0,
+          "count": 1015,
+          "percentage": 10.15
+        }
+      ]
+    },
+    "bikes_available": {
+      "min": 0.0,
+      "max": 78.0,
+      "mean": 12.0592,
+      "median": 9.0,
+      "quantiles": {
+        "p25": 4.0,
+        "p50": 9.0,
+        "p75": 17.0
+      },
+      "top_values": [
+        {
+          "value": 2.0,
+          "count": 694,
+          "percentage": 6.94
+        },
+        {
+          "value": 3.0,
+          "count": 691,
+          "percentage": 6.909999999999999
+        },
+        {
+          "value": 4.0,
+          "count": 657,
+          "percentage": 6.569999999999999
+        },
+        {
+          "value": 1.0,
+          "count": 606,
+          "percentage": 6.0600000000000005
+        },
+        {
+          "value": 5.0,
+          "count": 567,
+          "percentage": 5.67
+        }
+      ]
+    },
+    "rate_bike_available": {
+      "min": 0.0,
+      "max": 37.0,
+      "mean": 0.4317,
+      "median": 0.3108108108108108,
+      "quantiles": {
+        "p25": 0.13333333333333333,
+        "p50": 0.3108108108108108,
+        "p75": 0.6086956521739131
+      },
+      "top_values": [
+        {
+          "value": 0.0,
+          "count": 276,
+          "percentage": 3.0731544371450843
+        },
+        {
+          "value": 0.5,
+          "count": 158,
+          "percentage": 1.7592695690903017
+        },
+        {
+          "value": 0.3333333333333333,
+          "count": 130,
+          "percentage": 1.4475002783654383
+        },
+        {
+          "value": 0.2,
+          "count": 125,
+          "percentage": 1.3918271907359983
+        },
+        {
+          "value": 0.1,
+          "count": 118,
+          "percentage": 1.3138848680547823
+        }
+      ]
+    },
+    "rate_dock_available": {
+      "min": 0.0,
+      "max": 40.0,
+      "mean": 0.6574,
+      "median": 0.6610169491525424,
+      "quantiles": {
+        "p25": 0.3548387096774194,
+        "p50": 0.6610169491525424,
+        "p75": 0.8421052631578947
+      },
+      "top_values": [
+        {
+          "value": 0.0,
+          "count": 228,
+          "percentage": 2.5386927959024606
+        },
+        {
+          "value": 0.5,
+          "count": 159,
+          "percentage": 1.7704041866161897
+        },
+        {
+          "value": 0.8,
+          "count": 147,
+          "percentage": 1.6367887763055338
+        },
+        {
+          "value": 1.0,
+          "count": 143,
+          "percentage": 1.5922503062019822
+        },
+        {
+          "value": 0.6666666666666666,
+          "count": 123,
+          "percentage": 1.3695579556842223
+        }
+      ]
+    },
+    "bikes_out_of_order": {
+      "min": -73.0,
+      "max": 34.0,
+      "mean": -2.4135,
+      "median": 1.0,
+      "quantiles": {
+        "p25": 0.0,
+        "p50": 1.0,
+        "p75": 1.0
+      },
+      "top_values": [
+        {
+          "value": 0.0,
+          "count": 3754,
+          "percentage": 37.57381643479131
+        },
+        {
+          "value": 1.0,
+          "count": 2768,
+          "percentage": 27.704934440996897
+        },
+        {
+          "value": 2.0,
+          "count": 1276,
+          "percentage": 12.771494344910419
+        },
+        {
+          "value": 3.0,
+          "count": 587,
+          "percentage": 5.8752877589830845
+        },
+        {
+          "value": 4.0,
+          "count": 232,
+          "percentage": 2.3220898808928037
+        }
+      ]
+    },
+    "collected_at": {
+      "min_date": "2023-10-25 00:05:10",
+      "max_date": "2025-10-22 02:06:09",
+      "date_range_days": 728,
+      "most_common_dates": [
+        {
+          "date": "2024-07-03",
+          "count": 30,
+          "percentage": 0.3
+        },
+        {
+          "date": "2025-03-05",
+          "count": 25,
+          "percentage": 0.25
+        },
+        {
+          "date": "2025-06-14",
+          "count": 24,
+          "percentage": 0.24
+        },
+        {
+          "date": "2025-08-19",
+          "count": 24,
+          "percentage": 0.24
+        },
+        {
+          "date": "2023-12-27",
+          "count": 24,
+          "percentage": 0.24
+        }
+      ],
+      "most_common_hours": [
+        {
+          "hour": 9,
+          "count": 466,
+          "percentage": 4.66
+        },
+        {
+          "hour": 8,
+          "count": 456,
+          "percentage": 4.5600000000000005
+        },
+        {
+          "hour": 4,
+          "count": 452,
+          "percentage": 4.52
+        },
+        {
+          "hour": 2,
+          "count": 434,
+          "percentage": 4.34
+        },
+        {
+          "hour": 0,
+          "count": 431,
+          "percentage": 4.31
+        },
+        {
+          "hour": 11,
+          "count": 429,
+          "percentage": 4.29
+        },
+        {
+          "hour": 18,
+          "count": 427,
+          "percentage": 4.2700000000000005
+        },
+        {
+          "hour": 1,
+          "count": 427,
+          "percentage": 4.2700000000000005
+        },
+        {
+          "hour": 12,
+          "count": 425,
+          "percentage": 4.25
+        },
+        {
+          "hour": 15,
+          "count": 424,
+          "percentage": 4.24
+        }
+      ],
+      "most_common_days": [
+        {
+          "day": "Thursday",
+          "weekday": 4,
+          "count": 1448,
+          "percentage": 14.48
+        },
+        {
+          "day": "Tuesday",
+          "weekday": 2,
+          "count": 1442,
+          "percentage": 14.42
+        },
+        {
+          "day": "Wednesday",
+          "weekday": 3,
+          "count": 1440,
+          "percentage": 14.399999999999999
+        },
+        {
+          "day": "Monday",
+          "weekday": 1,
+          "count": 1439,
+          "percentage": 14.39
+        },
+        {
+          "day": "Friday",
+          "weekday": 5,
+          "count": 1429,
+          "percentage": 14.29
+        },
+        {
+          "day": "Saturday",
+          "weekday": 6,
+          "count": 1414,
+          "percentage": 14.14
+        },
+        {
+          "day": "Sunday",
+          "weekday": 7,
+          "count": 1388,
+          "percentage": 13.88
+        }
+      ],
+      "timezone": "None (timezone-naive)"
+    },
+    "rounded_collected_at": {
+      "min_date": "2023-10-25 00:00:00",
+      "max_date": "2025-10-22 02:00:00",
+      "date_range_days": 728,
+      "most_common_dates": [
+        {
+          "date": "2024-07-03",
+          "count": 30,
+          "percentage": 0.3
+        },
+        {
+          "date": "2025-03-05",
+          "count": 25,
+          "percentage": 0.25
+        },
+        {
+          "date": "2025-06-14",
+          "count": 24,
+          "percentage": 0.24
+        },
+        {
+          "date": "2025-08-19",
+          "count": 24,
+          "percentage": 0.24
+        },
+        {
+          "date": "2023-12-27",
+          "count": 24,
+          "percentage": 0.24
+        }
+      ],
+      "most_common_hours": [
+        {
+          "hour": 9,
+          "count": 466,
+          "percentage": 4.66
+        },
+        {
+          "hour": 8,
+          "count": 456,
+          "percentage": 4.5600000000000005
+        },
+        {
+          "hour": 4,
+          "count": 452,
+          "percentage": 4.52
+        },
+        {
+          "hour": 2,
+          "count": 434,
+          "percentage": 4.34
+        },
+        {
+          "hour": 0,
+          "count": 431,
+          "percentage": 4.31
+        },
+        {
+          "hour": 11,
+          "count": 429,
+          "percentage": 4.29
+        },
+        {
+          "hour": 18,
+          "count": 427,
+          "percentage": 4.2700000000000005
+        },
+        {
+          "hour": 1,
+          "count": 427,
+          "percentage": 4.2700000000000005
+        },
+        {
+          "hour": 12,
+          "count": 425,
+          "percentage": 4.25
+        },
+        {
+          "hour": 15,
+          "count": 424,
+          "percentage": 4.24
+        }
+      ],
+      "most_common_days": [
+        {
+          "day": "Thursday",
+          "weekday": 4,
+          "count": 1448,
+          "percentage": 14.48
+        },
+        {
+          "day": "Tuesday",
+          "weekday": 2,
+          "count": 1442,
+          "percentage": 14.42
+        },
+        {
+          "day": "Wednesday",
+          "weekday": 3,
+          "count": 1440,
+          "percentage": 14.399999999999999
+        },
+        {
+          "day": "Monday",
+          "weekday": 1,
+          "count": 1439,
+          "percentage": 14.39
+        },
+        {
+          "day": "Friday",
+          "weekday": 5,
+          "count": 1429,
+          "percentage": 14.29
+        },
+        {
+          "day": "Saturday",
+          "weekday": 6,
+          "count": 1414,
+          "percentage": 14.14
+        },
+        {
+          "day": "Sunday",
+          "weekday": 7,
+          "count": 1388,
+          "percentage": 13.88
+        }
+      ],
+      "timezone": "None (timezone-naive)"
+    }
+  },
+  "timestamp": "2025-10-22T10:49:00.933274",
+  "start_time": "2025-10-22T10:49:00.933274",
+  "check_durations": {
+    "string_checks": 0.023442,
+    "date_checks": 0.010455
+  },
+  "end_time": "2025-10-22T10:49:00.994079",
+  "duration_seconds": 0.06,
+  "table_metadata": {
+    "table_name": "fct_avaibility_part",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-22 08:34:44.372000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.fct_avaibility_part",
+    "row_count": 24487775,
+    "partition_column": "collected_at",
+    "partition_type": "TIME",
+    "clustering_columns": [
+      "station_code"
+    ]
+  },
+  "phase_timings": {
+    "connection": 62.89235,
+    "metadata": 8.273414,
+    "column_selection": 2.410688,
+    "data_loading": 3.791822,
+    "audit_checks": 0.062307
+  }
+}

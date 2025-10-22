@@ -14,6 +14,7 @@ from ..checks.string_checks import (
     check_numeric_strings
 )
 from ..checks.timestamp_checks import check_timestamp_patterns, check_date_outliers, check_future_dates
+from ..checks.numeric_checks import check_numeric_range
 from ..utils.security import mask_pii_columns, sanitize_connection_string
 from ..utils.output import print_results
 from .database import DatabaseConnection
@@ -85,6 +86,130 @@ class SecureTableAuditor(AuditorExporterMixin):
         self.outlier_threshold_pct = outlier_threshold_pct
         self.audit_log = []
 
+    @staticmethod
+    def determine_columns_to_load(
+        table_schema: Dict[str, str],
+        table_name: str,
+        column_check_config: Optional[any] = None,
+        primary_key_columns: Optional[List[str]] = None,
+        include_columns: Optional[List[str]] = None,
+        exclude_columns: Optional[List[str]] = None,
+        audit_mode: str = 'full'
+    ) -> List[str]:
+        """
+        Determine which columns to load based on checks, insights, filters, and mode
+
+        Args:
+            table_schema: Dictionary mapping column names to data types
+            table_name: Name of the table being audited
+            column_check_config: Optional configuration for column checks and insights
+            primary_key_columns: Optional list of primary key column names (always included)
+            include_columns: Optional list of columns to include (if specified, only load these)
+            exclude_columns: Optional list of columns to exclude
+            audit_mode: Audit mode ('full', 'checks', 'insights', 'discover')
+
+        Returns:
+            List of column names to load (empty list means load all columns)
+        """
+        if not table_schema:
+            # If we can't get schema, fallback to loading all columns
+            return []
+
+        columns_to_load = set()
+
+        # Always include primary key columns
+        if primary_key_columns:
+            columns_to_load.update(primary_key_columns)
+
+        # Process each column in the schema
+        for column_name, data_type in table_schema.items():
+            # Skip if in exclude list
+            if exclude_columns and column_name in exclude_columns:
+                continue
+
+            # If include list specified, only load those columns (plus PKs)
+            if include_columns and column_name not in include_columns:
+                continue
+
+            # Determine if this column should be loaded based on data type and config
+            should_load = False
+
+            # Map BigQuery types to general categories
+            data_type_upper = data_type.upper()
+
+            # String types - load based on mode
+            if any(t in data_type_upper for t in ['STRING', 'VARCHAR', 'TEXT', 'CHAR']):
+                # In 'checks' or 'full' mode, check if string checks are enabled
+                if audit_mode in ['checks', 'full']:
+                    if column_check_config and hasattr(column_check_config, 'get_column_checks'):
+                        col_checks = column_check_config.get_column_checks(table_name, column_name, data_type)
+                        # Load if any check is enabled
+                        if any(col_checks.values()):
+                            should_load = True
+                    else:
+                        # Default: load string columns for checks
+                        should_load = True
+
+                # In 'insights' or 'full' mode, also check if insights are configured
+                if audit_mode in ['insights', 'full']:
+                    if column_check_config and hasattr(column_check_config, 'get_column_insights'):
+                        col_insights = column_check_config.get_column_insights(table_name, column_name, data_type)
+                        if col_insights:
+                            should_load = True
+
+            # DateTime/Date types - load based on mode
+            elif any(t in data_type_upper for t in ['DATE', 'TIME', 'TIMESTAMP']):
+                # In 'checks' or 'full' mode, check if datetime checks are enabled
+                if audit_mode in ['checks', 'full']:
+                    if column_check_config and hasattr(column_check_config, 'get_column_checks'):
+                        col_checks = column_check_config.get_column_checks(table_name, column_name, data_type)
+                        if any(col_checks.values()):
+                            should_load = True
+                    else:
+                        # Default: load datetime columns for checks
+                        should_load = True
+
+                # In 'insights' or 'full' mode, also check if insights are configured
+                if audit_mode in ['insights', 'full']:
+                    if column_check_config and hasattr(column_check_config, 'get_column_insights'):
+                        col_insights = column_check_config.get_column_insights(table_name, column_name, data_type)
+                        if col_insights:
+                            should_load = True
+
+            # Numeric types - load only in insights or full mode
+            elif any(t in data_type_upper for t in ['INT', 'FLOAT', 'DOUBLE', 'NUMERIC', 'DECIMAL', 'NUMBER']):
+                # Numeric columns don't have quality checks, only insights
+                # Skip in 'checks' mode since they have no checks
+                if audit_mode in ['insights', 'full']:
+                    if column_check_config and hasattr(column_check_config, 'get_column_insights'):
+                        col_insights = column_check_config.get_column_insights(table_name, column_name, data_type)
+                        if col_insights:
+                            should_load = True
+                    else:
+                        # Default: load numeric columns for insights
+                        should_load = True
+
+            # Boolean types - load only in insights or full mode
+            elif any(t in data_type_upper for t in ['BOOL', 'BOOLEAN']):
+                # Load booleans if insights configured
+                # Skip in 'checks' mode since they have no checks
+                if audit_mode in ['insights', 'full']:
+                    if column_check_config and hasattr(column_check_config, 'get_column_insights'):
+                        col_insights = column_check_config.get_column_insights(table_name, column_name, data_type)
+                        if col_insights:
+                            should_load = True
+
+            # Skip complex types (STRUCT, ARRAY, JSON, GEOGRAPHY, etc.)
+            # These types don't support standard checks/insights anyway
+
+            if should_load:
+                columns_to_load.add(column_name)
+
+        # Convert to list, preserving schema order
+        result = [col for col in table_schema.keys() if col in columns_to_load]
+
+        return result
+
     def audit_from_database(
         self,
         table_name: str,
@@ -99,7 +224,7 @@ class SecureTableAuditor(AuditorExporterMixin):
         column_check_config: Optional[any] = None,
         sampling_method: str = 'random',
         sampling_key_column: Optional[str] = None,
-        discover_mode: bool = False
+        audit_mode: str = 'full'
     ) -> Dict:
         """
         Audit table directly from database using Ibis (RECOMMENDED)
@@ -129,7 +254,11 @@ class SecureTableAuditor(AuditorExporterMixin):
             sample_in_db: Use database sampling for large tables (faster & more secure)
             custom_query: Custom SQL query instead of SELECT * (advanced)
             custom_pii_keywords: Additional PII keywords beyond defaults
-            discover_mode: Discovery mode - skip quality checks and insights (only metadata)
+            audit_mode: Audit mode ('full', 'checks', 'insights', 'discover')
+                - 'full': Run both quality checks and insights (default)
+                - 'checks': Run quality checks only, skip insights
+                - 'insights': Run insights only, skip quality checks
+                - 'discover': Skip both (metadata only)
 
         Returns:
             Dictionary with audit results
@@ -167,6 +296,20 @@ class SecureTableAuditor(AuditorExporterMixin):
                     if 'row_count' in table_metadata and table_metadata['row_count'] is not None:
                         row_count = table_metadata['row_count']
                         print(f"📊 Table has {row_count:,} rows")
+
+                    # Display partition information
+                    if 'partition_column' in table_metadata and table_metadata['partition_column']:
+                        partition_type = table_metadata.get('partition_type', 'UNKNOWN')
+                        print(f"🔹 Partitioned by: {table_metadata['partition_column']} ({partition_type})")
+
+                    # Display clustering information
+                    if 'clustering_columns' in table_metadata and table_metadata['clustering_columns']:
+                        cluster_cols = ', '.join(table_metadata['clustering_columns'])
+                        print(f"🔸 Clustered by: {cluster_cols}")
+                    elif 'clustering_key' in table_metadata and table_metadata['clustering_key']:
+                        # Snowflake clustering key
+                        print(f"🔸 Clustering key: {table_metadata['clustering_key']}")
+
             except Exception as e:
                 print(f"⚠️  Could not get table metadata: {e}")
 
@@ -211,6 +354,41 @@ class SecureTableAuditor(AuditorExporterMixin):
 
             phase_timings['metadata'] = (datetime.now() - phase_start).total_seconds()
 
+            # Get table schema and determine which columns to load (optimization)
+            phase_start = datetime.now()
+            columns_to_load = None
+            try:
+                # Get table schema (column names and types)
+                table_schema = db_conn.get_table_schema(table_name, schema)
+
+                if table_schema:
+                    # Get filter configuration
+                    include_columns = getattr(column_check_config, 'include_columns', None) if column_check_config else None
+                    exclude_columns = getattr(column_check_config, 'exclude_columns', None) if column_check_config else None
+
+                    # Determine which columns to load
+                    columns_to_load = self.determine_columns_to_load(
+                        table_schema=table_schema,
+                        table_name=table_name,
+                        column_check_config=column_check_config,
+                        primary_key_columns=primary_key_columns,
+                        include_columns=include_columns,
+                        exclude_columns=exclude_columns,
+                        audit_mode=audit_mode
+                    )
+
+                    if columns_to_load:
+                        print(f"📊 Optimized column loading: selecting {len(columns_to_load)}/{len(table_schema)} columns")
+                    else:
+                        print(f"📊 Loading all {len(table_schema)} columns")
+                else:
+                    print(f"⚠️  Could not get table schema, will load all columns")
+            except Exception as e:
+                print(f"⚠️  Column optimization failed ({e}), will load all columns")
+                columns_to_load = None
+
+            phase_timings['column_selection'] = (datetime.now() - phase_start).total_seconds()
+
             # Determine if we should sample
             # For custom queries, don't sample - use the query as-is (user controls the data with their query)
             # For cross-project, always sample since we don't know the row count
@@ -236,7 +414,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                 custom_query=custom_query,
                 sample_size=self.sample_size if should_sample else None,
                 sampling_method=sampling_method,
-                sampling_key_column=sampling_key_column
+                sampling_key_column=sampling_key_column,
+                columns=columns_to_load if columns_to_load else None
             )
             phase_timings['data_loading'] = (datetime.now() - phase_start).total_seconds()
 
@@ -255,7 +434,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             if mask_pii:
                 df = mask_pii_columns(df, custom_pii_keywords)
 
-            # Run audit - pass the actual row count, metadata, primary key columns, and check config
+            # Run audit - pass the actual row count, metadata, primary key columns, check config, and schema
             phase_start = datetime.now()
             results = self.audit_table(
                 df,
@@ -263,7 +442,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                 total_row_count=row_count,
                 primary_key_columns=primary_key_columns,
                 column_check_config=column_check_config,
-                discover_mode=discover_mode
+                audit_mode=audit_mode,
+                table_schema=table_schema
             )
             phase_timings['audit_checks'] = (datetime.now() - phase_start).total_seconds()
 
@@ -326,7 +506,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         total_row_count: Optional[int] = None,
         primary_key_columns: Optional[List[str]] = None,
         column_check_config: Optional[any] = None,
-        discover_mode: bool = False
+        audit_mode: str = 'full',
+        table_schema: Optional[Dict[str, str]] = None
     ) -> Dict:
         """
         Main audit function - runs all checks on a Polars DataFrame
@@ -338,7 +519,8 @@ class SecureTableAuditor(AuditorExporterMixin):
             total_row_count: Optional total row count from database (if known)
             primary_key_columns: Optional list of primary key column names
             column_check_config: Optional column-level check configuration
-            discover_mode: Discovery mode - skip quality checks and insights (only metadata)
+            audit_mode: Audit mode ('full', 'checks', 'insights', 'discover')
+            table_schema: Optional table schema (all columns with types) for showing unloaded columns
 
         Returns:
             Dictionary with audit results
@@ -392,8 +574,23 @@ class SecureTableAuditor(AuditorExporterMixin):
         potential_keys = []
         check_durations = {}
 
-        for col in df.columns:
+        # Iterate over all columns in schema (if provided), otherwise just loaded columns
+        all_columns = list(table_schema.keys()) if table_schema else df.columns
+
+        for col in all_columns:
             col_start = datetime.now()
+
+            # Check if column was loaded (may be missing if optimized out)
+            if col not in df.columns:
+                # Column exists in schema but wasn't loaded (optimization)
+                results['column_summary'][col] = {
+                    'dtype': table_schema[col] if table_schema else 'Unknown',
+                    'null_count': 'N/A',
+                    'null_pct': 'N/A',
+                    'distinct_count': 'N/A',
+                    'status': 'NOT_LOADED'
+                }
+                continue  # Skip to next column
 
             # Get column-specific check configuration
             col_dtype = str(df[col].dtype)
@@ -404,14 +601,17 @@ class SecureTableAuditor(AuditorExporterMixin):
                 # Fallback to global check_config
                 col_check_config = check_config or {}
 
-            col_results = self._audit_column(df, col, col_check_config, primary_key_columns, discover_mode)
+            col_results = self._audit_column(df, col, col_check_config, primary_key_columns, audit_mode)
             col_duration = (datetime.now() - col_start).total_seconds()
 
             # Determine status based on column type and issues found
             dtype = df[col].dtype
-            if discover_mode:
+            if audit_mode == 'discover':
                 # In discover mode, all columns are marked as DISCOVERED
                 status = 'DISCOVERED'
+            elif audit_mode == 'insights':
+                # In insights mode, columns are marked as PROFILED
+                status = 'PROFILED'
             elif dtype in [pl.Utf8, pl.String, pl.Datetime, pl.Date]:
                 # Columns that are checked for quality issues
                 status = 'ERROR' if col_results['issues'] else 'OK'
@@ -438,8 +638,8 @@ class SecureTableAuditor(AuditorExporterMixin):
             if col_results['issues']:
                 results['columns'][col] = col_results
 
-            # Generate column insights (skip in discover mode)
-            if not discover_mode and column_check_config and hasattr(column_check_config, 'get_column_insights'):
+            # Generate column insights (skip in discover and checks modes)
+            if audit_mode not in ['discover', 'checks'] and column_check_config and hasattr(column_check_config, 'get_column_insights'):
                 col_insights_config = column_check_config.get_column_insights(table_name, col, col_dtype)
                 if col_insights_config:
                     insights = generate_column_insights(df, col, col_insights_config)
@@ -496,7 +696,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             'status': 'SKIPPED_COMPLEX_TYPE'
         }
 
-    def _audit_column(self, df: pl.DataFrame, col: str, check_config: Dict, primary_key_columns: Optional[List[str]] = None, discover_mode: bool = False) -> Dict:
+    def _audit_column(self, df: pl.DataFrame, col: str, check_config: Dict, primary_key_columns: Optional[List[str]] = None, audit_mode: str = 'full') -> Dict:
         """Audit a single column for all issues
 
         Args:
@@ -504,7 +704,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             col: Column name
             check_config: Configuration for which checks to run
             primary_key_columns: Optional list of primary key column names
-            discover_mode: If True, skip quality checks (only return metadata)
+            audit_mode: Audit mode ('full', 'checks', 'insights', 'discover')
         """
         dtype = df[col].dtype
 
@@ -523,11 +723,12 @@ class SecureTableAuditor(AuditorExporterMixin):
             'null_count': null_count,
             'null_pct': (null_count / total_rows * 100) if total_rows > 0 else 0,
             'distinct_count': distinct_count,
-            'issues': []
+            'issues': [],
+            'checks_run': []  # Track all checks performed
         }
 
-        # In discover mode, return only metadata (skip all checks)
-        if discover_mode:
+        # In discover or insights mode, return only metadata (skip quality checks)
+        if audit_mode in ['discover', 'insights']:
             return col_result
 
         # Skip if all nulls or masked
@@ -542,30 +743,132 @@ class SecureTableAuditor(AuditorExporterMixin):
         # String column checks
         if dtype in [pl.Utf8, pl.String]:
             if check_config.get('trailing_spaces', True):
+                before_count = len(col_result['issues'])
                 col_result['issues'].extend(check_trailing_spaces(df, col, primary_key_columns))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Trailing Spaces',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
+
             if check_config.get('case_duplicates', True):
+                before_count = len(col_result['issues'])
                 col_result['issues'].extend(check_case_duplicates(df, col, primary_key_columns))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Case Duplicates',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
+
             if check_config.get('special_chars', True):
+                before_count = len(col_result['issues'])
                 col_result['issues'].extend(check_special_chars(df, col, primary_key_columns))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Special Characters',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
+
             if check_config.get('numeric_strings', True):
+                before_count = len(col_result['issues'])
                 col_result['issues'].extend(check_numeric_strings(df, col, primary_key_columns))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Numeric Strings',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
 
         # Timestamp/Date checks
         elif dtype in [pl.Datetime, pl.Date]:
             if check_config.get('timestamp_patterns', True):
+                before_count = len(col_result['issues'])
                 col_result['issues'].extend(check_timestamp_patterns(df, col))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Timestamp Patterns',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
+
             if check_config.get('date_outliers', True):
+                before_count = len(col_result['issues'])
                 col_result['issues'].extend(check_date_outliers(
                     df, col,
                     min_year=getattr(self, 'min_year', 1950),
                     max_year=getattr(self, 'max_year', 2100),
                     outlier_threshold_pct=getattr(self, 'outlier_threshold_pct', 0.0)
                 ))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Date Outliers',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
+
             if check_config.get('future_dates', True):
+                before_count = len(col_result['issues'])
                 col_result['issues'].extend(check_future_dates(
                     df, col,
                     threshold_pct=getattr(self, 'outlier_threshold_pct', 0.0)
                 ))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Future Dates',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
+
+        # Numeric range checks (all numeric types)
+        if dtype in [pl.Int8, pl.Int16, pl.Int32, pl.Int64,
+                     pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
+                     pl.Float32, pl.Float64]:
+            # Extract range validation parameters from check_config
+            range_params = {}
+            range_desc_parts = []
+
+            if 'min' in check_config:
+                range_params['min_val'] = check_config['min']
+                range_desc_parts.append(f">= {check_config['min']}")
+            if 'max' in check_config:
+                range_params['max_val'] = check_config['max']
+                range_desc_parts.append(f"<= {check_config['max']}")
+            if 'greater_than' in check_config:
+                range_params['greater_than'] = check_config['greater_than']
+                range_desc_parts.append(f"> {check_config['greater_than']}")
+            if 'greater_than_or_equal' in check_config:
+                range_params['greater_than_or_equal'] = check_config['greater_than_or_equal']
+                range_desc_parts.append(f">= {check_config['greater_than_or_equal']}")
+            if 'less_than' in check_config:
+                range_params['less_than'] = check_config['less_than']
+                range_desc_parts.append(f"< {check_config['less_than']}")
+            if 'less_than_or_equal' in check_config:
+                range_params['less_than_or_equal'] = check_config['less_than_or_equal']
+                range_desc_parts.append(f"<= {check_config['less_than_or_equal']}")
+
+            # Only run check if at least one range parameter is defined
+            if range_params:
+                before_count = len(col_result['issues'])
+                col_result['issues'].extend(check_numeric_range(df, col, **range_params))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+
+                range_desc = ', '.join(range_desc_parts)
+                col_result['checks_run'].append({
+                    'name': f'Numeric Range ({range_desc})',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
 
         return col_result
 
