@@ -278,12 +278,10 @@ Examples:
             total_tb = total_bytes / 1_000_000_000_000
 
             # BigQuery on-demand pricing: $6.25 per TB (as of 2024)
-            # First 1 TB per month is free
             estimated_cost = max(0, total_tb * 6.25)
 
             print(f"\n💾 Total estimated data to scan: {total_gb:.2f} GB ({total_tb:.4f} TB)")
             print(f"💵 Estimated cost (on-demand): ${estimated_cost:.2f} USD")
-            print(f"   (Note: First 1 TB/month is free; pricing may vary by region)")
 
             # Ask for confirmation
             print(f"\n⚠️  Do you want to proceed with the audit?")

@@ -1,3 +1,0 @@
-table_name,total_rows,sampled,analyzed_rows,column_count,issues_found,columns_with_issues,status,duration_seconds,audit_timestamp,table_type,created_time
-transactions,3000,false,3000,17,0,0,OK,0.1,2025-10-21T16:15:06.814273,BASE TABLE,2019-01-14 18:48:06.807000+00:00
-blocks,2000,false,2000,13,0,0,OK,0.05,2025-10-21T16:15:17.964080,BASE TABLE,2019-01-14 18:28:17.012000+00:00

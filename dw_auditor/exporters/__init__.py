@@ -2,7 +2,7 @@
 
 from .dataframe_export import export_to_dataframe
 from .json_export import export_to_json
-from .html_export import export_to_html
+from .html import export_to_html
 from .run_summary_export import (
     export_run_summary_to_dataframe,
     export_run_summary_to_json,

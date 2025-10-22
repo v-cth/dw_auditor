@@ -1,4 +1,0 @@
-table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
-dim_station,1587,1587,false,station_name,String,0,0.0,1570,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place Du Général De Gaulle', 'Place du Général de Gaulle'])]",2025-10-21T22:58:08.601226
-dim_station,1587,1587,false,station_name,String,0,0.0,1570,SPECIAL_CHARACTERS,605,38.12224322621298,"","[""Quai de l'Horloge - Pont Neuf [station_code=1001]"", 'Turbigo - Française [station_code=1007]']",2025-10-21T22:58:08.601226
-dim_station,1587,1587,false,city,String,0,0.0,68,SPECIAL_CHARACTERS,57,3.5916824196597354,"","['Saint-Mandé [station_code=12041]', 'Sèvres [station_code=23101]']",2025-10-21T22:58:08.601226

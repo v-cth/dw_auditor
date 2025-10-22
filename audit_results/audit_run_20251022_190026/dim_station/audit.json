@@ -1,0 +1,484 @@
+{
+  "table_name": "dim_station",
+  "total_rows": 1587,
+  "sampled": false,
+  "analyzed_rows": 1587,
+  "columns": {
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 605,
+          "pct": 38.12224322621298,
+          "special_chars": [
+            "\u00ee",
+            "\u00e7",
+            "\u00e8",
+            "'",
+            "\u00f4",
+            "\u00fb",
+            "\u00e9",
+            "\u00ef",
+            "\u00e2"
+          ],
+          "examples": [
+            "Quai de l'Horloge - Pont Neuf [station_code=1001]",
+            "Turbigo - Fran\u00e7aise [station_code=1007]"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Spaces",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Special Characters",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "city": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 68,
+      "issues": [
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 57,
+          "pct": 3.5916824196597354,
+          "special_chars": [
+            "\u00ea",
+            "\u00ce",
+            "'",
+            "\u00e8",
+            "\u00e9",
+            "\u00e2"
+          ],
+          "examples": [
+            "Saint-Mand\u00e9 [station_code=12041]",
+            "S\u00e8vres [station_code=23101]"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Spaces",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Special Characters",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1587,
+      "status": "NOT_CHECKED"
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "status": "ERROR"
+    },
+    "capacity": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 72,
+      "status": "NOT_CHECKED"
+    },
+    "lon": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1586,
+      "status": "NOT_CHECKED"
+    },
+    "lat": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1587,
+      "status": "NOT_CHECKED"
+    },
+    "city": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 68,
+      "status": "ERROR"
+    },
+    "is_renting": {
+      "dtype": "BOOL",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "is_returning": {
+      "dtype": "BOOL",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "station_plus": {
+      "dtype": "BOOL",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    }
+  },
+  "column_insights": {
+    "station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 19021.426,
+      "median": 17007.0,
+      "quantiles": {
+        "p25": 11042.0,
+        "p50": 17007.0,
+        "p75": 22304.0
+      },
+      "top_values": [
+        {
+          "value": 13118.0,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 43004.0,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 43001.0,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 27004.0,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 11043.0,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        }
+      ]
+    },
+    "station_name": {
+      "top_values": [
+        {
+          "value": "Ch\u00e2teau - R\u00e9publique",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Place des Marseillais",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Gare RER - Canadiens",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Ren\u00e9 Boulanger - Lancry",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Gaston Roussel - Commune de Paris",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Verdun - Carnot",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Quai des C\u00e9lestins - Henri IV",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Buisson Saint-Louis - Saint-Maur",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Rocher - Laborde",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": "Place Nelson Mandela",
+          "count": 2,
+          "percentage": 0.1260239445494644
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.88
+      }
+    },
+    "capacity": {
+      "min": 0.0,
+      "max": 1200.0,
+      "mean": 31.5696,
+      "median": 29.0,
+      "quantiles": {
+        "p25": 22.0,
+        "p50": 29.0,
+        "p75": 37.0
+      },
+      "top_values": [
+        {
+          "value": 30.0,
+          "count": 93,
+          "percentage": 5.8601134215500945
+        },
+        {
+          "value": 20.0,
+          "count": 82,
+          "percentage": 5.16698172652804
+        },
+        {
+          "value": 28.0,
+          "count": 72,
+          "percentage": 4.536862003780719
+        },
+        {
+          "value": 0.0,
+          "count": 69,
+          "percentage": 4.3478260869565215
+        },
+        {
+          "value": 25.0,
+          "count": 68,
+          "percentage": 4.28481411468179
+        }
+      ]
+    },
+    "lon": {
+      "min": 2.1655967831611638,
+      "max": 2.5382421165704727,
+      "mean": 2.3419,
+      "median": 2.344057559967,
+      "quantiles": {
+        "p25": 2.3025986552238,
+        "p50": 2.344057559967,
+        "p75": 2.37933
+      },
+      "top_values": [
+        {
+          "value": 2.4345204234123234,
+          "count": 2,
+          "percentage": 0.1260239445494644
+        },
+        {
+          "value": 2.3903981223891,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 2.287667370814871,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 2.285863497192411,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 2.3004072904587,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        }
+      ]
+    },
+    "lat": {
+      "min": 48.757926073227,
+      "max": 48.95756799268,
+      "mean": 48.8583,
+      "median": 48.858688774062955,
+      "quantiles": {
+        "p25": 48.837442,
+        "p50": 48.858688774062955,
+        "p75": 48.879960700846226
+      },
+      "top_values": [
+        {
+          "value": 48.850310432924,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 48.89738369720229,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 48.9018492,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 48.84423193255657,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        },
+        {
+          "value": 48.844373437692,
+          "count": 1,
+          "percentage": 0.0630119722747322
+        }
+      ]
+    },
+    "city": {
+      "top_values": [
+        {
+          "value": "Paris",
+          "count": 1056,
+          "percentage": 66.5406427221172
+        },
+        {
+          "value": "Boulogne-Billancourt",
+          "count": 29,
+          "percentage": 1.8273471959672338
+        },
+        {
+          "value": "Montreuil",
+          "count": 24,
+          "percentage": 1.5122873345935728
+        },
+        {
+          "value": "Saint-Denis",
+          "count": 22,
+          "percentage": 1.3862633900441084
+        },
+        {
+          "value": "Issy-les-Moulineaux",
+          "count": 22,
+          "percentage": 1.3862633900441084
+        },
+        {
+          "value": "Pantin",
+          "count": 21,
+          "percentage": 1.3232514177693762
+        },
+        {
+          "value": "Ivry-sur-Seine",
+          "count": 18,
+          "percentage": 1.1342155009451798
+        },
+        {
+          "value": "Vitry-sur-Seine",
+          "count": 17,
+          "percentage": 1.0712035286704475
+        },
+        {
+          "value": "Neuilly-sur-Seine",
+          "count": 16,
+          "percentage": 1.0081915563957151
+        },
+        {
+          "value": "Cr\u00e9teil",
+          "count": 16,
+          "percentage": 1.0081915563957151
+        }
+      ],
+      "length_stats": {
+        "min": 5,
+        "max": 21,
+        "avg": 7.4
+      }
+    }
+  },
+  "timestamp": "2025-10-22T19:02:08.542463",
+  "start_time": "2025-10-22T19:02:08.542463",
+  "check_durations": {
+    "string_checks": 0.010073
+  },
+  "potential_primary_keys": [
+    "station_code",
+    "lat"
+  ],
+  "end_time": "2025-10-22T19:02:08.559036",
+  "duration_seconds": 0.02,
+  "table_metadata": {
+    "table_name": "dim_station",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-22 01:00:49.805000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.dim_station",
+    "row_count": 1587,
+    "primary_key_columns": [
+      "station_code"
+    ],
+    "primary_key_source": "user_config"
+  },
+  "phase_timings": {
+    "connection": 0.35034,
+    "metadata": 8.812652,
+    "column_selection": 2.65613,
+    "data_loading": 2.575009,
+    "audit_checks": 0.019112
+  }
+}

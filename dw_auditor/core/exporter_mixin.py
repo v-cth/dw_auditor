@@ -6,7 +6,7 @@ from typing import Dict, Optional, List
 import polars as pl
 
 from ..exporters.dataframe_export import export_to_dataframe
-from ..exporters.html_export import export_to_html
+from ..exporters.html import export_to_html
 from ..exporters.json_export import export_to_json
 from ..exporters.summary_export import (
     export_column_summary_to_dataframe,

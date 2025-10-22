@@ -1,4 +1,0 @@
-table_name,total_rows,sampled,analyzed_rows,column_count,issues_found,columns_with_issues,status,duration_seconds,audit_timestamp,table_type,created_time
-fct_avaibility,24452689,true,10000,13,2,1,WARNING,0.08,2025-10-21T22:57:59.280309,BASE TABLE,2025-10-21 01:00:48.978000+00:00
-dim_station,1587,false,1587,9,3,2,WARNING,0.02,2025-10-21T22:58:08.601226,BASE TABLE,2025-10-21 01:00:47.597000+00:00
-dtm_station_distance,2516982,true,10000,5,4,2,WARNING,0.02,2025-10-21T22:58:19.028918,BASE TABLE,2025-10-21 01:00:53.273000+00:00

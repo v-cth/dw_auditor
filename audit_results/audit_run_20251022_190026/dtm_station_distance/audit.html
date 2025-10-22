@@ -1,0 +1,1291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Quality Audit Report - dtm_station_distance</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+
+        :root {
+            --text-main: #000;
+            --text-muted: #666;
+            --border-light: #e5e5e5;
+            --accent: #6606dc;
+            --bg-alt: #fafafa;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 24px;
+            max-width: 1100px;
+            margin-inline: auto;
+            line-height: 1.6;
+        }
+
+        /* Header layout */
+        .report-header {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .report-title {
+            font-size: 2.8rem;
+            font-weight: 400;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+            max-width: 900px;
+            margin: 0;
+        }
+
+        .table-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        .table-tag {
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .meta-line {
+            border-top: 1px solid var(--border-light);
+            padding-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            font-size: 0.9rem;
+        }
+
+        .meta-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .meta-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--accent);
+        }
+
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            border-top: 1px solid var(--border-light);
+            margin-top: 32px;
+            padding-top: 24px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--accent);
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .card .status-warning {
+            color: #d97706;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            margin-top: 32px;
+            gap: 32px;
+        }
+
+        .tab {
+            position: relative;
+            padding: 12px 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            border: none;
+            background: none;
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent);
+        }
+
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+            padding-top: 28px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Tables */
+        .columns-table {
+            margin-top: 16px;
+            background: #fff;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            background: var(--bg-alt);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #fcfcfc;
+        }
+
+        tbody tr:hover {
+            background: #f5f3ff;
+        }
+
+        td {
+            color: var(--text-main);
+            font-weight: 400;
+        }
+
+        /* Column cards */
+        .column-card {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .column-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .column-type {
+            background: var(--bg-alt);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Issues */
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light);
+        }
+
+        .summary.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .summary.warning {
+            border-left: 4px solid #d97706;
+        }
+
+        .summary h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .summary p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .issue {
+            background: #fffbeb;
+            border-left: 3px solid #d97706;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+
+        .issue-type {
+            font-weight: 600;
+            color: #d97706;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .issue-stats {
+            color: var(--text-muted);
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .suggestion {
+            background: #eff6ff;
+            border-left: 3px solid var(--accent);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+
+        .examples {
+            background: var(--bg-alt);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+
+        /* Collapsible */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: var(--bg-alt);
+        }
+
+        .collapse-icon {
+            margin-right: 8px;
+            font-size: 0.9em;
+            transition: transform 0.3s;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            padding: 0 16px 16px 16px;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            padding: 0 16px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+            font-size: 0.9rem;
+        }
+
+    </style>
+    <script>
+
+        function toggleCollapse(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById(id + '-icon');
+
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                content.style.maxHeight = '0';
+                icon.classList.add('collapsed');
+            }
+        }
+
+        // Initialize all collapsible sections as collapsed on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.collapsible-content').forEach(function(element) {
+                // Start collapsed by default
+                element.classList.add('collapsed');
+                element.style.maxHeight = '0';
+            });
+
+            document.querySelectorAll('.collapse-icon').forEach(function(icon) {
+                // Set icons to collapsed state
+                icon.classList.add('collapsed');
+            });
+        });
+
+        // Tab switching logic using data-tab attributes
+        window.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Remove active class from all content sections
+                    contents.forEach(c => c.classList.remove('active'));
+                    // Show the selected tab content using data-tab attribute
+                    document.getElementById(tab.dataset.tab).classList.add('active');
+                });
+            });
+        });
+
+    </script>
+</head>
+<body>
+    <header class="report-header">
+        <div class="report-title">Data Quality Audit Report</div>
+        <div class="table-name">dtm_station_distance</div>
+        <div class="table-tag">BASE TABLE</div>
+
+        <div class="meta-line">
+            <div class="meta-block">
+                <div class="meta-label">Generated</div>
+                <div class="meta-value">2025-10-22T19:02:23.764399</div>
+            </div>
+            <div class="meta-block">
+                <div class="meta-label">Duration</div>
+                <div class="meta-value">0.03s</div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <div class="tab active" data-tab="summary">Summary</div>
+        <div class="tab" data-tab="insights">Insights</div>
+        <div class="tab" data-tab="checks">Quality Checks</div>
+        <div class="tab" data-tab="metadata">Metadata</div>
+    </nav>
+    
+    <section id="summary" class="tab-content active">
+        <div class="summary-cards">
+            <div class="card">
+                <h2>2,516,982</h2>
+                <p>Total Rows</p>
+            </div>
+            <div class="card">
+                <h2>10,000</h2>
+                <p>Analyzed Rows</p>
+            </div>
+            <div class="card">
+                <h2>2</h2>
+                <p>Columns Audited</p>
+            </div>
+            <div class="card">
+                <h2 class="status-warning">⚠ Issues Found</h2>
+                <p>Status</p>
+            </div>
+        </div>
+    </section>
+
+    <section id="insights" class="tab-content">
+        <strong>Column Insights</strong>
+        
+    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #1f2937;">📋 Column Summary</h2>
+        <p style="color: #666; margin-bottom: 20px;">Basic metrics for all columns in the table</p>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+                <thead>
+                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: left; font-weight: 600;">Column Name</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600;">Data Type</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600;">Status</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null Count</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null %</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Distinct Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">origin_station_code</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">- N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,586</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: #fef2f2;">
+                        <td style="padding: 10px; font-weight: 500;">origin_station_name</td>
+                        <td style="padding: 10px; color: #6b7280;">String</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">✗ ERROR</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,569</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">dest_station_code</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">- N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,587</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: #fef2f2;">
+                        <td style="padding: 10px; font-weight: 500;">dest_station_name</td>
+                        <td style="padding: 10px; color: #6b7280;">String</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">✗ ERROR</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,570</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">distance_meters</td>
+                        <td style="padding: 10px; color: #6b7280;">Float64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">- N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">9,976</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+        
+    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #1f2937;">💡 Column Insights</h2>
+        <p style="color: #666; margin-bottom: 20px;">Data profiling and distribution analysis</p>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-0')">
+                <span class="collapse-icon" id="insights-0-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">📊 origin_station_code</h3>
+            </div>
+            <div class="collapsible-content" id="insights-0">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="16043.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>16043.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="21306.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>21306.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="51002.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>51002.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="15004.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>15004.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="21212.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>21212.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 11.02222905930313%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 17.584361642511016%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 23.09053149757711%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 19.622300152735505%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 1,001.0</div>
+
+                        <div style="position: absolute; top: 45px; left: 19.622300152735505%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 18,858.7</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 92,008.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 14.303295350907074%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Q1/Median: 11,032.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 23.09053149757711%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 22,015.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-1')">
+                <span class="collapse-icon" id="insights-1-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">📊 origin_station_name</h3>
+            </div>
+            <div class="collapsible-content" id="insights-1">
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                        <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✓ Trailing Spaces <span style="color: #6b7280;">(0 issues)</span>
+                        </span>
+
+                        <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✗ Case Duplicates <span style="color: #6b7280;">(1 issues)</span>
+                        </span>
+
+                        <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✗ Special Characters <span style="color: #6b7280;">(1 issues)</span>
+                        </span>
+
+                        <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✓ Numeric Strings <span style="color: #6b7280;">(0 issues)</span>
+                        </span>
+
+                    </div>
+                </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place de Passy">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place de Passy</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16%, #f3f4f6 0.16%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Château - République">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Château - République</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(16)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16%, #f3f4f6 0.16%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place de la Gare">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place de la Gare</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(16)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Placette Grégoire Collas">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Placette Grégoire Collas</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Vaugirard - Pasteur">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Vaugirard - Pasteur</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place Lafayette">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place Lafayette</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Rocher - Laborde">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Rocher - Laborde</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place Nelson Mandela">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place Nelson Mandela</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Marne - Germain Dardan">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Marne - Germain Dardan</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Simon Bolivar - Henri Turot">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Simon Bolivar - Henri Turot</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <span style="color: #6b7280; font-size: 0.9em; margin-right: 8px;">Length:</span>
+<span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">min:</span> <span style="font-weight: 600; color: #667eea;">6</span></span><span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">max:</span> <span style="font-weight: 600; color: #667eea;">58</span></span><span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">avg:</span> <span style="font-weight: 600; color: #667eea;">23.82</span></span>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-2')">
+                <span class="collapse-icon" id="insights-2-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">📊 dest_station_code</h3>
+            </div>
+            <div class="collapsible-content" id="insights-2">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="35011.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>35011.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="10014.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>10014.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="32023.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>32023.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="43008.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>43008.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="5119.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>5119.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 11.03871130792137%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 17.60304152427835%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 23.626753985957123%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 20.096448185304425%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 1,001.0</div>
+
+                        <div style="position: absolute; top: 55px; left: 20.096448185304425%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 19,290.2</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 92,008.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 14.32087641609986%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Q1/Median: 11,047.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 23.626753985957123%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 22,503.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-3')">
+                <span class="collapse-icon" id="insights-3-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">📊 dest_station_name</h3>
+            </div>
+            <div class="collapsible-content" id="insights-3">
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                        <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✓ Trailing Spaces <span style="color: #6b7280;">(0 issues)</span>
+                        </span>
+
+                        <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✗ Case Duplicates <span style="color: #6b7280;">(1 issues)</span>
+                        </span>
+
+                        <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✗ Special Characters <span style="color: #6b7280;">(1 issues)</span>
+                        </span>
+
+                        <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            ✓ Numeric Strings <span style="color: #6b7280;">(0 issues)</span>
+                        </span>
+
+                    </div>
+                </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.21%, #f3f4f6 0.21%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Gaston Roussel - Commune de Paris">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Gaston Roussel - Commune de Paris</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(21)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.19%, #f3f4f6 0.19%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Paul Bodin - Clichy">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Paul Bodin - Clichy</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(19)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Evariste Galois">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Evariste Galois</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Guy Môquet - Jean Moulin">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Guy Môquet - Jean Moulin</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Honoré d'Estienne d'Ovres - Grilles">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Honoré d'Estienne d'Ovres - Grilles</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Rocher - Laborde">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Rocher - Laborde</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Marseille - Beaurepaire">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Marseille - Beaurepaire</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Buisson Saint-Louis - Saint-Maur">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Buisson Saint-Louis - Saint-Maur</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Bordier - Félix Faure">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Bordier - Félix Faure</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place Nelson Mandela">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place Nelson Mandela</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <span style="color: #6b7280; font-size: 0.9em; margin-right: 8px;">Length:</span>
+<span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">min:</span> <span style="font-weight: 600; color: #667eea;">6</span></span><span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">max:</span> <span style="font-weight: 600; color: #667eea;">58</span></span><span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">avg:</span> <span style="font-weight: 600; color: #667eea;">23.87</span></span>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-4')">
+                <span class="collapse-icon" id="insights-4-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">📊 distance_meters</h3>
+            </div>
+            <div class="collapsible-content" id="insights-4">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.02%, #f3f4f6 0.02%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="10967.03678207478">
+                        <span style="font-weight: 500; color: #1f2937;"><code>10967.03678207478</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.0%</span>
+                        <span style="float: right; color: #6b7280;">(2)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.02%, #f3f4f6 0.02%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="7228.15268791028">
+                        <span style="font-weight: 500; color: #1f2937;"><code>7228.15268791028</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.0%</span>
+                        <span style="float: right; color: #6b7280;">(2)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.02%, #f3f4f6 0.02%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="4278.219011877767">
+                        <span style="font-weight: 500; color: #1f2937;"><code>4278.219011877767</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.0%</span>
+                        <span style="float: right; color: #6b7280;">(2)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.02%, #f3f4f6 0.02%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="9015.682456031032">
+                        <span style="font-weight: 500; color: #1f2937;"><code>9015.682456031032</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.0%</span>
+                        <span style="float: right; color: #6b7280;">(2)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.02%, #f3f4f6 0.02%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="2735.7841905237124">
+                        <span style="font-weight: 500; color: #1f2937;"><code>2735.7841905237124</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.0%</span>
+                        <span style="float: right; color: #6b7280;">(2)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 15.830968473651513%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 24.6043163063199%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 35.760997717556435%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 26.771434770203374%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 26.1</div>
+
+                        <div style="position: absolute; top: 55px; left: 26.771434770203374%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 6,959.0</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 25,922.5</div>
+
+                        <div style="position: absolute; top: 5px; left: 15.830968473651513%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q1: 4,125.8</div>
+
+                        <div style="position: absolute; top: 15px; left: 24.6043163063199%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Median: 6,397.8</div>
+
+                        <div style="position: absolute; top: 5px; left: 35.760997717556435%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 9,286.9</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    </section>
+    
+    <section id="checks" class="tab-content">
+        
+    <div class="summary warning">
+        <h2>⚠️ Quality Check Results</h2>
+        <p><strong>8</strong> check(s) performed: <strong style="color: #10b981;">4 passed</strong>, <strong style="color: #ef4444;">4 failed</strong> (4 total issues)</p>
+    </div>
+
+    <div class="column-card">
+        <div class="collapsible-header" onclick="toggleCollapse('issues-0')" style="margin-bottom: 15px;">
+            <span class="collapse-icon" id="issues-0-icon">▼</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
+                <div class="column-name">origin_station_name</div>
+                <div class="column-type">String</div>
+            </div>
+        </div>
+        <div class="collapsible-content" id="issues-0">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    0 (0.0%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    1,569
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✓ Trailing Spaces <span style="color: #6b7280;">(0 issues)</span>
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✗ Case Duplicates <span style="color: #6b7280;">(1 issues)</span>
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✗ Special Characters <span style="color: #6b7280;">(1 issues)</span>
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✓ Numeric Strings <span style="color: #6b7280;">(0 issues)</span>
+                </span>
+
+            </div>
+        </div>
+
+
+        <div class="issue">
+            <div class="issue-type">⚠️ Case Duplicates</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>1</strong> (0.0%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                [('place du général de gaulle', ['Place du Général de Gaulle', 'Place Du Général De Gaulle'])]
+            </div>
+
+        </div>
+
+        <div class="issue">
+            <div class="issue-type">⚠️ Special Characters</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>3,690</strong> (36.9%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                ['Camille Groult - Guy Môquet', "Gare d'Austerlitz - Pont Charles de Gaulle"]
+            </div>
+
+            <div class="examples">
+                <strong>Special characters found:</strong> ë, ç, ü, è, ', ô, /, û, é, â
+            </div>
+
+        </div>
+
+        </div>
+    </div>
+
+    <div class="column-card">
+        <div class="collapsible-header" onclick="toggleCollapse('issues-1')" style="margin-bottom: 15px;">
+            <span class="collapse-icon" id="issues-1-icon">▼</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
+                <div class="column-name">dest_station_name</div>
+                <div class="column-type">String</div>
+            </div>
+        </div>
+        <div class="collapsible-content" id="issues-1">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    0 (0.0%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    1,570
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✓ Trailing Spaces <span style="color: #6b7280;">(0 issues)</span>
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✗ Case Duplicates <span style="color: #6b7280;">(1 issues)</span>
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✗ Special Characters <span style="color: #6b7280;">(1 issues)</span>
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    ✓ Numeric Strings <span style="color: #6b7280;">(0 issues)</span>
+                </span>
+
+            </div>
+        </div>
+
+
+        <div class="issue">
+            <div class="issue-type">⚠️ Case Duplicates</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>1</strong> (0.0%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                [('place du général de gaulle', ['Place Du Général De Gaulle', 'Place du Général de Gaulle'])]
+            </div>
+
+        </div>
+
+        <div class="issue">
+            <div class="issue-type">⚠️ Special Characters</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>3,830</strong> (38.3%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                ["Quai de l'Horloge - Pont Neuf", 'Manin - Secrétan']
+            </div>
+
+            <div class="examples">
+                <strong>Special characters found:</strong> î, ê, ç, è, ', ô, à, é, â
+            </div>
+
+        </div>
+
+        </div>
+    </div>
+
+    </section>
+    
+    <section id="metadata" class="tab-content">
+        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="margin-top: 0; color: #1f2937; font-size: 1.3rem;">Table Details</h2>
+
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Type:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">BASE TABLE</span>
+            </div>
+
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 12px;">Audit Information</h3>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Generated:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">2025-10-22T19:02:23.764399</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Duration:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">0.03s</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Sampled:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">Yes</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="footer">
+        <p>Generated by SecureTableAuditor</p>
+    </div>
+</body>
+</html>

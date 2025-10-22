@@ -190,7 +190,12 @@ df = table.limit(1000).to_polars()  # NOW executes query
 **Purpose**: Transform audit results into various output formats
 
 **Key Modules**:
-- `html_export.py`: Generate visual HTML reports
+- `html/` (modular HTML export package):
+  - `export.py`: Main orchestration (75 lines)
+  - `structure.py`: Page structure components (232 lines)
+  - `insights.py`: Column insights rendering (748 lines)
+  - `checks.py`: Quality checks section (181 lines)
+  - `assets.py`: CSS styles and JavaScript (371 lines)
 - `json_export.py`: Export to JSON format
 - `dataframe_export.py`: Convert to Polars DataFrame
 - `summary_export.py`: Generate summary CSV files
@@ -205,6 +210,8 @@ df = table.limit(1000).to_polars()  # NOW executes query
 **Design Pattern**: Strategy pattern (each exporter is interchangeable)
 
 **Mixin Pattern**: `ExporterMixin` provides export methods to `SecureTableAuditor`
+
+**Modular Architecture**: HTML export split into focused modules (~270 lines avg) for better maintainability
 
 ## Data Flow Patterns
 
