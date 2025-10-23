@@ -1,0 +1,3 @@
+table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
+fct_avaibility_part,3877353,10000,true,station_name,String,0,0.0,1458,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place du Général de Gaulle', 'Place Du Général De Gaulle'])]",2025-10-22T20:01:22.056412
+fct_avaibility_part,3877353,10000,true,station_name,String,0,0.0,1458,SPECIAL_CHARACTERS,3847,38.47,"","['Alfred de Vigny - Place du Général Brocard', ""Fabre d'Eglantine - Place de la Nation""]",2025-10-22T20:01:22.056412

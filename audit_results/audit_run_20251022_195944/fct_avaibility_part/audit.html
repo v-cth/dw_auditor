@@ -1,0 +1,2113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Quality Audit Report - fct_avaibility_part</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+
+        :root {
+            --text-main: #000;
+            --text-muted: #666;
+            --border-light: #e5e5e5;
+            --accent: #6606dc;
+            --bg-alt: #fafafa;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 24px;
+            max-width: 1100px;
+            margin-inline: auto;
+            line-height: 1.6;
+        }
+
+        /* Header layout */
+        .report-header {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .report-title {
+            font-size: 2.8rem;
+            font-weight: 400;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+            max-width: 900px;
+            margin: 0;
+        }
+
+        .table-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        .table-tag {
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .meta-line {
+            border-top: 1px solid var(--border-light);
+            padding-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            font-size: 0.9rem;
+        }
+
+        .meta-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .meta-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--accent);
+        }
+
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            border-top: 1px solid var(--border-light);
+            margin-top: 32px;
+            padding-top: 24px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--accent);
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .card .status-warning {
+            color: #d97706;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            margin-top: 32px;
+            gap: 32px;
+        }
+
+        .tab {
+            position: relative;
+            padding: 12px 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            border: none;
+            background: none;
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent);
+        }
+
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+            padding-top: 28px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Tables */
+        .columns-table {
+            margin-top: 16px;
+            background: #fff;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            background: var(--bg-alt);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:nth-child(odd) {
+            background: #fcfcfc;
+        }
+
+        tbody tr:hover {
+            background: #f5f3ff;
+        }
+
+        td {
+            color: var(--text-main);
+            font-weight: 400;
+        }
+
+        /* Column cards */
+        .column-card {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .column-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .column-type {
+            background: var(--bg-alt);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Issues */
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light);
+        }
+
+        .summary.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .summary.warning {
+            border-left: 4px solid #d97706;
+        }
+
+        .summary h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .summary p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .issue {
+            background: #fffbeb;
+            border-left: 3px solid #d97706;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+
+        .issue-type {
+            font-weight: 600;
+            color: #d97706;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .issue-stats {
+            color: var(--text-muted);
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .suggestion {
+            background: #eff6ff;
+            border-left: 3px solid var(--accent);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+
+        .examples {
+            background: var(--bg-alt);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+
+        /* Collapsible */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: var(--bg-alt);
+        }
+
+        .collapse-icon {
+            margin-right: 8px;
+            font-size: 0.9em;
+            transition: transform 0.3s;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            padding: 0 16px 16px 16px;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            padding: 0 16px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+            font-size: 0.9rem;
+        }
+
+    </style>
+    <script>
+
+        function toggleCollapse(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById(id + '-icon');
+
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                content.style.maxHeight = '0';
+                icon.classList.add('collapsed');
+            }
+        }
+
+        // Initialize all collapsible sections as collapsed on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.collapsible-content').forEach(function(element) {
+                // Start collapsed by default
+                element.classList.add('collapsed');
+                element.style.maxHeight = '0';
+            });
+
+            document.querySelectorAll('.collapse-icon').forEach(function(icon) {
+                // Set icons to collapsed state
+                icon.classList.add('collapsed');
+            });
+        });
+
+        // Tab switching logic using data-tab attributes
+        window.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Remove active class from all content sections
+                    contents.forEach(c => c.classList.remove('active'));
+                    // Show the selected tab content using data-tab attribute
+                    document.getElementById(tab.dataset.tab).classList.add('active');
+                });
+            });
+        });
+
+    </script>
+</head>
+<body>
+    <header class="report-header">
+        <div class="report-title">Data Quality Audit Report</div>
+        <div class="table-name">fct_avaibility_part</div>
+        <div class="table-tag">BASE TABLE</div>
+
+        <div class="meta-line">
+            <div class="meta-block">
+                <div class="meta-label">Generated</div>
+                <div class="meta-value">2025-10-22T20:01:22.056412</div>
+            </div>
+            <div class="meta-block">
+                <div class="meta-label">Partitioned By</div>
+                <div class="meta-value">collected_at (TIME)</div>
+            </div>
+            <div class="meta-block">
+                <div class="meta-label">Clustered By</div>
+                <div class="meta-value">station_code</div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <div class="tab active" data-tab="summary">Summary</div>
+        <div class="tab" data-tab="insights">Insights</div>
+        <div class="tab" data-tab="checks">Quality Checks</div>
+        <div class="tab" data-tab="metadata">Metadata</div>
+    </nav>
+    
+    <section id="summary" class="tab-content active">
+        <div class="summary-cards">
+            <div class="card">
+                <h2>3,877,353</h2>
+                <p>Total Rows</p>
+            </div>
+            <div class="card">
+                <h2>10,000</h2>
+                <p>Analyzed Rows</p>
+            </div>
+            <div class="card">
+                <h2>1</h2>
+                <p>Columns Audited</p>
+            </div>
+            <div class="card">
+                <h2 class="status-warning">Issues Found</h2>
+                <p>Status</p>
+            </div>
+        </div>
+    </section>
+
+    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #1f2937;">Column Summary</h2>
+        <p style="color: #666; margin-bottom: 20px;">Basic metrics for all columns in the table</p>
+        <div style="overflow-x: auto;">
+            <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
+                <thead>
+                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
+                        <th style="padding: 12px; text-align: left; font-weight: 600;">Column Name</th>
+                        <th style="padding: 12px; text-align: left; font-weight: 600;">Data Type</th>
+                        <th style="padding: 12px; text-align: center; font-weight: 600;">Status</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null Count</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null %</th>
+                        <th style="padding: 12px; text-align: right; font-weight: 600;">Distinct Values</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">station_code</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,461</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: #fef2f2;">
+                        <td style="padding: 10px; font-weight: 500;">station_name</td>
+                        <td style="padding: 10px; color: #6b7280;">String</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">ERROR</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,458</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">capacity</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">66</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">docks_available</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">72</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">mechanical</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">65</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">ebike</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">34</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">duedate</td>
+                        <td style="padding: 10px; color: #6b7280;">TIMESTAMP</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">NOT LOADED</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">N/A</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">bikes_available</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">69</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">rate_bike_available</td>
+                        <td style="padding: 10px; color: #6b7280;">Float64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,010</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">rate_dock_available</td>
+                        <td style="padding: 10px; color: #6b7280;">Float64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">1,029</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">bikes_out_of_order</td>
+                        <td style="padding: 10px; color: #6b7280;">Int64</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">40</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">collected_at</td>
+                        <td style="padding: 10px; color: #6b7280;">Datetime(time_unit='ns', time_zone=None)</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">OK</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">2,625</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #e5e7eb; background: white;">
+                        <td style="padding: 10px; font-weight: 500;">rounded_collected_at</td>
+                        <td style="padding: 10px; color: #6b7280;">Datetime(time_unit='ns', time_zone=None)</td>
+                        <td style="padding: 10px; text-align: center;"><span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">OK</span></td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">0</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 10px; text-align: right; color: #6b7280;">2,625</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    </section>
+    
+    <section id="insights" class="tab-content">
+        
+    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <h2 style="margin-top: 0; color: #1f2937;">Column Insights</h2>
+        <p style="color: #666; margin-bottom: 20px;">Data profiling and distribution analysis</p>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-0')">
+                <span class="collapse-icon" id="insights-0-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">station_code</h3>
+            </div>
+            <div class="collapsible-content" id="insights-0">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="46001.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>46001.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="18039.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>18039.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16%, #f3f4f6 0.16%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="16043.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>16043.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(16)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="15110.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>15110.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="41602.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>41602.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 11.029920775324975%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 17.583262825936465%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 23.081740964980714%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 19.610040766094915%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 1,001.0</div>
+
+                        <div style="position: absolute; top: 45px; left: 19.610040766094915%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 18,847.5</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 92,008.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 14.30659180063072%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Q1/Median: 11,039.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 23.081740964980714%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 22,007.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-1')">
+                <span class="collapse-icon" id="insights-1-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">station_name</h3>
+            </div>
+            <div class="collapsible-content" id="insights-1">
+
+                <div style="margin-bottom: 20px;">
+                    <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                        <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            Trailing Spaces (0 issues)
+                        </span>
+
+                        <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            Case Duplicates (1 issues)
+                        </span>
+
+                        <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            Special Characters (1 issues)
+                        </span>
+
+                        <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                            Numeric Strings (0 issues)
+                        </span>
+
+                    </div>
+                </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place Paul Eluard">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place Paul Eluard</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Jardins d'Eole">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Jardins d'Eole</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16999999999999998%, #f3f4f6 0.16999999999999998%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place de la Gare">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place de la Gare</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(17)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.16%, #f3f4f6 0.16%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place de Passy">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place de Passy</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.2%</span>
+                        <span style="float: right; color: #6b7280;">(16)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.15%, #f3f4f6 0.15%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place Nelson Mandela">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place Nelson Mandela</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(15)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Belleville - Couronnes">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Belleville - Couronnes</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place Charles Digeon">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place Charles Digeon</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Saint-Bon - Rivoli">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Saint-Bon - Rivoli</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Place Robert Guillemard">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Place Robert Guillemard</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 0.13999999999999999%, #f3f4f6 0.13999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="Verdun - Carnot">
+                        <span style="font-weight: 500; color: #1f2937;"><code>Verdun - Carnot</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">0.1%</span>
+                        <span style="float: right; color: #6b7280;">(14)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 10px;">
+                <span style="color: #6b7280; font-size: 0.9em; margin-right: 8px;">Length:</span>
+<span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">min:</span> <span style="font-weight: 600; color: #667eea;">6</span></span><span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">max:</span> <span style="font-weight: 600; color: #667eea;">50</span></span><span style="display: inline-block; background: #f3f4f6; color: #4b5563; padding: 4px 12px; border-radius: 16px; font-size: 0.85em; margin-right: 6px;"><span style="color: #9ca3af; text-transform: uppercase; font-size: 0.8em;">avg:</span> <span style="font-weight: 600; color: #667eea;">23.89</span></span>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-2')">
+                <span class="collapse-icon" id="insights-2-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">capacity</h3>
+            </div>
+            <div class="collapsible-content" id="insights-2">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 6.21%, #f3f4f6 6.21%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="30.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>30.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">6.2%</span>
+                        <span style="float: right; color: #6b7280;">(621)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 5.72%, #f3f4f6 5.72%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="20.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>20.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">5.7%</span>
+                        <span style="float: right; color: #6b7280;">(572)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 4.75%, #f3f4f6 4.75%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="28.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>28.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.8%</span>
+                        <span style="float: right; color: #6b7280;">(475)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 4.43%, #f3f4f6 4.43%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="25.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>25.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(443)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 4.390000000000001%, #f3f4f6 4.390000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="24.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>24.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(439)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 21.428571428571427%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 31.428571428571427%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 42.857142857142854%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 34.141285714285715%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 8.0</div>
+
+                        <div style="position: absolute; top: 55px; left: 34.141285714285715%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 31.9</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 78.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 21.428571428571427%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q1: 23.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 31.428571428571427%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Median: 30.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 42.857142857142854%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 38.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-3')">
+                <span class="collapse-icon" id="insights-3-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">docks_available</h3>
+            </div>
+            <div class="collapsible-content" id="insights-3">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 3.81%, #f3f4f6 3.81%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="17.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>17.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">3.8%</span>
+                        <span style="float: right; color: #6b7280;">(381)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 3.7900000000000005%, #f3f4f6 3.7900000000000005%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="19.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>19.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">3.8%</span>
+                        <span style="float: right; color: #6b7280;">(379)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 3.74%, #f3f4f6 3.74%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="16.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>16.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">3.7%</span>
+                        <span style="float: right; color: #6b7280;">(374)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 3.53%, #f3f4f6 3.53%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="18.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>18.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">3.5%</span>
+                        <span style="float: right; color: #6b7280;">(353)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 3.5000000000000004%, #f3f4f6 3.5000000000000004%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="13.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>13.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">3.5%</span>
+                        <span style="float: right; color: #6b7280;">(350)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 13.88888888888889%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 25.0%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 36.11111111111111%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 26.705833333333334%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 0.0</div>
+
+                        <div style="position: absolute; top: 55px; left: 26.705833333333334%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 19.2</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 72.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 13.88888888888889%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q1: 10.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 25.0%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Median: 18.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 36.11111111111111%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 26.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-4')">
+                <span class="collapse-icon" id="insights-4-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">mechanical</h3>
+            </div>
+            <div class="collapsible-content" id="insights-4">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 17.26%, #f3f4f6 17.26%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">17.3%</span>
+                        <span style="float: right; color: #6b7280;">(1,726)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 13.65%, #f3f4f6 13.65%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="1.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>1.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">13.7%</span>
+                        <span style="float: right; color: #6b7280;">(1,365)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 10.07%, #f3f4f6 10.07%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="2.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>2.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">10.1%</span>
+                        <span style="float: right; color: #6b7280;">(1,007)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 7.08%, #f3f4f6 7.08%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="3.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>3.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">7.1%</span>
+                        <span style="float: right; color: #6b7280;">(708)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 5.800000000000001%, #f3f4f6 5.800000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="4.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>4.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">5.8%</span>
+                        <span style="float: right; color: #6b7280;">(580)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 1.4492753623188406%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 5.797101449275362%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 14.492753623188406%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 10.419130434782609%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 0.0</div>
+
+                        <div style="position: absolute; top: 45px; left: 10.419130434782609%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 7.2</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 69.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 3.6231884057971016%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Q1/Median: 1.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 14.492753623188406%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 10.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-5')">
+                <span class="collapse-icon" id="insights-5-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">ebike</h3>
+            </div>
+            <div class="collapsible-content" id="insights-5">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 15.5%, #f3f4f6 15.5%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="2.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>2.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">15.5%</span>
+                        <span style="float: right; color: #6b7280;">(1,550)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 15.42%, #f3f4f6 15.42%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="1.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>1.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">15.4%</span>
+                        <span style="float: right; color: #6b7280;">(1,542)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 13.819999999999999%, #f3f4f6 13.819999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="3.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>3.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">13.8%</span>
+                        <span style="float: right; color: #6b7280;">(1,382)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 11.020000000000001%, #f3f4f6 11.020000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="4.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>4.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">11.0%</span>
+                        <span style="float: right; color: #6b7280;">(1,102)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 8.88%, #f3f4f6 8.88%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">8.9%</span>
+                        <span style="float: right; color: #6b7280;">(888)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 5.263157894736842%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 7.894736842105263%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 15.789473684210526%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 11.441052631578948%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 0.0</div>
+
+                        <div style="position: absolute; top: 45px; left: 11.441052631578948%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 4.3</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 38.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 6.578947368421052%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Q1/Median: 2.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 15.789473684210526%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 6.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-6')">
+                <span class="collapse-icon" id="insights-6-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">bikes_available</h3>
+            </div>
+            <div class="collapsible-content" id="insights-6">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 7.470000000000001%, #f3f4f6 7.470000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="3.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>3.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">7.5%</span>
+                        <span style="float: right; color: #6b7280;">(747)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 7.049999999999999%, #f3f4f6 7.049999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="2.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>2.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">7.0%</span>
+                        <span style="float: right; color: #6b7280;">(705)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 6.8500000000000005%, #f3f4f6 6.8500000000000005%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="4.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>4.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">6.9%</span>
+                        <span style="float: right; color: #6b7280;">(685)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 5.75%, #f3f4f6 5.75%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="1.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>1.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">5.8%</span>
+                        <span style="float: right; color: #6b7280;">(575)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 5.6000000000000005%, #f3f4f6 5.6000000000000005%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="5.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>5.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">5.6%</span>
+                        <span style="float: right; color: #6b7280;">(560)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 5.194805194805195%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 11.688311688311687%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 20.77922077922078%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 14.982857142857142%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 0.0</div>
+
+                        <div style="position: absolute; top: 45px; left: 14.982857142857142%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 11.5</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 77.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 8.441558441558442%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Q1/Median: 4.0</div>
+
+                        <div style="position: absolute; top: 15px; left: 20.77922077922078%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 16.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-7')">
+                <span class="collapse-icon" id="insights-7-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">rate_bike_available</h3>
+            </div>
+            <div class="collapsible-content" id="insights-7">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 2.48%, #f3f4f6 2.48%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">2.5%</span>
+                        <span style="float: right; color: #6b7280;">(248)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.6199999999999999%, #f3f4f6 1.6199999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.5">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.5</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.6%</span>
+                        <span style="float: right; color: #6b7280;">(162)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.55%, #f3f4f6 1.55%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.2">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.2</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.6%</span>
+                        <span style="float: right; color: #6b7280;">(155)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.48%, #f3f4f6 1.48%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.25">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.25</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.5%</span>
+                        <span style="float: right; color: #6b7280;">(148)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.46%, #f3f4f6 1.46%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.3333333333333333">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.3333333333333333</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.5%</span>
+                        <span style="float: right; color: #6b7280;">(146)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 10.0%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 21.7741935483871%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 42.391304347826086%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 27.465000000000007%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 0.0</div>
+
+                        <div style="position: absolute; top: 55px; left: 27.465000000000007%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 0.4</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 1.3</div>
+
+                        <div style="position: absolute; top: 5px; left: 10.0%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q1: 0.1</div>
+
+                        <div style="position: absolute; top: 15px; left: 21.7741935483871%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Median: 0.3</div>
+
+                        <div style="position: absolute; top: 5px; left: 42.391304347826086%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 0.6</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-8')">
+                <span class="collapse-icon" id="insights-8-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">rate_dock_available</h3>
+            </div>
+            <div class="collapsible-content" id="insights-8">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 2.23%, #f3f4f6 2.23%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">2.2%</span>
+                        <span style="float: right; color: #6b7280;">(223)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.87%, #f3f4f6 1.87%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.5">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.5</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.9%</span>
+                        <span style="float: right; color: #6b7280;">(187)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.83%, #f3f4f6 1.83%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.8">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.8</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.8%</span>
+                        <span style="float: right; color: #6b7280;">(183)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.58%, #f3f4f6 1.58%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.6666666666666666">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.6666666666666666</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.6%</span>
+                        <span style="float: right; color: #6b7280;">(158)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 1.38%, #f3f4f6 1.38%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.75">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.75</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.4%</span>
+                        <span style="float: right; color: #6b7280;">(138)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 38.12709030100334%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 64.95726495726495%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 81.19658119658119%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 58.110769230769236%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: 0.0</div>
+
+                        <div style="position: absolute; top: 55px; left: 58.110769230769236%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 0.6</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 1.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 38.12709030100334%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q1: 0.4</div>
+
+                        <div style="position: absolute; top: 5px; left: 64.95726495726495%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Median: 0.7</div>
+
+                        <div style="position: absolute; top: 15px; left: 81.19658119658119%; transform: translateX(-50%); font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Q3: 0.8</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-9')">
+                <span class="collapse-icon" id="insights-9-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">bikes_out_of_order</h3>
+            </div>
+            <div class="collapsible-content" id="insights-9">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Top Values:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #60a5fa 0%, #60a5fa 41.44%, #f3f4f6 41.44%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="0.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>0.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">41.4%</span>
+                        <span style="float: right; color: #6b7280;">(4,144)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #60a5fa 0%, #60a5fa 30.2%, #f3f4f6 30.2%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="1.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>1.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">30.2%</span>
+                        <span style="float: right; color: #6b7280;">(3,020)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 15.47%, #f3f4f6 15.47%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="2.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>2.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">15.5%</span>
+                        <span style="float: right; color: #6b7280;">(1,547)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 6.74%, #f3f4f6 6.74%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="3.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>3.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">6.7%</span>
+                        <span style="float: right; color: #6b7280;">(674)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #93c5fd 0%, #93c5fd 2.8400000000000003%, #f3f4f6 2.8400000000000003%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;"
+                         title="4.0">
+                        <span style="font-weight: 500; color: #1f2937;"><code>4.0</code></span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">2.8%</span>
+                        <span style="float: right; color: #6b7280;">(284)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Distribution Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 70px; margin: 10px 0; overflow: hidden;">
+                        <!-- Range bar -->
+                        <div style="position: absolute; top: 30px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #e0e7ff 0%, #c7d2fe 25%, #a5b4fc 50%, #818cf8 75%, #6366f1 100%); border-radius: 4px;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 26.08695652173913%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 28.26086956521739%; width: 3px; height: 18px; background: #4338ca; font-weight: bold;"></div>
+
+                        <div style="position: absolute; top: 25px; left: 30.434782608695656%; width: 2px; height: 18px; background: #4f46e5; opacity: 0.7;"></div>
+
+                        <div style="position: absolute; top: 28px; left: 28.55195652173913%; width: 8px; height: 8px; background: #f59e0b; border: 2px solid white; border-radius: 50%; transform: translateX(-50%);"></div>
+
+                        <div style="position: absolute; top: 55px; left: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Min: -12.0</div>
+
+                        <div style="position: absolute; top: 55px; left: 28.55195652173913%; transform: translateX(-50%); font-size: 0.7em; color: #f59e0b; font-weight: 600; white-space: nowrap;">μ: 1.1</div>
+
+                        <div style="position: absolute; top: 55px; right: 0%; font-size: 0.7em; color: #6b7280; font-weight: 600; white-space: nowrap;">Max: 34.0</div>
+
+                        <div style="position: absolute; top: 5px; left: 28.26086956521739%; transform: translateX(-50%); font-size: 0.7em; color: #4338ca; font-weight: 600; white-space: nowrap;">Q1/Median/Q3: 0.0</div>
+
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-10')">
+                <span class="collapse-icon" id="insights-10-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">collected_at</h3>
+            </div>
+            <div class="collapsible-content" id="insights-10">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Date Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 50px; margin: 5px 0; overflow: hidden;">
+                        <!-- Timeline bar -->
+                        <div style="position: absolute; top: 20px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #dbeafe 0%, #93c5fd 25%, #60a5fa 50%, #3b82f6 75%, #2563eb 100%); border-radius: 4px;"></div>
+
+                        <!-- Start marker -->
+                        <div style="position: absolute; top: 15px; left: 0%; width: 3px; height: 18px; background: #1e40af;"></div>
+
+                        <!-- End marker -->
+                        <div style="position: absolute; top: 15px; right: 0%; width: 3px; height: 18px; background: #1e40af;"></div>
+
+                        <!-- Start date label -->
+                        <div style="position: absolute; top: 35px; left: 0%; font-size: 0.7em; color: #1e40af; font-weight: 600; white-space: nowrap;">2025-07-01 00:06:03</div>
+
+                        <!-- Duration label (center) -->
+                        <div style="position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 0.75em; color: #6b7280; font-weight: 600; background: white; padding: 0 8px; border-radius: 3px; border: 1px solid #e5e7eb;">113 days</div>
+
+                        <!-- End date label -->
+                        <div style="position: absolute; top: 35px; right: 0%; font-size: 0.7em; color: #1e40af; font-weight: 600; white-space: nowrap;">2025-10-22 02:06:09</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <div style="background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #e5e7eb; display: inline-flex; align-items: center; gap: 8px;">
+                    <span style="color: #6b7280; font-size: 0.8em; font-weight: 600;">Timezone:</span>
+                    <span style="color: #1f2937; font-size: 0.85em; font-weight: 500;">Timezone-naive</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Dates:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.1199999999999999%, #f3f4f6 1.1199999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-09-27</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.1%</span>
+                        <span style="float: right; color: #6b7280;">(112)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.11%, #f3f4f6 1.11%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-09-30</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.1%</span>
+                        <span style="float: right; color: #6b7280;">(111)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.0999999999999999%, #f3f4f6 1.0999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-07-27</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.1%</span>
+                        <span style="float: right; color: #6b7280;">(110)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.03%, #f3f4f6 1.03%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-08-31</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.0%</span>
+                        <span style="float: right; color: #6b7280;">(103)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.03%, #f3f4f6 1.03%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-08-16</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.0%</span>
+                        <span style="float: right; color: #6b7280;">(103)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Days of Week:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.74%, #f3f4f6 14.74%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Tuesday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.7%</span>
+                        <span style="float: right; color: #6b7280;">(1,474)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.719999999999999%, #f3f4f6 14.719999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Saturday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.7%</span>
+                        <span style="float: right; color: #6b7280;">(1,472)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.469999999999999%, #f3f4f6 14.469999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Friday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.5%</span>
+                        <span style="float: right; color: #6b7280;">(1,447)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.430000000000001%, #f3f4f6 14.430000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Wednesday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.4%</span>
+                        <span style="float: right; color: #6b7280;">(1,443)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.19%, #f3f4f6 14.19%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Sunday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.2%</span>
+                        <span style="float: right; color: #6b7280;">(1,419)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 13.850000000000001%, #f3f4f6 13.850000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Thursday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">13.9%</span>
+                        <span style="float: right; color: #6b7280;">(1,385)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 13.600000000000001%, #f3f4f6 13.600000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Monday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">13.6%</span>
+                        <span style="float: right; color: #6b7280;">(1,360)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Hours:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.45%, #f3f4f6 4.45%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">22:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.5%</span>
+                        <span style="float: right; color: #6b7280;">(445)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.45%, #f3f4f6 4.45%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">06:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.5%</span>
+                        <span style="float: right; color: #6b7280;">(445)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.43%, #f3f4f6 4.43%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">10:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(443)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.390000000000001%, #f3f4f6 4.390000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">01:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(439)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.37%, #f3f4f6 4.37%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">04:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(437)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
+            <div class="collapsible-header" onclick="toggleCollapse('insights-11')">
+                <span class="collapse-icon" id="insights-11-icon">▼</span>
+                <h3 style="margin: 0; color: #4b5563;">rounded_collected_at</h3>
+            </div>
+            <div class="collapsible-content" id="insights-11">
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Date Range:</h4>
+                <div style="background: white; padding: 12px; border-radius: 6px; border: 1px solid #e5e7eb;">
+                    <div style="position: relative; height: 50px; margin: 5px 0; overflow: hidden;">
+                        <!-- Timeline bar -->
+                        <div style="position: absolute; top: 20px; left: 0; right: 0; height: 8px; background: linear-gradient(to right, #dbeafe 0%, #93c5fd 25%, #60a5fa 50%, #3b82f6 75%, #2563eb 100%); border-radius: 4px;"></div>
+
+                        <!-- Start marker -->
+                        <div style="position: absolute; top: 15px; left: 0%; width: 3px; height: 18px; background: #1e40af;"></div>
+
+                        <!-- End marker -->
+                        <div style="position: absolute; top: 15px; right: 0%; width: 3px; height: 18px; background: #1e40af;"></div>
+
+                        <!-- Start date label -->
+                        <div style="position: absolute; top: 35px; left: 0%; font-size: 0.7em; color: #1e40af; font-weight: 600; white-space: nowrap;">2025-07-01 00:00:00</div>
+
+                        <!-- Duration label (center) -->
+                        <div style="position: absolute; top: 2px; left: 50%; transform: translateX(-50%); font-size: 0.75em; color: #6b7280; font-weight: 600; background: white; padding: 0 8px; border-radius: 3px; border: 1px solid #e5e7eb;">113 days</div>
+
+                        <!-- End date label -->
+                        <div style="position: absolute; top: 35px; right: 0%; font-size: 0.7em; color: #1e40af; font-weight: 600; white-space: nowrap;">2025-10-22 02:00:00</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <div style="background: white; padding: 8px 12px; border-radius: 6px; border: 1px solid #e5e7eb; display: inline-flex; align-items: center; gap: 8px;">
+                    <span style="color: #6b7280; font-size: 0.8em; font-weight: 600;">Timezone:</span>
+                    <span style="color: #1f2937; font-size: 0.85em; font-weight: 500;">Timezone-naive</span>
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Dates:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.1199999999999999%, #f3f4f6 1.1199999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-09-27</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.1%</span>
+                        <span style="float: right; color: #6b7280;">(112)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.11%, #f3f4f6 1.11%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-09-30</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.1%</span>
+                        <span style="float: right; color: #6b7280;">(111)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.0999999999999999%, #f3f4f6 1.0999999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-07-27</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.1%</span>
+                        <span style="float: right; color: #6b7280;">(110)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.03%, #f3f4f6 1.03%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-08-31</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.0%</span>
+                        <span style="float: right; color: #6b7280;">(103)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #6ee7b7 0%, #6ee7b7 1.03%, #f3f4f6 1.03%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">2025-08-16</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">1.0%</span>
+                        <span style="float: right; color: #6b7280;">(103)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Days of Week:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.74%, #f3f4f6 14.74%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Tuesday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.7%</span>
+                        <span style="float: right; color: #6b7280;">(1,474)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.719999999999999%, #f3f4f6 14.719999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Saturday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.7%</span>
+                        <span style="float: right; color: #6b7280;">(1,472)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.469999999999999%, #f3f4f6 14.469999999999999%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Friday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.5%</span>
+                        <span style="float: right; color: #6b7280;">(1,447)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.430000000000001%, #f3f4f6 14.430000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Wednesday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.4%</span>
+                        <span style="float: right; color: #6b7280;">(1,443)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 14.19%, #f3f4f6 14.19%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Sunday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">14.2%</span>
+                        <span style="float: right; color: #6b7280;">(1,419)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 13.850000000000001%, #f3f4f6 13.850000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Thursday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">13.9%</span>
+                        <span style="float: right; color: #6b7280;">(1,385)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #c4b5fd 0%, #c4b5fd 13.600000000000001%, #f3f4f6 13.600000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">Monday</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">13.6%</span>
+                        <span style="float: right; color: #6b7280;">(1,360)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Hours:</h4>
+                <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.45%, #f3f4f6 4.45%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">06:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.5%</span>
+                        <span style="float: right; color: #6b7280;">(445)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.45%, #f3f4f6 4.45%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">22:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.5%</span>
+                        <span style="float: right; color: #6b7280;">(445)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.43%, #f3f4f6 4.43%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">10:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(443)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.390000000000001%, #f3f4f6 4.390000000000001%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">01:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(439)</span>
+                    </div>
+
+                    <div style="background: linear-gradient(to right, #fcd34d 0%, #fcd34d 4.37%, #f3f4f6 4.37%, #f3f4f6 100%);
+                                border-radius: 4px; padding: 6px 10px; margin: 3px 0;
+                                font-size: 0.9em; position: relative; overflow: hidden;">
+                        <span style="font-weight: 500; color: #1f2937;">04:00</span>
+                        <span style="float: right; font-weight: bold; color: #1f2937; margin-left: 8px;">4.4%</span>
+                        <span style="float: right; color: #6b7280;">(437)</span>
+                    </div>
+
+                </div>
+            </div>
+
+            </div>
+        </div>
+
+    </div>
+
+    </section>
+    
+    <section id="checks" class="tab-content">
+        
+    <div class="summary warning">
+        <h2>Quality Check Results</h2>
+        <p><strong>4</strong> check(s) performed: <strong style="color: #10b981;">2 passed</strong>, <strong style="color: #ef4444;">2 failed</strong> (2 total issues)</p>
+    </div>
+
+    <div class="column-card">
+        <div class="collapsible-header" onclick="toggleCollapse('issues-0')" style="margin-bottom: 15px;">
+            <span class="collapse-icon" id="issues-0-icon">▼</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
+                <div class="column-name">station_name</div>
+                <div class="column-type">String</div>
+            </div>
+        </div>
+        <div class="collapsible-content" id="issues-0">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    0 (0.0%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    1,458
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Trailing Spaces (0 issues)
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Case Duplicates (1 issues)
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Special Characters (1 issues)
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Numeric Strings (0 issues)
+                </span>
+
+            </div>
+        </div>
+
+
+        <div class="issue">
+            <div class="issue-type">Case Duplicates</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>1</strong> (0.0%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                [('place du général de gaulle', ['Place du Général de Gaulle', 'Place Du Général De Gaulle'])]
+            </div>
+
+        </div>
+
+        <div class="issue">
+            <div class="issue-type">Special Characters</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>3,847</strong> (38.5%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                ['Alfred de Vigny - Place du Général Brocard', "Fabre d'Eglantine - Place de la Nation"]
+            </div>
+
+            <div class="examples">
+                <strong>Special characters found:</strong> ë, ô, û, é, â, ', î, ç, è
+            </div>
+
+        </div>
+
+        </div>
+    </div>
+
+    </section>
+    
+    <section id="metadata" class="tab-content">
+        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="margin-top: 0; color: #1f2937; font-size: 1.3rem;">Table Details</h2>
+
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Type:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">BASE TABLE</span>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Partitioned By:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">collected_at (TIME)</span>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Clustered By:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">station_code</span>
+            </div>
+
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 12px;">Audit Information</h3>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Generated:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">2025-10-22T20:01:22.056412</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Duration:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">0.07s</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Sampled:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">Yes</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="footer">
+        <p>Generated by SecureTableAuditor</p>
+    </div>
+</body>
+</html>

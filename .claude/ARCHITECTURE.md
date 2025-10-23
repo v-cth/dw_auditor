@@ -267,34 +267,28 @@ df = table_expr.to_polars()
 - Generate statistics
 - User can configure level of detail
 
-### Pattern 4: HTML Generation with Inline CSS
+### Pattern 4: Modular HTML Generation
 
-**Problem**: HTML reports must be portable (single file, no external dependencies)
+**Problem**: Large HTML generation file (1,558 lines) difficult to maintain
 
-**Solution**: Generate HTML with all CSS inline using f-strings
+**Solution**: Split into focused modules with single responsibilities
 
-```python
-def _render_numeric_insights(insights, thousand_separator, decimal_places):
-    html = f"""
-    <div style="background: white; padding: 12px; border-radius: 6px;">
-        <div style="position: relative; height: 70px;">
-            <div style="position: absolute; top: 30px; left: 0; right: 0;
-                        height: 8px; background: linear-gradient(...); ">
-            </div>
-            <div style="position: absolute; top: 35px; left: {pos}%;">
-                {label}
-            </div>
-        </div>
-    </div>
-    """
-    return html
+**Structure**:
+```
+exporters/html/
+├── __init__.py           # Public API (export_to_html)
+├── export.py             # Orchestration (assembles report)
+├── structure.py          # Header, summary cards, metadata
+├── insights.py           # Column profiling visualizations
+├── checks.py             # Quality check results
+└── assets.py             # CSS styles and JavaScript
 ```
 
 **Benefits**:
-- Single file portability
-- No build step
-- No CSS framework dependencies
-- Easy to modify in code
+- Each file ~200-750 lines (manageable)
+- Easy to locate and modify specific sections
+- Backward compatible via __init__.py export
+- Clear separation of concerns
 
 ## Module Interactions
 
@@ -338,15 +332,15 @@ audit.py (CLI entry point)
         │     └─→ Return structured results dict
         │
         ├─→ ExporterMixin.export_results_to_html()
-        │     └─→ html_export.export_to_html()
-        │           ├─→ _generate_header()
-        │           ├─→ _generate_metadata_cards()
-        │           ├─→ _generate_column_summary_table()
-        │           ├─→ _generate_column_insights()
-        │           │     ├─→ _render_string_insights()
-        │           │     ├─→ _render_numeric_insights()
-        │           │     └─→ _render_datetime_insights()
-        │           └─→ _generate_issues_section()
+        │     └─→ html.export_to_html()
+        │           ├─→ structure._generate_header()
+        │           ├─→ structure._generate_metadata_cards()
+        │           ├─→ insights._generate_column_summary_table()
+        │           ├─→ insights._generate_column_insights()
+        │           │     ├─→ insights._render_string_insights()
+        │           │     ├─→ insights._render_numeric_insights()
+        │           │     └─→ insights._render_datetime_insights()
+        │           └─→ checks._generate_issues_section()
         │
         ├─→ ExporterMixin.export_results_to_json()
         │
@@ -492,4 +486,4 @@ All major phases are timed:
 
 ---
 
-**Last Updated**: October 21, 2025
+**Last Updated**: October 23, 2025

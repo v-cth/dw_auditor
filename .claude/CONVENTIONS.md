@@ -90,6 +90,17 @@ module_name/
 └── _internal.py         # Private utilities (prefix with _)
 ```
 
+**Example - HTML Export Module**:
+```
+exporters/html/
+├── __init__.py          # Re-exports: export_to_html
+├── export.py            # Main orchestration (assembles tabs)
+├── structure.py         # Header, summary, metadata components
+├── insights.py          # Column profiling visualizations
+├── checks.py            # Quality check results rendering
+└── assets.py            # CSS styles and JavaScript
+```
+
 ### Import Organization
 ```python
 # 1. Standard library imports
@@ -289,29 +300,26 @@ except:  # BAD: Catches everything including KeyboardInterrupt
 
 ## HTML Report Conventions
 
+### Design Philosophy
+- **Minimalist**: Clean typography, no emojis, focused on data
+- **Inline CSS**: All styles inline for single-file portability
+- **Four-tab structure**: Summary → Insights → Quality Checks → Metadata
+- **Inter font**: Professional, readable sans-serif
+
 ### CSS Styling Patterns
 
-**Color Palette** (use these consistently):
+**Color Palette**:
 ```python
-# Primary colors
-PURPLE_LIGHT = "#e0e7ff"
-PURPLE_MID = "#a5b4fc"
-PURPLE_DARK = "#6366f1"
-
-# Secondary colors
-BLUE_LIGHT = "#dbeafe"
-BLUE_MID = "#60a5fa"
-BLUE_DARK = "#2563eb"
+# Primary accent
+PURPLE_PRIMARY = "#6606dc"   # Main accent color
 
 # Status colors
-GREEN = "#10b981"      # Success, high frequency
-ORANGE = "#f59e0b"     # Warning, mean/average
-RED = "#ef4444"        # Error, issues
+GREEN = "#10b981"            # Success, high frequency
+ORANGE = "#f59e0b"           # Warning, mean/average
+RED = "#ef4444"              # Error, issues
 
-# Neutral colors
+# Neutral grays
 GRAY_50 = "#f9fafb"
-GRAY_200 = "#e5e7eb"
-GRAY_400 = "#9ca3af"
 GRAY_600 = "#4b5563"
 GRAY_800 = "#1f2937"
 ```
@@ -515,4 +523,4 @@ refactor: simplify format_number function
 
 ---
 
-**Last Updated**: October 21, 2025
+**Last Updated**: October 23, 2025

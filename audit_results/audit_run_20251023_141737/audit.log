@@ -1,0 +1,9 @@
+📁 Audit run directory: audit_results/audit_run_20251023_141737
+📝 Logs will be saved to: audit_results/audit_run_20251023_141737/audit.log
+🔍 Full audit mode: Running quality checks and profiling/insights
+
+======================================================================
+💰 Estimating BigQuery scan costs...
+======================================================================
+✅ Connected to BIGQUERY
+   🔍 Estimating query: SELECT station_code, station_name, capacity, docks_available, mechanical, ebike, bikes_available, rate_bike_available, rate_dock_available, bikes_out_of_order, collected_at, rounded_collected_at FROM ...

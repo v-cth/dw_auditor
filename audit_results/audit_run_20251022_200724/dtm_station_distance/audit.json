@@ -1,0 +1,426 @@
+{
+  "table_name": "dtm_station_distance",
+  "total_rows": 2516982,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1566,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3820,
+          "pct": 38.2,
+          "special_chars": [
+            "\u00eb",
+            "\u00e8",
+            "\u00e7",
+            "\u00ee",
+            "\u00f4",
+            "'",
+            "\u00e9",
+            "\u00e2"
+          ],
+          "examples": [
+            "Chanc\u00e9 Milly - Cimeti\u00e8re Communal Sud",
+            "Ventadour - Op\u00e9ra"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Spaces",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Special Characters",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1568,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place du G\u00e9n\u00e9ral de Gaulle",
+                "Place Du G\u00e9n\u00e9ral De Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3783,
+          "pct": 37.830000000000005,
+          "special_chars": [
+            "\u00e8",
+            "\u00c9",
+            "\u00ef",
+            "\u00e7",
+            "\u00f4",
+            "'",
+            "\u00e9",
+            "\u00fb",
+            "\u00e2",
+            "\u00e0"
+          ],
+          "examples": [
+            "Ancien Canal - H\u00e9l\u00e8ne Brion",
+            "Manin - Carri\u00e8res d'Am\u00e9rique"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Spaces",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Special Characters",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "origin_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1583,
+      "status": "NOT_CHECKED"
+    },
+    "origin_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1566,
+      "status": "ERROR"
+    },
+    "dest_station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1585,
+      "status": "NOT_CHECKED"
+    },
+    "dest_station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1568,
+      "status": "ERROR"
+    },
+    "distance_meters": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9980,
+      "status": "NOT_CHECKED"
+    }
+  },
+  "column_insights": {
+    "origin_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 19080.501,
+      "median": 17015.0,
+      "quantiles": {
+        "p25": 11043.0,
+        "p50": 17015.0,
+        "p75": 22209.0
+      },
+      "top_values": [
+        {
+          "value": 21402.0,
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": 19115.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 21014.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 20121.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": 42028.0,
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ]
+    },
+    "origin_station_name": {
+      "top_values": [
+        {
+          "value": "Verdun - Carnot",
+          "count": 20,
+          "percentage": 0.2
+        },
+        {
+          "value": "Evariste Galois",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Place de la Gare",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Place Aim\u00e9 C\u00e9saire",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Rocher - Laborde",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Porte de la Villette",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Ch\u00e2teau - R\u00e9publique",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Boyer - M\u00e9nilmontant",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Square Bela Bartok",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        },
+        {
+          "value": "Place Nelson Mandela",
+          "count": 14,
+          "percentage": 0.13999999999999999
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.79
+      }
+    },
+    "dest_station_code": {
+      "min": 1001.0,
+      "max": 92008.0,
+      "mean": 19140.8624,
+      "median": 17005.0,
+      "quantiles": {
+        "p25": 11043.0,
+        "p50": 17005.0,
+        "p75": 22401.0
+      },
+      "top_values": [
+        {
+          "value": 21108.0,
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": 27008.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 17011.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 15008.0,
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": 18012.0,
+          "count": 15,
+          "percentage": 0.15
+        }
+      ]
+    },
+    "dest_station_name": {
+      "top_values": [
+        {
+          "value": "Verdun - Carnot",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "R\u00e9aumur - Montmartre",
+          "count": 18,
+          "percentage": 0.18
+        },
+        {
+          "value": "Mairie de Clichy",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Les Plan\u00e8tes",
+          "count": 16,
+          "percentage": 0.16
+        },
+        {
+          "value": "Labouret - Saint-Denis",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "S\u00e8vres - Lecourbe",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Stephenson - Doudeauville",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Fragonard - Porte de Clichy",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Evariste Galois",
+          "count": 15,
+          "percentage": 0.15
+        },
+        {
+          "value": "Rocher - Laborde",
+          "count": 15,
+          "percentage": 0.15
+        }
+      ],
+      "length_stats": {
+        "min": 6,
+        "max": 58,
+        "avg": 23.99
+      }
+    },
+    "distance_meters": {
+      "min": 28.248978359926618,
+      "max": 23324.16716251242,
+      "mean": 6957.8746,
+      "median": 6493.014494345543,
+      "quantiles": {
+        "p25": 4104.367242180844,
+        "p50": 6495.098217307612,
+        "p75": 9274.472550282853
+      },
+      "top_values": [
+        {
+          "value": 6575.551510814278,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 2247.2902787897415,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 4626.4252089779175,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 10335.530228077081,
+          "count": 2,
+          "percentage": 0.02
+        },
+        {
+          "value": 7833.9471695727725,
+          "count": 2,
+          "percentage": 0.02
+        }
+      ]
+    }
+  },
+  "timestamp": "2025-10-22T20:08:31.558721",
+  "start_time": "2025-10-22T20:08:31.558721",
+  "check_durations": {
+    "string_checks": 0.020271
+  },
+  "end_time": "2025-10-22T20:08:31.590471",
+  "duration_seconds": 0.03,
+  "table_metadata": {
+    "table_name": "dtm_station_distance",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-22 01:00:56.165000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.dtm_station_distance",
+    "row_count": 2516982
+  },
+  "phase_timings": {
+    "connection": 0.422074,
+    "metadata": 8.930214,
+    "column_selection": 2.669666,
+    "data_loading": 3.800515,
+    "audit_checks": 0.032913
+  }
+}

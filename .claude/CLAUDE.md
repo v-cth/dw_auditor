@@ -20,16 +20,16 @@ source audit_env/bin/activate && python audit.py --discover          # Discovery
 ### Key Entry Points
 - **`audit.py`**: Main CLI script - starts here for user-facing audits
 - **`dw_auditor/core/auditor.py`**: `SecureTableAuditor` class - core audit logic
-- **`dw_auditor/exporters/html_export.py`**: HTML report generation - most active development area
+- **`dw_auditor/exporters/html/`**: HTML report generation (modular package with 5 files)
 
 ### Recent Development Focus
 
-**Current Sprint** (October 2025):
-1. ✅ Migrated from pandas to Ibis for direct database queries
-2. ✅ Added visual distribution ranges for numeric columns (gradient bars with Q1/Median/Q3/Mean markers)
-3. ✅ Implemented visual timeline bars for date ranges
-4. ✅ Added configurable number formatting (thousand separator + decimal places)
-5. 🔄 Working on: Label positioning system for distribution visualizations
+**Completed** (October 2025):
+1. ✅ Modularized HTML export (1,558 lines → 5 focused modules)
+2. ✅ Minimalist redesign: 4-tab structure, no emojis, cleaner UI
+3. ✅ Visual distribution ranges for numeric columns (gradient bars)
+4. ✅ Visual timeline bars for date ranges
+5. ✅ Configurable number formatting (thousand separator + decimal places)
 
 ## Architecture Philosophy
 
@@ -77,15 +77,16 @@ audit.py
 - **HTML generation**: f-strings with triple-quoted strings for readability
 
 ### HTML Report Conventions
+- **Minimalist design**: Clean typography, no emojis, Inter font
+- **Four-tab structure**: Summary → Insights → Quality Checks → Metadata
 - **Inline CSS**: All styles inline (no external files for portability)
-- **Responsive design**: Works without JavaScript (progressive enhancement)
 - **Color palette**:
-  - Purple (`#667eea`, `#6366f1`): Primary (numeric distributions)
-  - Blue (`#3b82f6`, `#2563eb`): Secondary (date timelines)
+  - Purple (`#6606dc`): Primary accent
   - Green (`#10b981`): Success/high frequency
   - Orange (`#f59e0b`): Mean/average markers
-  - Gray (`#6b7280`, `#4b5563`): Labels and text
-- **Visual elements**: Use CSS gradients and absolute positioning for charts
+  - Red (`#ef4444`): Errors/issues
+  - Gray (`#4b5563`, `#1f2937`): Text and labels
+- **Visual elements**: CSS gradients and absolute positioning for charts
 
 ## Configuration (`audit_config.yaml`)
 
@@ -107,7 +108,7 @@ config.column_insights       # Profiling settings
 
 ### Adding a New Visual Element to HTML Reports
 
-1. **Find the renderer function** in `dw_auditor/exporters/html_export.py`:
+1. **Find the renderer function** in `dw_auditor/exporters/html/insights.py`:
    - Numeric: `_render_numeric_insights()`
    - DateTime: `_render_datetime_insights()`
    - String: `_render_string_insights()`
@@ -124,7 +125,7 @@ config.column_insights       # Profiling settings
    ```
 
 3. **Pass config parameters** through the function chain:
-   - Renderer function → `_generate_column_insights()` → `export_to_html()`
+   - Renderer → `_generate_column_insights()` → `export_to_html()` in `export.py`
 
 ### Adding a New Configuration Option
 
@@ -185,22 +186,18 @@ python audit.py
 
 ## Recent Changes (October 2025)
 
-### Distribution Range Visualization
-- Added visual gradient bar showing min/max/Q1/Q2/Q3/mean
-- Implemented smart label combining when quartiles overlap
-- Added vertical label stacking to prevent overflow
-- Configurable formatting via `output.number_format`
+### October 23: Modularization & Minimalist Redesign
+- **Refactored HTML export**: Split 1,558-line file into 5 focused modules
+- **New structure**: `html/` package with `export.py`, `structure.py`, `insights.py`, `checks.py`, `assets.py`
+- **Minimalist design**: Removed all emojis, cleaner UI, professional typography
+- **Four tabs**: Summary (with column summary) → Insights → Quality Checks → Metadata
+- **Layout refinements**: Duration moved to Metadata tab
 
-### Date Range Visualization
-- Replaced text-based date ranges with visual timeline bars
-- Blue gradient with start/end markers
-- Duration badge floats above timeline
-- Compact timezone display with emoji icons
-
-### Number Formatting
-- User-configurable thousand separator (`,` or ` ` or `_`)
-- Configurable decimal places (0, 1, 2, etc.)
-- Applied consistently across all numeric displays
+### October 19-21: Visual Enhancements
+- Visual gradient bars for numeric distributions (min/max/Q1/Q2/Q3/mean)
+- Timeline bars for date ranges with duration badges
+- Configurable number formatting (thousand separator, decimal places)
+- Smart label combining and vertical stacking to prevent overlap
 
 ## Getting Help
 
@@ -218,5 +215,5 @@ python audit.py
 
 ---
 
-**Last Updated**: October 21, 2025
+**Last Updated**: October 23, 2025
 **Maintained for**: Claude Code (AI pair programming assistant)

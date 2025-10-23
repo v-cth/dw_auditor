@@ -655,34 +655,7 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
             </div>
             <div class="collapsible-content" id="{col_id}">
 """
-
-        # Add checks performed section if available
-        col_data = results.get('columns', {}).get(col_name, {})
-        if 'checks_run' in col_data and col_data['checks_run']:
-            html += """
-                <div style="margin-bottom: 20px;">
-                    <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">
-"""
-            for check in col_data['checks_run']:
-                if check['status'] == 'PASSED':
-                    badge_color = '#dcfce7'
-                    text_color = '#166534'
-                else:
-                    badge_color = '#fee2e2'
-                    text_color = '#991b1b'
-
-                html += f"""
-                        <span style="display: inline-block; background: {badge_color}; color: {text_color}; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
-                            {check['name']} ({check['issues_count']} issues)
-                        </span>
-"""
-
-            html += """
-                    </div>
-                </div>
-"""
-
+        
         # Render different insight types
         html += _render_string_insights(insights)
         html += _render_numeric_insights(insights, thousand_separator, decimal_places)

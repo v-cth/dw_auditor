@@ -95,7 +95,7 @@ column_checks:
       future_dates: true
 
   # Per-table, per-column overrides and numeric range validation
-  # tables:
+  tables:
   #   dim_station:
   #     # Skip special chars check for city column (we expect French accents)
   #     city:
@@ -116,11 +116,11 @@ column_checks:
   #       greater_than: -180          # Exclusive: longitude > -180
   #       less_than: 180              # Exclusive: longitude < 180
   #
-  #   fct_avaibility_part:
-  #     available_bikes:
-  #       min: 0                      # No negative bikes
-  #     available_docks:
-  #       greater_than_or_equal: 0    # Same as min: 0
+    fct_avaibility_part:
+      available_bikes:
+        min: 0          
+      available_docks:
+        greater_than_or_equal: 1
 
 # Column Insights Configuration
 # ----------------------------------------------------------------------------
@@ -160,7 +160,7 @@ column_insights:
       # Most common days of week
       most_common_days: 7
       # Most common hours (0-23)
-      most_common_hours: 10
+      most_common_hours: 5
 
   # Per-table, per-column overrides
   # tables:
