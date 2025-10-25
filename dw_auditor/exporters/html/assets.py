@@ -91,9 +91,7 @@ def _generate_css_styles() -> str:
             display: grid;
             grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
             gap: 24px;
-            border-top: 1px solid var(--border-light);
             margin-top: 32px;
-            padding-top: 24px;
         }
 
         .card {
@@ -201,12 +199,12 @@ def _generate_css_styles() -> str:
             letter-spacing: 0.5px;
         }
 
-        tbody tr:nth-child(odd) {
+        tbody tr:nth-child(even) {
             background: #fcfcfc;
         }
 
         tbody tr:hover {
-            background: #f5f3ff;
+            background: #f8f5ff !important;
         }
 
         td {

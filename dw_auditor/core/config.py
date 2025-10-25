@@ -13,6 +13,12 @@ class AuditConfig:
 
     def __init__(self, config_dict: Dict):
         """Initialize from dictionary (parsed from YAML)"""
+        # Audit metadata (optional descriptive information)
+        self.audit_version = config_dict.get('version')
+        self.audit_project = config_dict.get('project')
+        self.audit_description = config_dict.get('description')
+        self.audit_last_modified = config_dict.get('last_modified')
+
         # Database connection
         db_config = config_dict.get('database') or {}
         self.backend = db_config.get('backend')  # 'bigquery' or 'snowflake'
@@ -20,18 +26,19 @@ class AuditConfig:
         self.schema = db_config.get('schema')
 
         # Tables to audit - normalize format
-        # Support both simple list and dict format with primary keys and custom queries
+        # Support both simple list and dict format with primary keys, custom queries, and schemas
         tables_raw = config_dict.get('tables') or []
         self.tables = []
         self.table_primary_keys = {}  # Map of table_name -> primary_key_column(s)
         self.table_queries = {}  # Map of table_name -> custom_query
+        self.table_schemas = {}  # Map of table_name -> schema/dataset
 
         for table_entry in tables_raw:
             if isinstance(table_entry, str):
                 # Simple string format
                 self.tables.append(table_entry)
             elif isinstance(table_entry, dict):
-                # Dictionary format with optional primary_key and query
+                # Dictionary format with optional primary_key, query, and schema
                 table_name = table_entry.get('name')
                 if table_name:
                     self.tables.append(table_name)
@@ -46,6 +53,10 @@ class AuditConfig:
                     custom_query = table_entry.get('query')
                     if custom_query:
                         self.table_queries[table_name] = custom_query
+                    # Store table-specific schema if provided
+                    table_schema = table_entry.get('schema')
+                    if table_schema:
+                        self.table_schemas[table_name] = table_schema
 
         # Table filtering configuration
         table_filters = config_dict.get('table_filters') or {}
@@ -101,6 +112,11 @@ class AuditConfig:
         self.file_prefix = output.get('file_prefix', 'audit')
         self.auto_open_html = output.get('auto_open_html', False)
 
+        # Number formatting for HTML reports
+        number_format = output.get('number_format') or {}
+        self.thousand_separator = number_format.get('thousand_separator', ',')
+        self.decimal_places = number_format.get('decimal_places', 1)
+
         # Column filters (optional)
         filters = config_dict.get('filters') or {}
         self.include_columns = filters.get('include_columns', [])
@@ -137,6 +153,12 @@ class AuditConfig:
             # No insights config - disable insights
             self.column_insights_defaults = {}
             self.column_insights_overrides = {}
+
+        # Relationship detection configuration
+        relationship_detection = config_dict.get('relationship_detection') or {}
+        self.relationship_detection_enabled = relationship_detection.get('enabled', False)
+        self.relationship_confidence_threshold = relationship_detection.get('confidence_threshold', 0.7)
+        self.relationship_min_display_confidence = relationship_detection.get('min_confidence_display', 0.5)
 
     def get_column_checks(self, table_name: str, column_name: str, column_dtype: str) -> Dict:
         """
@@ -225,6 +247,19 @@ class AuditConfig:
                 sampling_config['key_column'] = table_config['key_column']
 
         return sampling_config
+
+    def get_table_schema(self, table_name: str) -> str:
+        """
+        Get schema/dataset for a specific table
+
+        Args:
+            table_name: Name of the table
+
+        Returns:
+            Schema/dataset name (falls back to global schema if not specified)
+        """
+        # Return table-specific schema if defined, otherwise use global schema
+        return self.table_schemas.get(table_name, self.schema)
 
     def should_include_table(self, table_name: str) -> bool:
         """

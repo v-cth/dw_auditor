@@ -1,4 +1,0 @@
-table_name,column_name,data_type,status,null_count,null_pct,distinct_count
-dim_station,station_code,Int64,NOT_CHECKED,0,0.0,1587
-dim_station,station_name,String,ERROR,0,0.0,1570
-dim_station,city,String,ERROR,0,0.0,68

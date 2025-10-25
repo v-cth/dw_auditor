@@ -1,0 +1,296 @@
+{
+  "table_name": "fct_avaibility_part",
+  "total_rows": 3877353,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1459,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place du G\u00e9n\u00e9ral de Gaulle",
+                "Place Du G\u00e9n\u00e9ral De Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 3870,
+          "pct": 38.7,
+          "special_chars": [
+            "'",
+            "\u00ce",
+            "\u00f4",
+            "\u00e2",
+            "\u00eb",
+            "\u00c9",
+            "\u00ea",
+            "\u00e9",
+            "\u00e8"
+          ],
+          "examples": [
+            "Pr\u00e9fecture de Cr\u00e9teil",
+            "Montreuil - R\u00e9publique"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Spaces",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Special Characters",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "bikes_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 69,
+      "issues": [
+        {
+          "type": "VALUE_NOT_GREATER_THAN",
+          "count": 256,
+          "pct": 2.56,
+          "threshold": 0,
+          "operator": ">",
+          "suggestion": "Values should be > 0",
+          "examples": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "type": "DUPLICATE_VALUES",
+          "count": 9931,
+          "pct": 99.31,
+          "distinct_duplicates": 65,
+          "suggestion": "Column should contain only unique values. Found 65 distinct value(s) with duplicates.",
+          "examples": [
+            "2 [count=722]",
+            "3 [count=717]",
+            "4 [count=699]",
+            "5 [count=641]",
+            "6 [count=526]"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Numeric Range (> 0)",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Uniqueness",
+          "status": "FAILED",
+          "issues_count": 1
+        }
+      ]
+    },
+    "collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2619,
+      "issues": [],
+      "checks_run": [
+        {
+          "name": "Timestamp Patterns",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Date Outliers",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Future Dates",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "rounded_collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2619,
+      "issues": [],
+      "checks_run": [
+        {
+          "name": "Timestamp Patterns",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Date Outliers",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Future Dates",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "station_code": {
+      "dtype": "INT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1459,
+      "status": "ERROR"
+    },
+    "capacity": {
+      "dtype": "INT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "docks_available": {
+      "dtype": "INT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "mechanical": {
+      "dtype": "INT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "ebike": {
+      "dtype": "INT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "duedate": {
+      "dtype": "TIMESTAMP",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "bikes_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 69,
+      "status": "ERROR"
+    },
+    "rate_bike_available": {
+      "dtype": "FLOAT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "rate_dock_available": {
+      "dtype": "FLOAT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "bikes_out_of_order": {
+      "dtype": "INT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2619,
+      "status": "OK"
+    },
+    "rounded_collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2619,
+      "status": "OK"
+    }
+  },
+  "column_insights": {},
+  "timestamp": "2025-10-24 09:44:14 UTC",
+  "start_time": "2025-10-24T11:44:14.069961",
+  "check_durations": {
+    "string_checks": 0.036072,
+    "numeric_checks": 0.007313,
+    "date_checks": 0.016416
+  },
+  "end_time": "2025-10-24T11:44:14.129972",
+  "duration_seconds": 0.06,
+  "table_metadata": {
+    "table_name": "fct_avaibility_part",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-22 09:22:21.004000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.fct_avaibility_part",
+    "row_count": 3877353,
+    "partition_column": "collected_at",
+    "partition_type": "TIME",
+    "clustering_columns": [
+      "station_code"
+    ]
+  },
+  "phase_timings": {
+    "connection": 62.89645,
+    "metadata": 9.010954,
+    "column_selection": 2.685103,
+    "data_loading": 3.636909,
+    "audit_checks": 0.06048
+  },
+  "config_metadata": {
+    "version": 1,
+    "project": "Bike Availability Data Quality",
+    "description": "Auditing availability fact table and station dimension for data quality issues",
+    "last_modified": "2025-10-24"
+  }
+}

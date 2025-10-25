@@ -1,0 +1,918 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Quality Audit Report - fct_avaibility_part</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+
+        :root {
+            --text-main: #000;
+            --text-muted: #666;
+            --border-light: #e5e5e5;
+            --accent: #6606dc;
+            --bg-alt: #fafafa;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 24px;
+            max-width: 1100px;
+            margin-inline: auto;
+            line-height: 1.6;
+        }
+
+        /* Header layout */
+        .report-header {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .report-title {
+            font-size: 2.8rem;
+            font-weight: 400;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+            max-width: 900px;
+            margin: 0;
+        }
+
+        .table-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        .table-tag {
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .meta-line {
+            border-top: 1px solid var(--border-light);
+            padding-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            font-size: 0.9rem;
+        }
+
+        .meta-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .meta-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--accent);
+        }
+
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--accent);
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .card .status-warning {
+            color: #d97706;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            margin-top: 32px;
+            gap: 32px;
+        }
+
+        .tab {
+            position: relative;
+            padding: 12px 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            border: none;
+            background: none;
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent);
+        }
+
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+            padding-top: 28px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Tables */
+        .columns-table {
+            margin-top: 16px;
+            background: #fff;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            background: var(--bg-alt);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fcfcfc;
+        }
+
+        tbody tr:hover {
+            background: #f8f5ff !important;
+        }
+
+        td {
+            color: var(--text-main);
+            font-weight: 400;
+        }
+
+        /* Column cards */
+        .column-card {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .column-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .column-type {
+            background: var(--bg-alt);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Issues */
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light);
+        }
+
+        .summary.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .summary.warning {
+            border-left: 4px solid #d97706;
+        }
+
+        .summary h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .summary p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .issue {
+            background: #fffbeb;
+            border-left: 3px solid #d97706;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+
+        .issue-type {
+            font-weight: 600;
+            color: #d97706;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .issue-stats {
+            color: var(--text-muted);
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .suggestion {
+            background: #eff6ff;
+            border-left: 3px solid var(--accent);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+
+        .examples {
+            background: var(--bg-alt);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+
+        /* Collapsible */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: var(--bg-alt);
+        }
+
+        .collapse-icon {
+            margin-right: 8px;
+            font-size: 0.9em;
+            transition: transform 0.3s;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            padding: 0 16px 16px 16px;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            padding: 0 16px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+            font-size: 0.9rem;
+        }
+
+    </style>
+    <script>
+
+        function toggleCollapse(id) {
+            const content = document.getElementById(id);
+            const icon = document.getElementById(id + '-icon');
+
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                content.style.maxHeight = content.scrollHeight + 'px';
+                icon.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                content.style.maxHeight = '0';
+                icon.classList.add('collapsed');
+            }
+        }
+
+        // Initialize all collapsible sections as collapsed on page load
+        window.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.collapsible-content').forEach(function(element) {
+                // Start collapsed by default
+                element.classList.add('collapsed');
+                element.style.maxHeight = '0';
+            });
+
+            document.querySelectorAll('.collapse-icon').forEach(function(icon) {
+                // Set icons to collapsed state
+                icon.classList.add('collapsed');
+            });
+        });
+
+        // Tab switching logic using data-tab attributes
+        window.addEventListener('DOMContentLoaded', function() {
+            const tabs = document.querySelectorAll('.tab');
+            const contents = document.querySelectorAll('.tab-content');
+
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    // Remove active class from all tabs
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+
+                    // Remove active class from all content sections
+                    contents.forEach(c => c.classList.remove('active'));
+                    // Show the selected tab content using data-tab attribute
+                    document.getElementById(tab.dataset.tab).classList.add('active');
+                });
+            });
+        });
+
+    </script>
+</head>
+<body>
+    <header class="report-header">
+        <div class="report-title">Data Quality Audit Report</div>
+        <div class="table-name">fct_avaibility_part</div>
+        <div class="table-tag">BASE TABLE</div>
+
+        <div class="meta-line">
+            <div class="meta-block">
+                <div class="meta-label">Generated</div>
+                <div class="meta-value">2025-10-24 10:56:31 UTC</div>
+            </div>
+            <div class="meta-block">
+                <div class="meta-label">Partitioned By</div>
+                <div class="meta-value">collected_at (TIME)</div>
+            </div>
+            <div class="meta-block">
+                <div class="meta-label">Clustered By</div>
+                <div class="meta-value">station_code</div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <div class="tab active" data-tab="summary">Summary</div>
+        <div class="tab" data-tab="insights">Insights</div>
+        <div class="tab" data-tab="checks">Quality Checks</div>
+        <div class="tab" data-tab="metadata">Metadata</div>
+    </nav>
+    
+    <section id="summary" class="tab-content active">
+        <div class="summary-cards">
+            <div class="card">
+                <h2>3,877,353</h2>
+                <p>Total Rows</p>
+            </div>
+            <div class="card">
+                <h2>10,000</h2>
+                <p>Analyzed Rows</p>
+            </div>
+            <div class="card">
+                <h2>4</h2>
+                <p>Columns Audited</p>
+            </div>
+            <div class="card">
+                <h2 class="status-warning">Issues Found</h2>
+                <p>Status</p>
+            </div>
+        </div>
+
+    <h3 style="font-size: 1.25rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.25rem; color: #000;">Column Summary</h3>
+    <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">Basic metrics for all columns in the table</p>
+    <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); overflow: hidden; margin-bottom: 30px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+            <thead>
+                <tr style="background: #fafafa; border-bottom: 1px solid #eee;">
+                    <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Column Name</th>
+                    <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Data Type</th>
+                    <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Status</th>
+                    <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Null Count</th>
+                    <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Null %</th>
+                    <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Distinct Values</th>
+                </tr>
+            </thead>
+            <tbody>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">station_code</td>
+                        <td style="padding: 12px 16px; color: #222;">INT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">station_name</td>
+                        <td style="padding: 12px 16px; color: #222;">String</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #b91c1c;">Error</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">0</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">1,459</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">capacity</td>
+                        <td style="padding: 12px 16px; color: #222;">INT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">docks_available</td>
+                        <td style="padding: 12px 16px; color: #222;">INT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">mechanical</td>
+                        <td style="padding: 12px 16px; color: #222;">INT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">ebike</td>
+                        <td style="padding: 12px 16px; color: #222;">INT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">duedate</td>
+                        <td style="padding: 12px 16px; color: #222;">TIMESTAMP</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">bikes_available</td>
+                        <td style="padding: 12px 16px; color: #222;">Int64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #b91c1c;">Error</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">0</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">67</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">rate_bike_available</td>
+                        <td style="padding: 12px 16px; color: #222;">FLOAT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">rate_dock_available</td>
+                        <td style="padding: 12px 16px; color: #222;">FLOAT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">bikes_out_of_order</td>
+                        <td style="padding: 12px 16px; color: #222;">INT64</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">N/A</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">N/A</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">collected_at</td>
+                        <td style="padding: 12px 16px; color: #222;">Datetime(time_unit='ns', time_zone=None)</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #166534;">OK</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">0</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">2,608</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: normal;">rounded_collected_at</td>
+                        <td style="padding: 12px 16px; color: #222;">Datetime(time_unit='ns', time_zone=None)</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #166534;">OK</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">0</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #6b7280; font-weight: normal;">0.0%</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">2,608</td>
+                    </tr>
+
+                </tbody>
+            </table>
+    </div>
+
+    </section>
+    
+    <section id="insights" class="tab-content">
+        
+    </section>
+    
+    <section id="checks" class="tab-content">
+        
+    <div class="summary warning">
+        <h2>Quality Check Results</h2>
+        <p><strong>12</strong> check(s) performed: <strong style="color: #10b981;">8 passed</strong>, <strong style="color: #ef4444;">4 failed</strong> (4 total issues)</p>
+    </div>
+
+    <div class="column-card">
+        <div class="collapsible-header" onclick="toggleCollapse('issues-0')" style="margin-bottom: 15px;">
+            <span class="collapse-icon" id="issues-0-icon">▼</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
+                <div class="column-name">station_name</div>
+                <div class="column-type">String</div>
+            </div>
+        </div>
+        <div class="collapsible-content" id="issues-0">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    0 (0.0%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    1,459
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Trailing Spaces (0 issues)
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Case Duplicates (1 issues)
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Special Characters (1 issues)
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Numeric Strings (0 issues)
+                </span>
+
+            </div>
+        </div>
+
+        <div class="issue">
+            <div class="issue-type">Case Duplicates</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>1</strong> (0.0%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                [('place du général de gaulle', ['Place du Général de Gaulle', 'Place Du Général De Gaulle'])]
+            </div>
+
+        </div>
+
+        <div class="issue">
+            <div class="issue-type">Special Characters</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>3,768</strong> (37.7%)
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                ["Place des Droits de l'Enfant", 'Molière - République']
+            </div>
+
+            <div class="examples">
+                <strong>Special characters found:</strong> é, ç, â, ê, î, û, ï, à, ë, è
+            </div>
+
+        </div>
+
+        </div>
+    </div>
+
+    <div class="column-card">
+        <div class="collapsible-header" onclick="toggleCollapse('issues-1')" style="margin-bottom: 15px;">
+            <span class="collapse-icon" id="issues-1-icon">▼</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
+                <div class="column-name">bikes_available</div>
+                <div class="column-type">Int64</div>
+            </div>
+        </div>
+        <div class="collapsible-content" id="issues-1">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    0 (0.0%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    67
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Numeric Range (> 0) (1 issues)
+                </span>
+
+                <span style="display: inline-block; background: #fee2e2; color: #991b1b; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Uniqueness (1 issues)
+                </span>
+
+            </div>
+        </div>
+
+        <div class="issue">
+            <div class="issue-type">Value Not Greater Than</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>252</strong> (2.5%)
+            </div>
+
+            <div class="suggestion">
+                Suggestion: Values should be > 0
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                ['0', '0', '0', '0', '0']
+            </div>
+
+            <div class="issue-stats">
+                <strong>Expected:</strong> value > 0
+            </div>
+
+        </div>
+
+        <div class="issue">
+            <div class="issue-type">Duplicate Values</div>
+
+            <div class="issue-stats">
+                Affected rows: <strong>9,933</strong> (99.3%)
+            </div>
+
+            <div class="suggestion">
+                Suggestion: Column should contain only unique values. Found 62 distinct value(s) with duplicates.
+            </div>
+
+            <div class="examples">
+                <strong>Examples:</strong><br>
+                ['3 [count=721]', '2 [count=708]', '4 [count=667]', '5 [count=591]', '6 [count=568]']
+            </div>
+
+        </div>
+
+        </div>
+    </div>
+
+    <div class="column-card">
+        <div class="collapsible-header" onclick="toggleCollapse('issues-2')" style="margin-bottom: 15px;">
+            <span class="collapse-icon" id="issues-2-icon">▼</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
+                <div class="column-name">collected_at</div>
+                <div class="column-type">Datetime(time_unit='ns', time_zone=None)</div>
+            </div>
+        </div>
+        <div class="collapsible-content" id="issues-2">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    0 (0.0%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    2,608
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Timestamp Patterns (0 issues)
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Date Outliers (0 issues)
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Future Dates (0 issues)
+                </span>
+
+            </div>
+        </div>
+
+        <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; border-radius: 6px; margin-top: 15px;">
+            <div style="color: #065f46; font-weight: 500;">All quality checks passed</div>
+            <div style="color: #047857; font-size: 0.9em; margin-top: 5px;">No data quality issues detected for this column</div>
+        </div>
+
+        </div>
+    </div>
+
+    <div class="column-card">
+        <div class="collapsible-header" onclick="toggleCollapse('issues-3')" style="margin-bottom: 15px;">
+            <span class="collapse-icon" id="issues-3-icon">▼</span>
+            <div style="display: flex; justify-content: space-between; align-items: center; flex: 1;">
+                <div class="column-name">rounded_collected_at</div>
+                <div class="column-type">Datetime(time_unit='ns', time_zone=None)</div>
+            </div>
+        </div>
+        <div class="collapsible-content" id="issues-3">
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px; padding: 15px; background: #f9fafb; border-radius: 6px;">
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Null Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    0 (0.0%)
+                </div>
+            </div>
+            <div>
+                <div style="color: #666; font-size: 0.9em;">Distinct Values</div>
+                <div style="font-size: 1.2em; font-weight: bold; color: #6b7280;">
+                    2,608
+                </div>
+            </div>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <h4 style="color: #4b5563; margin: 0 0 10px 0; font-size: 0.95em;">Checks Performed:</h4>
+            <div style="display: flex; flex-wrap: wrap; gap: 8px;">
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Timestamp Patterns (0 issues)
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Date Outliers (0 issues)
+                </span>
+
+                <span style="display: inline-block; background: #dcfce7; color: #166534; padding: 6px 12px; border-radius: 16px; font-size: 0.85em; font-weight: 500;">
+                    Future Dates (0 issues)
+                </span>
+
+            </div>
+        </div>
+
+        <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 15px; border-radius: 6px; margin-top: 15px;">
+            <div style="color: #065f46; font-weight: 500;">All quality checks passed</div>
+            <div style="color: #047857; font-size: 0.9em; margin-top: 5px;">No data quality issues detected for this column</div>
+        </div>
+
+        </div>
+    </div>
+
+    </section>
+    
+    <section id="metadata" class="tab-content">
+        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+            <h2 style="margin-top: 0; color: #1f2937; font-size: 1.3rem;">Table Details</h2>
+
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Type:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">BASE TABLE</span>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Partitioned By:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">collected_at (TIME)</span>
+            </div>
+
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Clustered By:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">station_code</span>
+            </div>
+
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
+                <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 12px;">Audit Information</h3>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Generated:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">2025-10-24 10:56:31 UTC</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Duration:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">0.06s</span>
+                </div>
+                <div style="margin-bottom: 12px;">
+                    <span style="color: #6b7280; font-size: 0.9em;">Sampled:</span>
+                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">Yes</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="footer">
+        <p>Generated by SecureTableAuditor</p>
+    </div>
+</body>
+</html>

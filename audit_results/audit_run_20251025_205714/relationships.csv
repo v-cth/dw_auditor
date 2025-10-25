@@ -1,0 +1,2 @@
+table1,column1,table2,column2,confidence,relationship_type,matching_values
+fct_avaibility_part,station_name,dim_station,station_name,0.9699363057324841,one-to-many,1452

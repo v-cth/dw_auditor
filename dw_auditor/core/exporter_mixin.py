@@ -93,31 +93,33 @@ class AuditorExporterMixin:
         """
         return export_run_summary_to_dataframe(all_results)
 
-    def export_run_summary_to_json(self, all_results: List[Dict], file_path: Optional[str] = None) -> Dict:
+    def export_run_summary_to_json(self, all_results: List[Dict], file_path: Optional[str] = None, relationships: List[Dict] = None) -> Dict:
         """
         Export run-level summary to JSON
 
         Args:
             all_results: List of audit results dictionaries (one per table)
             file_path: Optional path to save JSON file
+            relationships: Optional list of detected relationships
 
         Returns:
             Dictionary with run summary
         """
-        return export_run_summary_to_json(all_results, file_path)
+        return export_run_summary_to_json(all_results, file_path, relationships)
 
-    def export_run_summary_to_html(self, all_results: List[Dict], file_path: str = "summary.html") -> str:
+    def export_run_summary_to_html(self, all_results: List[Dict], file_path: str = "summary.html", relationships: List[Dict] = None) -> str:
         """
         Export run-level summary to HTML dashboard
 
         Args:
             all_results: List of audit results dictionaries (one per table)
             file_path: Path to save HTML file
+            relationships: Optional list of detected relationships
 
         Returns:
             Path to saved HTML file
         """
-        return export_run_summary_to_html(all_results, file_path)
+        return export_run_summary_to_html(all_results, file_path, relationships)
 
     def export_combined_column_summary_to_dataframe(self, all_results: List[Dict]) -> pl.DataFrame:
         """

@@ -4,6 +4,15 @@
 # This YAML file configures the table auditor behavior, including database
 # connections, sampling, security settings, and output formats.
 
+# Audit Metadata (Optional)
+# ----------------------------------------------------------------------------
+# Descriptive information about this audit configuration
+# These fields will be displayed in the Metadata tab of HTML reports
+version: 1
+project: "Bike Availability Data Quality"
+description: "Auditing availability fact table and station dimension for data quality issues"
+last_modified: "2025-10-24"
+
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
@@ -51,15 +60,25 @@ tables:
   - name: fct_avaibility_part
   - name: dim_station
     primary_key: station_code  # Optional: specify primary key column(s)
-  - name: dtm_station_distance
+    # schema: dbt_prod          # Optional: override dataset/schema for this table
+  # - name: dtm_station_distance
   # - name: transactions
-  #   primary_key: transaction_id 
+  #   primary_key: transaction_id
+  #   schema: dbt_staging       # Optional: audit tables from different datasets
   #   query: "SELECT * FROM transactions LIMIT 3000"
 
 
   # - name: blocks
-  #   primary_key: block_id 
+  #   primary_key: block_id
   #   query: "SELECT * FROM blocks LIMIT 2000"
+
+  # Example: Auditing tables from multiple datasets in one run
+  # - name: raw_customers
+  #   schema: raw_data          # From raw_data dataset
+  # - name: stg_customers
+  #   schema: staging           # From staging dataset
+  # - name: dim_customers
+  #   schema: dbt_prod          # From production dataset
 
 # Option 2: Auto-discover tables and apply filters
 # ----------------------------------------------------------------------------
@@ -113,10 +132,10 @@ column_checks:
   #       case_duplicates: false
   #       special_chars: false  # Skip - French accents are expected
   #
-  #     # Numeric range validation (supports 6 boundary operators)
+  #     # Numeric range validation (supports 4 boundary operators)
   #     capacity:
-  #       min: 1                      # Inclusive: capacity >= 1
-  #       max: 100                    # Inclusive: capacity <= 100
+  #       greater_than_or_equal: 1    # Inclusive: capacity >= 1
+  #       less_than_or_equal: 100     # Inclusive: capacity <= 100
   #       uniqueness: false           # Capacity can have duplicates
   #     latitude:
   #       greater_than_or_equal: -90  # Inclusive: latitude >= -90
@@ -134,6 +153,8 @@ column_checks:
 
 
     dim_station:
+      station_code:
+        uniqueness: true
       capacity:
         less_than: 20
 
@@ -192,6 +213,26 @@ column_insights:
   #     # Detailed date analysis for timestamp columns
   #     last_reported:
   #       most_common_dates: 3
+
+# Relationship Detection
+# ----------------------------------------------------------------------------
+# Automatically detect relationships between tables based on column names,
+# data types, and value overlaps (uses already-loaded Polars DataFrames)
+relationship_detection:
+  # Enable/disable relationship detection (only runs when auditing 2+ tables)
+  enabled: true
+
+  # Minimum confidence score to detect a relationship (0.0 to 1.0)
+  # Higher values = fewer but more confident relationships
+  # Confidence calculation: 40% name similarity + 20% type compatibility + 40% value overlap
+  confidence_threshold: 0.7
+
+  # Minimum confidence score to display in reports (0.0 to 1.0)
+  # Allows detecting high-confidence relationships but showing moderate ones too
+  min_confidence_display: 0.5
+
+  # Note: Uses already-loaded DataFrames from audit (respects sampling.sample_size)
+  # No additional database queries are performed
 
 # Sampling Configuration
 # ----------------------------------------------------------------------------

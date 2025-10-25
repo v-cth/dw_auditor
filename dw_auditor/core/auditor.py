@@ -4,7 +4,7 @@ Main auditor class that coordinates all auditing functionality
 
 import polars as pl
 from typing import Dict, List, Optional, Union
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from ..checks.string_checks import (
@@ -95,7 +95,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         primary_key_columns: Optional[List[str]] = None,
         include_columns: Optional[List[str]] = None,
         exclude_columns: Optional[List[str]] = None,
-        audit_mode: str = 'full'
+        audit_mode: str = 'full',
+        store_dataframe: bool = False
     ) -> List[str]:
         """
         Determine which columns to load based on checks, insights, filters, and mode
@@ -104,6 +105,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             table_schema: Dictionary mapping column names to data types
             table_name: Name of the table being audited
             column_check_config: Optional configuration for column checks and insights
+            store_dataframe: If True, load all columns (for relationship detection)
             primary_key_columns: Optional list of primary key column names (always included)
             include_columns: Optional list of columns to include (if specified, only load these)
             exclude_columns: Optional list of columns to exclude
@@ -112,6 +114,10 @@ class SecureTableAuditor(AuditorExporterMixin):
         Returns:
             List of column names to load (empty list means load all columns)
         """
+        # If storing dataframe for relationship detection, load all columns
+        if store_dataframe:
+            return []
+
         if not table_schema:
             # If we can't get schema, fallback to loading all columns
             return []
@@ -232,7 +238,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         column_check_config: Optional[any] = None,
         sampling_method: str = 'random',
         sampling_key_column: Optional[str] = None,
-        audit_mode: str = 'full'
+        audit_mode: str = 'full',
+        store_dataframe: bool = False
     ) -> Dict:
         """
         Audit table directly from database using Ibis (RECOMMENDED)
@@ -267,6 +274,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                 - 'checks': Run quality checks only, skip insights
                 - 'insights': Run insights only, skip quality checks
                 - 'discover': Skip both (metadata only)
+            store_dataframe: If True, store the Polars DataFrame in results['data']
+                            (used for relationship detection, default: False)
 
         Returns:
             Dictionary with audit results
@@ -382,7 +391,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                         primary_key_columns=primary_key_columns,
                         include_columns=include_columns,
                         exclude_columns=exclude_columns,
-                        audit_mode=audit_mode
+                        audit_mode=audit_mode,
+                        store_dataframe=store_dataframe  # Load all columns if relationship detection is enabled
                     )
 
                     if columns_to_load:
@@ -451,7 +461,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                 primary_key_columns=primary_key_columns,
                 column_check_config=column_check_config,
                 audit_mode=audit_mode,
-                table_schema=table_schema
+                table_schema=table_schema,
+                store_dataframe=store_dataframe
             )
             phase_timings['audit_checks'] = (datetime.now() - phase_start).total_seconds()
 
@@ -515,7 +526,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         primary_key_columns: Optional[List[str]] = None,
         column_check_config: Optional[any] = None,
         audit_mode: str = 'full',
-        table_schema: Optional[Dict[str, str]] = None
+        table_schema: Optional[Dict[str, str]] = None,
+        store_dataframe: bool = False
     ) -> Dict:
         """
         Main audit function - runs all checks on a Polars DataFrame
@@ -533,8 +545,9 @@ class SecureTableAuditor(AuditorExporterMixin):
         Returns:
             Dictionary with audit results
         """
-        # Start timing
+        # Start timing (capture both local and UTC time)
         start_time = datetime.now()
+        start_time_utc = datetime.now(timezone.utc)
 
         # Determine the actual total row count
         # If we have it from the database, use that; otherwise use DataFrame length
@@ -563,7 +576,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             'columns': {},
             'column_summary': {},  # Summary for ALL columns
             'column_insights': {},  # Insights for columns
-            'timestamp': start_time.strftime('%B %d, %Y at %I:%M %p'),
+            'timestamp': start_time_utc.strftime('%Y-%m-%d %H:%M:%S UTC'),
             'start_time': start_time.isoformat()
         }
 
@@ -684,6 +697,10 @@ class SecureTableAuditor(AuditorExporterMixin):
             for check_type, check_duration in results['check_durations'].items():
                 print(f"   • {check_type}: {check_duration:.3f}s")
         print(f"   • Total: {duration:.2f}s\n")
+
+        # Store DataFrame if requested (for relationship detection)
+        if store_dataframe:
+            results['data'] = df
 
         return results
 
@@ -875,12 +892,6 @@ class SecureTableAuditor(AuditorExporterMixin):
             range_params = {}
             range_desc_parts = []
 
-            if 'min' in check_config:
-                range_params['min_val'] = check_config['min']
-                range_desc_parts.append(f">= {check_config['min']}")
-            if 'max' in check_config:
-                range_params['max_val'] = check_config['max']
-                range_desc_parts.append(f"<= {check_config['max']}")
             if 'greater_than' in check_config:
                 range_params['greater_than'] = check_config['greater_than']
                 range_desc_parts.append(f"> {check_config['greater_than']}")

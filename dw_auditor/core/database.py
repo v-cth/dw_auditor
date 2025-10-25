@@ -497,12 +497,15 @@ class DatabaseConnection:
         """
         Get primary key column names from INFORMATION_SCHEMA
 
+        Note: BigQuery primary keys are NOT ENFORCED (metadata only since 2023)
+              Snowflake primary keys can be enforced or not enforced
+
         Args:
             table_name: Name of the table
-            schema: Optional schema name
+            schema: Optional schema name (dataset for BigQuery, schema for Snowflake)
 
         Returns:
-            List of column names that form the primary key
+            List of column names that form the primary key (empty if none declared)
         """
         if self.conn is None:
             self.connect()
@@ -511,8 +514,51 @@ class DatabaseConnection:
 
         try:
             if self.backend == 'bigquery':
-                # BigQuery doesn't enforce primary keys, so we can't get them from INFORMATION_SCHEMA
-                # Return empty list
+                # BigQuery supports primary key declarations (NOT ENFORCED) since 2023
+                # They're stored in INFORMATION_SCHEMA as metadata
+                project_id = self.connection_params.get('project_id')
+                dataset_id = schema or self.connection_params.get('dataset_id')
+
+                if not dataset_id:
+                    return primary_keys
+
+                try:
+                    # Query for primary key constraints
+                    # Note: BigQuery PK constraints are NOT ENFORCED but exist as metadata
+                    constraints_table = f'{project_id}.{dataset_id}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS'
+                    constraints = self.conn.table(constraints_table)
+                    pk_constraints = (
+                        constraints
+                        .filter(
+                            (constraints.table_name == table_name.upper()) &
+                            (constraints.constraint_type == 'PRIMARY KEY')
+                        )
+                        .select('constraint_name')
+                        .to_polars()
+                    )
+
+                    if len(pk_constraints) > 0:
+                        constraint_name = pk_constraints['constraint_name'][0]
+
+                        # Get column names for this constraint
+                        key_columns_table = f'{project_id}.{dataset_id}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE'
+                        key_columns = self.conn.table(key_columns_table)
+                        pk_columns = (
+                            key_columns
+                            .filter(
+                                (key_columns.table_name == table_name.upper()) &
+                                (key_columns.constraint_name == constraint_name)
+                            )
+                            .select('column_name')
+                            .order_by('ordinal_position')
+                            .to_polars()
+                        )
+
+                        primary_keys = [str(col).lower() for col in pk_columns['column_name'].to_list()]
+                except Exception as e:
+                    # If INFORMATION_SCHEMA query fails, return empty (table might not have PK declared)
+                    pass
+
                 return primary_keys
 
             elif self.backend == 'snowflake':

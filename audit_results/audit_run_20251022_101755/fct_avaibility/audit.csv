@@ -1,3 +1,0 @@
-table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
-fct_avaibility,24487775,10000,true,station_name,String,0,0.0,1493,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place Du Général De Gaulle', 'Place du Général de Gaulle'])]",2025-10-22T10:19:31.706469
-fct_avaibility,24487775,10000,true,station_name,String,0,0.0,1493,SPECIAL_CHARACTERS,3810,38.1,"","['Galilée - Kléber', 'Carnot - Pâquerettes']",2025-10-22T10:19:31.706469

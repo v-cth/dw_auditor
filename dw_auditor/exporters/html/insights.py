@@ -11,9 +11,8 @@ def _generate_column_summary_table(results: Dict) -> str:
         return ""
 
     html = """
-    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-        <h2 style="margin-top: 0; color: #1f2937;">Column Summary</h2>
-        <p style="color: #666; margin-bottom: 20px;">Basic metrics for all columns in the table</p>"""
+    <h3 style="font-size: 1.25rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.25rem; color: #000;">Column Summary</h3>
+    <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">Basic metrics for all columns in the table</p>"""
 
     # Show primary key information if available
     primary_keys = []
@@ -24,24 +23,24 @@ def _generate_column_summary_table(results: Dict) -> str:
 
     if primary_keys:
         html += f"""
-        <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 12px 15px; margin-bottom: 15px; border-radius: 4px;">
-            <strong>Primary Key Column(s):</strong> {', '.join(primary_keys)}
-        </div>"""
+    <div style="background: #ecfdf5; border-left: 4px solid #10b981; padding: 12px 15px; margin-bottom: 15px; border-radius: 4px;">
+        <strong>Primary Key Column(s):</strong> {', '.join(primary_keys)}
+    </div>"""
 
     html += """
-        <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.95em;">
-                <thead>
-                    <tr style="background: #f3f4f6; border-bottom: 2px solid #e5e7eb;">
-                        <th style="padding: 12px; text-align: left; font-weight: 600;">Column Name</th>
-                        <th style="padding: 12px; text-align: left; font-weight: 600;">Data Type</th>
-                        <th style="padding: 12px; text-align: center; font-weight: 600;">Status</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null Count</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 600;">Null %</th>
-                        <th style="padding: 12px; text-align: right; font-weight: 600;">Distinct Values</th>
-                    </tr>
-                </thead>
-                <tbody>
+    <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); overflow: hidden; margin-bottom: 30px;">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.95rem;">
+            <thead>
+                <tr style="background: #fafafa; border-bottom: 1px solid #eee;">
+                    <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Column Name</th>
+                    <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Data Type</th>
+                    <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Status</th>
+                    <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Null Count</th>
+                    <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Null %</th>
+                    <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Distinct Values</th>
+                </tr>
+            </thead>
+            <tbody>
 """
     for col_name, col_data in results['column_summary'].items():
         null_pct = col_data['null_pct']
@@ -68,27 +67,18 @@ def _generate_column_summary_table(results: Dict) -> str:
         else:
             distinct_display = "N/A"
 
-        # Determine row color based on status and other factors
-        if status == 'ERROR':
-            row_color = '#fef2f2'
-        elif is_primary_key:
-            row_color = '#ecfdf5'
-        elif null_pct_numeric > 10:
-            row_color = '#fef2f2'
-        else:
-            row_color = 'white'
 
         # Status badge styling
         if status == 'OK':
-            status_badge = '<span style="background: #dcfce7; color: #166534; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">OK</span>'
+            status_badge = '<span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #dcfce7; color: #166534;">OK</span>'
         elif status == 'ERROR':
-            status_badge = '<span style="background: #fee2e2; color: #991b1b; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">ERROR</span>'
+            status_badge = '<span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #fee2e2; color: #b91c1c;">Error</span>'
         elif status == 'SKIPPED_COMPLEX_TYPE':
-            status_badge = '<span style="background: #fef3c7; color: #92400e; padding: 4px 8px; border-radius: 12px; font-size: 0.85em; font-weight: 600;">SKIPPED</span>'
+            status_badge = '<span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #92400e;">Skipped</span>'
         elif status == 'NOT_LOADED':
-            status_badge = '<span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">NOT LOADED</span>'
+            status_badge = '<span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">Not Loaded</span>'
         else:
-            status_badge = '<span style="background: #f3f4f6; color: #6b7280; padding: 4px 8px; border-radius: 12px; font-size: 0.85em;">N/A</span>'
+            status_badge = '<span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #f3f4f6; color: #555;">N/A</span>'
 
         col_name_display = col_name if not is_primary_key else f"{col_name} (PK)"
 
@@ -97,19 +87,18 @@ def _generate_column_summary_table(results: Dict) -> str:
         null_pct_weight = 'bold' if null_pct_numeric > 10 else 'normal'
 
         html += f"""
-                    <tr style="border-bottom: 1px solid #e5e7eb; background: {row_color};">
-                        <td style="padding: 10px; font-weight: {'bold' if is_primary_key else '500'};">{col_name_display}</td>
-                        <td style="padding: 10px; color: #6b7280;">{col_data['dtype']}</td>
-                        <td style="padding: 10px; text-align: center;">{status_badge}</td>
-                        <td style="padding: 10px; text-align: right; color: #6b7280;">{null_display}</td>
-                        <td style="padding: 10px; text-align: right; color: {null_pct_color}; font-weight: {null_pct_weight};">{null_pct_display}</td>
-                        <td style="padding: 10px; text-align: right; color: #6b7280;">{distinct_display}</td>
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222; font-weight: {'bold' if is_primary_key else 'normal'};">{col_name_display}</td>
+                        <td style="padding: 12px 16px; color: #222;">{col_data['dtype']}</td>
+                        <td style="padding: 12px 16px;">{status_badge}</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">{null_display}</td>
+                        <td style="padding: 12px 16px; text-align: right; color: {null_pct_color}; font-weight: {null_pct_weight};">{null_pct_display}</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">{distinct_display}</td>
                     </tr>
 """
     html += """
                 </tbody>
             </table>
-        </div>
     </div>
 """
     return html

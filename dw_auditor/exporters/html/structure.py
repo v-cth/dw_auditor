@@ -120,7 +120,51 @@ def _generate_metadata_section(results: Dict) -> str:
     html = """
     <section id="metadata" class="tab-content">
         <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
-            <h2 style="margin-top: 0; color: #1f2937; font-size: 1.3rem;">Table Details</h2>
+"""
+
+    # Config metadata section (if available)
+    if 'config_metadata' in results:
+        config_meta = results['config_metadata']
+        # Only show section if at least one field is present
+        if any(config_meta.values()):
+            html += """
+            <h2 style="margin-top: 0; color: #1f2937; font-size: 1.3rem;">Audit Configuration</h2>
+"""
+            if config_meta.get('project'):
+                html += f"""
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Project:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['project']}</span>
+            </div>
+"""
+            if config_meta.get('description'):
+                html += f"""
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Description:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['description']}</span>
+            </div>
+"""
+            if config_meta.get('version'):
+                html += f"""
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Config Version:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['version']}</span>
+            </div>
+"""
+            if config_meta.get('last_modified'):
+                html += f"""
+            <div style="margin-bottom: 16px;">
+                <span style="color: #6b7280; font-size: 0.9em;">Config Last Modified:</span>
+                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['last_modified']}</span>
+            </div>
+"""
+            html += """
+            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;"></div>
+"""
+
+    # Table metadata section
+    html += """
+            <h2 style="margin-top: 16px; color: #1f2937; font-size: 1.3rem;">Table Details</h2>
 """
 
     # Schema and basic info

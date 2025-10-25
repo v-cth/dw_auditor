@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Table Relationships Visualization</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f9fafb;
+            color: #1f2937;
+        }
+        .header {
+            background: linear-gradient(135deg, #6606dc 0%, #8b5cf6 100%);
+            color: white;
+            padding: 40px;
+        }
+        .header h1 {
+            margin: 0 0 10px 0;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        .header p {
+            margin: 0;
+            font-size: 16px;
+            opacity: 0.9;
+        }
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 40px 20px;
+        }
+        #mynetwork {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #e5e7eb;
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .info-panel {
+            background-color: white;
+            border: 1px solid #e5e7eb;
+            padding: 30px;
+            margin-top: 30px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .info-panel h2 {
+            margin: 0 0 20px 0;
+            font-size: 24px;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .relationship-item {
+            padding: 15px;
+            margin: 10px 0;
+            background-color: #f9fafb;
+            border-left: 4px solid #10b981;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .relationship-item:hover {
+            background-color: #f3f4f6;
+            transform: translateX(4px);
+        }
+        .confidence-high { border-left-color: #10b981; }
+        .confidence-medium { border-left-color: #f59e0b; }
+        .confidence-low { border-left-color: #ef4444; }
+        .stats {
+            display: flex;
+            gap: 30px;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: #f9fafb;
+            border-radius: 8px;
+        }
+        .stat {
+            flex: 1;
+        }
+        .stat-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #6606dc;
+        }
+        .stat-label {
+            font-size: 14px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Table Relationships Visualization</h1>
+        <p>Interactive network diagram showing detected relationships between tables</p>
+    </div>
+
+    <div class="container">
+        <div class="stats">
+            <div class="stat">
+                <div class="stat-value">2</div>
+                <div class="stat-label">Tables</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">1</div>
+                <div class="stat-label">Relationships</div>
+            </div>
+            <div class="stat">
+                <div class="stat-value">1</div>
+                <div class="stat-label">High Confidence (&ge;80%)</div>
+            </div>
+        </div>
+
+        <div id="mynetwork"></div>
+
+        <div class="info-panel">
+            <h2>Detected Relationships</h2>
+            <div id="relationships-list">
+                
+        <div class="relationship-item confidence-high">
+            <strong>fct_avaibility_part.station_name</strong> ↔
+            <strong>dim_station.station_name</strong><br>
+            <small>
+                Confidence: 97.0% |
+                Type: one-to-many |
+                Matching values: 1452
+            </small>
+        </div>
+        
+            </div>
+        </div>
+    </div>
+
+    <script type="text/javascript">
+        // Create nodes and edges
+        var nodes = new vis.DataSet([{"id": "dim_station", "label": "dim_station\\n(1,587 rows)", "title": "Table: dim_station<br>Rows: 1,587<br>Columns: 9"}, {"id": "fct_avaibility_part", "label": "fct_avaibility_part\\n(3,877,353 rows)", "title": "Table: fct_avaibility_part<br>Rows: 3,877,353<br>Columns: 13"}]);
+        var edges = new vis.DataSet([{"from": "fct_avaibility_part", "to": "dim_station", "label": "station_name \u2194 station_name", "title": "Confidence: 97.0%<br>Type: one-to-many<br>Matching values: 1452", "width": 4.849681528662421, "value": 0.9699363057324841}]);
+
+        // Create network
+        var container = document.getElementById('mynetwork');
+        var data = {
+            nodes: nodes,
+            edges: edges
+        };
+
+        var options = {
+            nodes: {
+                shape: 'box',
+                font: {
+                    size: 16,
+                    color: 'white',
+                    face: 'Inter'
+                },
+                color: {
+                    background: '#6606dc',
+                    border: '#5005b8',
+                    highlight: {
+                        background: '#5005b8',
+                        border: '#4004a0'
+                    }
+                },
+                margin: 12,
+                borderWidth: 2,
+                borderWidthSelected: 3
+            },
+            edges: {
+                smooth: {
+                    type: 'continuous',
+                    roundness: 0.5
+                },
+                font: {
+                    size: 12,
+                    align: 'middle',
+                    face: 'Inter'
+                },
+                color: {
+                    color: '#9ca3af',
+                    highlight: '#6606dc'
+                },
+                arrows: {
+                    to: {
+                        enabled: false
+                    }
+                }
+            },
+            physics: {
+                enabled: true,
+                barnesHut: {
+                    gravitationalConstant: -8000,
+                    springConstant: 0.04,
+                    springLength: 150
+                },
+                stabilization: {
+                    iterations: 200
+                }
+            },
+            interaction: {
+                hover: true,
+                tooltipDelay: 200,
+                navigationButtons: true,
+                keyboard: true
+            }
+        };
+
+        var network = new vis.Network(container, data, options);
+
+        // Add click event for relationship details
+        network.on("selectEdge", function(params) {
+            if (params.edges.length > 0) {
+                var edgeId = params.edges[0];
+                var edge = edges.get(edgeId);
+                alert("Relationship: " + edge.label + "\n" + edge.title.replace(/<br>/g, "\n"));
+            }
+        });
+    </script>
+</body>
+</html>

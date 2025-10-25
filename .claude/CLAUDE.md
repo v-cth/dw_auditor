@@ -91,10 +91,24 @@ audit.py
 ## Configuration (`audit_config.yaml`)
 
 ### Most Important Sections
-1. **`database`**: Connection settings (backend, project_id, dataset_id)
-2. **`tables`**: Tables to audit (with optional custom queries)
-3. **`column_insights`**: Profiling configuration per data type
-4. **`output.number_format`**: Display formatting (NEW: thousand_separator, decimal_places)
+1. **`version`, `project`, `description`, `last_modified`**: Optional audit metadata (displayed in Metadata tab)
+2. **`database`**: Connection settings (backend, project_id, dataset_id)
+3. **`tables`**: Tables to audit (with optional primary keys, custom queries, and per-table schemas)
+4. **`column_insights`**: Profiling configuration per data type
+5. **`output.number_format`**: Display formatting (thousand_separator, decimal_places)
+
+### Audit Metadata (Top-level, Optional)
+Descriptive fields that appear in the HTML report Metadata tab:
+- `version`: Config version number (e.g., 1, 2.0)
+- `project`: Project name (e.g., "Customer Data Quality Audit")
+- `description`: Brief description of what this audit configuration does
+- `last_modified`: Last update date (e.g., "2025-10-24")
+
+### Per-Table Configuration
+Tables can have individual settings that override global defaults:
+- `primary_key`: Column(s) to use as primary key for context in error messages
+- `query`: Custom SQL query to audit (instead of SELECT *)
+- `schema`: Override dataset/schema for this specific table (allows auditing across multiple datasets)
 
 ### Config Access Pattern
 ```python

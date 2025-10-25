@@ -1,4 +1,0 @@
-table_name,total_rows,sampled,analyzed_rows,column_count,issues_found,columns_with_issues,status,duration_seconds,audit_timestamp,table_type,created_time,partition_column,partition_type,clustering_columns
-fct_avaibility_part,9952507,true,10000,13,2,1,WARNING,0.06,2025-10-22T11:11:49.558426,BASE TABLE,2025-10-22 08:51:57.574000+00:00,collected_at,TIME,station_code
-dim_station,1587,false,1587,9,3,2,WARNING,0.02,2025-10-22T11:12:03.768156,BASE TABLE,2025-10-22 01:00:49.805000+00:00,"","",""
-dtm_station_distance,2516982,true,10000,5,4,2,WARNING,0.03,2025-10-22T11:12:18.620278,BASE TABLE,2025-10-22 01:00:56.165000+00:00,"","",""

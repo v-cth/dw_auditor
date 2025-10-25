@@ -1,0 +1,5 @@
+table_name,total_rows,analyzed_rows,sampled,column_name,column_dtype,null_count,null_pct,distinct_count,issue_type,issue_count,issue_pct,suggestion,examples,audit_timestamp
+dtm_station_distance,2516982,10000,true,origin_station_name,String,0,0.0,1568,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place du Général de Gaulle', 'Place Du Général De Gaulle'])]",2025-10-24 10:37:02 UTC
+dtm_station_distance,2516982,10000,true,origin_station_name,String,0,0.0,1568,SPECIAL_CHARACTERS,3789,37.89,"","['Raymond Poincaré - Place Victor Hugo', 'Poulet - Barbès']",2025-10-24 10:37:02 UTC
+dtm_station_distance,2516982,10000,true,dest_station_name,String,0,0.0,1568,CASE_DUPLICATES,1,0.0,"","[('place du général de gaulle', ['Place Du Général De Gaulle', 'Place du Général de Gaulle'])]",2025-10-24 10:37:02 UTC
+dtm_station_distance,2516982,10000,true,dest_station_name,String,0,0.0,1568,SPECIAL_CHARACTERS,3824,38.24,"","['Square René Viviani - Montebello', 'André Mazet - Saint-André des Arts']",2025-10-24 10:37:02 UTC

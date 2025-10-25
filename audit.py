@@ -319,11 +319,14 @@ Examples:
                 # Get custom query from config if specified
                 custom_query = config.table_queries.get(table, None)
 
+                # Get table-specific schema (falls back to global schema if not specified)
+                table_schema = config.get_table_schema(table)
+
                 results = auditor.audit_from_database(
                     table_name=table,
                     backend=config.backend,
                     connection_params=config.connection_params,
-                    schema=config.schema,
+                    schema=table_schema,
                     mask_pii=config.mask_pii,
                     custom_pii_keywords=config.custom_pii_keywords,
                     user_primary_key=user_defined_primary_key,
@@ -331,8 +334,17 @@ Examples:
                     sampling_method=sampling_config['method'],
                     sampling_key_column=sampling_config['key_column'],
                     custom_query=custom_query,
-                    audit_mode=audit_mode
+                    audit_mode=audit_mode,
+                    store_dataframe=config.relationship_detection_enabled  # Store DataFrame for relationship detection
                 )
+
+                # Add config metadata to results (for display in reports)
+                results['config_metadata'] = {
+                    'version': config.audit_version,
+                    'project': config.audit_project,
+                    'description': config.audit_description,
+                    'last_modified': config.audit_last_modified
+                }
 
                 # Store results for summary generation
                 all_table_results.append(results)
@@ -385,6 +397,48 @@ Examples:
                 traceback.print_exc()
                 continue
 
+        # Detect table relationships if enabled
+        detected_relationships = []
+        if config.relationship_detection_enabled and len(all_table_results) >= 2:
+            print(f"\n{'='*70}")
+            print(f"🔗 Detecting table relationships...")
+            print(f"{'='*70}")
+
+            try:
+                from dw_auditor.analysis import PolarsRelationshipDetector
+
+                detector = PolarsRelationshipDetector()
+
+                # Add all audited tables with their DataFrames
+                for result in all_table_results:
+                    if 'data' in result:  # Check if DataFrame was stored
+                        detector.add_table(result['table_name'], result['data'])
+                        print(f"   Added table: {result['table_name']}")
+
+                # Detect relationships
+                detected_relationships = detector.detect_relationships(
+                    confidence_threshold=config.relationship_confidence_threshold
+                )
+
+                print(f"\n✅ Found {len(detected_relationships)} relationships (confidence >= {config.relationship_confidence_threshold:.0%})")
+
+                # Show detected relationships
+                if detected_relationships:
+                    print(f"\nDetected Relationships:")
+                    for rel in sorted(detected_relationships, key=lambda x: x['confidence'], reverse=True):
+                        print(f"   • {rel['table1']}.{rel['column1']} ↔ {rel['table2']}.{rel['column2']}")
+                        print(f"     Confidence: {rel['confidence']:.1%} | Type: {rel['relationship_type']} | Matching values: {rel['matching_values']}")
+
+                # Remove DataFrames from results to save memory (no longer needed)
+                for result in all_table_results:
+                    if 'data' in result:
+                        del result['data']
+
+            except Exception as e:
+                print(f"⚠️  Error detecting relationships: {e}")
+                import traceback
+                traceback.print_exc()
+
         # Generate run-level summary reports
         if all_table_results:
             print(f"\n{'='*70}")
@@ -394,12 +448,18 @@ Examples:
             # Export summary in all configured formats
             if 'html' in config.export_formats:
                 summary_html = run_dir / 'summary.html'
-                auditor.export_run_summary_to_html(all_table_results, str(summary_html))
+                auditor.export_run_summary_to_html(all_table_results, str(summary_html), detected_relationships)
                 print(f"📄 Summary HTML saved to: {summary_html}")
+
+                # Generate standalone interactive relationships report if relationships were detected
+                if detected_relationships:
+                    relationships_html = run_dir / 'relationships_interactive.html'
+                    # This will be implemented when we create relationships.py
+                    print(f"📄 Interactive relationships report: {relationships_html}")
 
             if 'json' in config.export_formats:
                 summary_json = run_dir / 'summary.json'
-                auditor.export_run_summary_to_json(all_table_results, str(summary_json))
+                auditor.export_run_summary_to_json(all_table_results, str(summary_json), detected_relationships)
                 print(f"📄 Summary JSON saved to: {summary_json}")
 
             if 'csv' in config.export_formats:
@@ -414,6 +474,14 @@ Examples:
                 tables_df = auditor.export_run_summary_to_dataframe(all_table_results)
                 tables_df.write_csv(str(tables_csv))
                 print(f"📄 Table summary CSV saved to: {tables_csv}")
+
+                # Export relationships CSV if detected
+                if detected_relationships:
+                    import polars as pl
+                    relationships_csv = run_dir / 'relationships.csv'
+                    relationships_df = pl.DataFrame(detected_relationships)
+                    relationships_df.write_csv(str(relationships_csv))
+                    print(f"📄 Relationships CSV saved to: {relationships_csv}")
 
         # Calculate total duration
         total_end_time = datetime.now()

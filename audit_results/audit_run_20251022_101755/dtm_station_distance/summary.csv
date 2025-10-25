@@ -1,3 +1,0 @@
-table_name,column_name,data_type,status,null_count,null_pct,distinct_count
-dtm_station_distance,origin_station_name,String,ERROR,0,0.0,1568
-dtm_station_distance,dest_station_name,String,ERROR,0,0.0,1569

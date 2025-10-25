@@ -1,0 +1,264 @@
+{
+  "table_name": "dim_station",
+  "total_rows": 1587,
+  "sampled": false,
+  "analyzed_rows": 1587,
+  "columns": {
+    "station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1587,
+      "issues": [],
+      "checks_run": [
+        {
+          "name": "Uniqueness",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place du G\u00e9n\u00e9ral de Gaulle",
+                "Place Du G\u00e9n\u00e9ral De Gaulle"
+              ]
+            ]
+          ]
+        },
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 605,
+          "pct": 38.12224322621298,
+          "special_chars": [
+            "\u00ee",
+            "\u00e7",
+            "\u00e8",
+            "\u00e2",
+            "\u00ef",
+            "\u00fb",
+            "\u00f4",
+            "\u00e9",
+            "'"
+          ],
+          "examples": [
+            "Quai de l'Horloge - Pont Neuf [station_code=1001]",
+            "Turbigo - Fran\u00e7aise [station_code=1007]"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Spaces",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Special Characters",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "capacity": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 72,
+      "issues": [
+        {
+          "type": "VALUE_NOT_LESS_THAN",
+          "count": 1359,
+          "pct": 85.63327032136105,
+          "threshold": 20,
+          "operator": "<",
+          "suggestion": "Values should be < 20",
+          "examples": [
+            "22 [station_code=1002]",
+            "43 [station_code=1003]",
+            "33 [station_code=1006]",
+            "32 [station_code=1008]",
+            "22 [station_code=1012]"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Numeric Range (< 20)",
+          "status": "FAILED",
+          "issues_count": 1
+        }
+      ]
+    },
+    "city": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 68,
+      "issues": [
+        {
+          "type": "SPECIAL_CHARACTERS",
+          "count": 57,
+          "pct": 3.5916824196597354,
+          "special_chars": [
+            "\u00e9",
+            "\u00ea",
+            "\u00e8",
+            "\u00ce",
+            "\u00e2",
+            "'"
+          ],
+          "examples": [
+            "Saint-Mand\u00e9 [station_code=12041]",
+            "S\u00e8vres [station_code=23101]"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Spaces",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Special Characters",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1587,
+      "status": "OK"
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1570,
+      "status": "ERROR"
+    },
+    "capacity": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 72,
+      "status": "ERROR"
+    },
+    "lon": {
+      "dtype": "FLOAT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "lat": {
+      "dtype": "FLOAT64",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "city": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 68,
+      "status": "ERROR"
+    },
+    "is_renting": {
+      "dtype": "BOOL",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "is_returning": {
+      "dtype": "BOOL",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    },
+    "station_plus": {
+      "dtype": "BOOL",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    }
+  },
+  "column_insights": {},
+  "timestamp": "2025-10-25 18:55:40 UTC",
+  "start_time": "2025-10-25T20:55:40.383612",
+  "check_durations": {
+    "numeric_checks": 0.0036430000000000004,
+    "string_checks": 0.0075509999999999996
+  },
+  "potential_primary_keys": [
+    "station_code"
+  ],
+  "end_time": "2025-10-25T20:55:40.395049",
+  "duration_seconds": 0.01,
+  "data": "shape: (1_587, 4)\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 station_code \u2506 station_name                    \u2506 capacity \u2506 city     \u2502\n\u2502 ---          \u2506 ---                             \u2506 ---      \u2506 ---      \u2502\n\u2502 i64          \u2506 str                             \u2506 i64      \u2506 str      \u2502\n\u255e\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2561\n\u2502 1001         \u2506 Quai de l'Horloge - Pont Neuf   \u2506 17       \u2506 Paris    \u2502\n\u2502 1002         \u2506 Victoria - Place du Chatelet    \u2506 22       \u2506 Paris    \u2502\n\u2502 1003         \u2506 Saint-Denis - Rivoli            \u2506 43       \u2506 Paris    \u2502\n\u2502 1006         \u2506 Grande Truanderie - Saint-Deni\u2026 \u2506 33       \u2506 Paris    \u2502\n\u2502 1007         \u2506 Turbigo - Fran\u00e7aise             \u2506 16       \u2506 Paris    \u2502\n\u2502 \u2026            \u2506 \u2026                               \u2506 \u2026        \u2506 \u2026        \u2502\n\u2502 92004        \u2506 Nanterre - Universit\u00e9           \u2506 20       \u2506 Nanterre \u2502\n\u2502 92005        \u2506 Gare de Nanterre Ville          \u2506 43       \u2506 Nanterre \u2502\n\u2502 92006        \u2506 Place Nelson Mandela            \u2506 30       \u2506 Nanterre \u2502\n\u2502 92007        \u2506 Pesaro - Pr\u00e9fecture             \u2506 22       \u2506 Nanterre \u2502\n\u2502 92008        \u2506 H\u00f4tel de Ville de Nanterre      \u2506 38       \u2506 Nanterre \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+  "table_metadata": {
+    "table_name": "dim_station",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-25 01:00:48.270000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.dim_station",
+    "row_count": 1587,
+    "primary_key_columns": [
+      "station_code"
+    ],
+    "primary_key_source": "user_config"
+  },
+  "phase_timings": {
+    "connection": 0.481807,
+    "metadata": 8.277202,
+    "column_selection": 2.352647,
+    "data_loading": 2.320232,
+    "audit_checks": 0.011953
+  },
+  "config_metadata": {
+    "version": 1,
+    "project": "Bike Availability Data Quality",
+    "description": "Auditing availability fact table and station dimension for data quality issues",
+    "last_modified": "2025-10-24"
+  }
+}

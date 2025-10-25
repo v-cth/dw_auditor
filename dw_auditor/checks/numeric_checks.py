@@ -22,8 +22,6 @@ def check_numeric_range(
     df: pl.DataFrame,
     col: str,
     primary_key_columns: Optional[List[str]] = None,
-    min_val: Optional[float] = None,
-    max_val: Optional[float] = None,
     greater_than: Optional[float] = None,
     greater_than_or_equal: Optional[float] = None,
     less_than: Optional[float] = None,
@@ -35,8 +33,7 @@ def check_numeric_range(
     Args:
         df: DataFrame to check
         col: Column name
-        min_val: Minimum value (inclusive: value >= min_val)
-        max_val: Maximum value (inclusive: value <= max_val)
+        primary_key_columns: Optional list of primary key column names for context
         greater_than: Exclusive lower bound (value > greater_than)
         greater_than_or_equal: Inclusive lower bound (value >= greater_than_or_equal)
         less_than: Exclusive upper bound (value < less_than)
@@ -52,54 +49,6 @@ def check_numeric_range(
 
     if non_null_count == 0:
         return issues
-
-    # Check minimum value (inclusive: >=)
-    if min_val is not None:
-        below_min = non_null_df.filter(pl.col(col) < min_val)
-        below_min_count = len(below_min)
-
-        if below_min_count > 0:
-            pct = (below_min_count / non_null_count) * 100
-
-            # Format examples with primary key context if available
-            examples = []
-            select_cols = [col] + (primary_key_columns if primary_key_columns else [])
-            for row in below_min.select(select_cols).head(5).iter_rows(named=True):
-                examples.append(_format_example_with_pk(row, col, primary_key_columns))
-
-            issues.append({
-                'type': 'VALUE_BELOW_MIN',
-                'count': below_min_count,
-                'pct': pct,
-                'threshold': min_val,
-                'operator': '>=',
-                'suggestion': f'Values should be >= {min_val}',
-                'examples': examples
-            })
-
-    # Check maximum value (inclusive: <=)
-    if max_val is not None:
-        above_max = non_null_df.filter(pl.col(col) > max_val)
-        above_max_count = len(above_max)
-
-        if above_max_count > 0:
-            pct = (above_max_count / non_null_count) * 100
-
-            # Format examples with primary key context if available
-            examples = []
-            select_cols = [col] + (primary_key_columns if primary_key_columns else [])
-            for row in above_max.select(select_cols).head(5).iter_rows(named=True):
-                examples.append(_format_example_with_pk(row, col, primary_key_columns))
-
-            issues.append({
-                'type': 'VALUE_ABOVE_MAX',
-                'count': above_max_count,
-                'pct': pct,
-                'threshold': max_val,
-                'operator': '<=',
-                'suggestion': f'Values should be <= {max_val}',
-                'examples': examples
-            })
 
     # Check greater_than (exclusive: >)
     if greater_than is not None:
