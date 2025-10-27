@@ -4,6 +4,19 @@ HTML page structure components (header, summary, metadata)
 
 from typing import Dict
 from .assets import _generate_css_styles, _generate_javascript
+from .helpers import meta_item, section_header, subsection_header, status_badge, info_box, table_row
+
+
+def _format_bytes(size_bytes: int) -> str:
+    """Format bytes to human-readable size"""
+    if size_bytes is None:
+        return "N/A"
+
+    for unit in ['B', 'KB', 'MB', 'GB', 'TB']:
+        if size_bytes < 1024.0:
+            return f"{size_bytes:.2f} {unit}"
+        size_bytes /= 1024.0
+    return f"{size_bytes:.2f} PB"
 
 
 def _generate_header(results: Dict) -> str:
@@ -119,7 +132,7 @@ def _generate_metadata_section(results: Dict) -> str:
     """Generate the metadata tab section with detailed table information"""
     html = """
     <section id="metadata" class="tab-content">
-        <div style="background: white; padding: 25px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        <div class="section-container">
 """
 
     # Config metadata section (if available)
@@ -127,126 +140,165 @@ def _generate_metadata_section(results: Dict) -> str:
         config_meta = results['config_metadata']
         # Only show section if at least one field is present
         if any(config_meta.values()):
-            html += """
-            <h2 style="margin-top: 0; color: #1f2937; font-size: 1.3rem;">Audit Configuration</h2>
-"""
+            html += section_header("Audit Configuration", first=True)
+
             if config_meta.get('project'):
-                html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Project:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['project']}</span>
-            </div>
-"""
+                html += meta_item("Project", config_meta['project'])
+
             if config_meta.get('description'):
-                html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Description:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['description']}</span>
-            </div>
-"""
+                html += meta_item("Description", config_meta['description'])
+
             if config_meta.get('version'):
-                html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Config Version:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['version']}</span>
-            </div>
-"""
+                html += meta_item("Config Version", str(config_meta['version']))
+
             if config_meta.get('last_modified'):
-                html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Config Last Modified:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{config_meta['last_modified']}</span>
-            </div>
-"""
-            html += """
-            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;"></div>
-"""
+                html += meta_item("Config Last Modified", config_meta['last_modified'])
+
+            html += '            <div class="divider"></div>\n'
 
     # Table metadata section
-    html += """
-            <h2 style="margin-top: 16px; color: #1f2937; font-size: 1.3rem;">Table Details</h2>
-"""
+    html += section_header("Table Details")
 
     # Schema and basic info
     if 'table_metadata' in results:
         metadata = results['table_metadata']
 
+        # Table ID (fully qualified name)
+        if 'table_uid' in metadata:
+            html += meta_item("Table ID", metadata['table_uid'], mono=True)
+
         # Table type
         if 'table_type' in metadata:
-            html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Type:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{metadata['table_type']}</span>
-            </div>
-"""
+            html += meta_item("Type", metadata['table_type'])
 
         # Schema
         if 'schema' in metadata:
-            html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Schema:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{metadata['schema']}</span>
-            </div>
-"""
+            html += meta_item("Schema", metadata['schema'])
+
+        # Table size
+        if 'size_bytes' in metadata and metadata['size_bytes'] is not None:
+            formatted_size = _format_bytes(metadata['size_bytes'])
+            html += meta_item("Size", formatted_size)
+
+        # Created at
+        if 'created_at' in metadata and metadata['created_at']:
+            html += meta_item("Created", metadata['created_at'])
+
+        # Modified at
+        if 'modified_at' in metadata and metadata['modified_at']:
+            html += meta_item("Last Modified", metadata['modified_at'])
 
         # Partition information
         if 'partition_column' in metadata and metadata['partition_column']:
             partition_type = metadata.get('partition_type', 'UNKNOWN')
-            html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Partitioned By:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{metadata['partition_column']} ({partition_type})</span>
-            </div>
-"""
+            html += meta_item("Partitioned By", f"{metadata['partition_column']} ({partition_type})")
 
         # Clustering information (BigQuery)
         if 'clustering_columns' in metadata and metadata['clustering_columns']:
             cluster_cols = ', '.join(metadata['clustering_columns'])
-            html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Clustered By:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{cluster_cols}</span>
-            </div>
-"""
+            html += meta_item("Clustered By", cluster_cols)
 
         # Clustering information (Snowflake)
         if 'clustering_key' in metadata and metadata['clustering_key']:
-            html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Clustering Key:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{metadata['clustering_key']}</span>
-            </div>
-"""
+            html += meta_item("Clustering Key", metadata['clustering_key'])
 
         # Primary key
         if 'primary_key_columns' in metadata and metadata['primary_key_columns']:
             pk_cols = ', '.join(metadata['primary_key_columns'])
-            html += f"""
-            <div style="margin-bottom: 16px;">
-                <span style="color: #6b7280; font-size: 0.9em;">Primary Key:</span>
-                <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{pk_cols}</span>
-            </div>
-"""
+            html += meta_item("Primary Key", pk_cols)
 
     # Audit metadata
-    html += f"""
-            <div style="margin-top: 24px; padding-top: 16px; border-top: 1px solid #e5e7eb;">
-                <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 12px;">Audit Information</h3>
-                <div style="margin-bottom: 12px;">
-                    <span style="color: #6b7280; font-size: 0.9em;">Generated:</span>
-                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{results.get('timestamp', 'N/A')}</span>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <span style="color: #6b7280; font-size: 0.9em;">Duration:</span>
-                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{results.get('duration_seconds', 0):.2f}s</span>
-                </div>
-                <div style="margin-bottom: 12px;">
-                    <span style="color: #6b7280; font-size: 0.9em;">Sampled:</span>
-                    <span style="color: #1f2937; font-weight: 500; margin-left: 8px;">{'Yes' if results.get('sampled', False) else 'No'}</span>
-                </div>
-            </div>
-        </div>
+    html += '            <div class="divider"></div>\n'
+    html += '                <h3 style="color: #1f2937; font-size: 1.1rem; margin-bottom: 12px;">Audit Information</h3>\n'
+    html += meta_item("Generated", results.get('timestamp', 'N/A'))
+    html += meta_item("Duration", f"{results.get('duration_seconds', 0):.2f}s")
+    html += meta_item("Sampled", 'Yes' if results.get('sampled', False) else 'No')
+
+    html += """        </div>
     </section>
 """
 
+    return html
+
+
+def _generate_column_summary_table(results: Dict) -> str:
+    """Generate the column summary table for the Summary tab"""
+    if 'column_summary' not in results or not results['column_summary']:
+        return ""
+
+    html = subsection_header("Column Summary", "Basic metrics for all columns in the table")
+
+    # Show primary key information if available
+    primary_keys = []
+    if 'table_metadata' in results and 'primary_key_columns' in results['table_metadata']:
+        primary_keys = results['table_metadata']['primary_key_columns']
+    elif 'potential_primary_keys' in results:
+        primary_keys = results['potential_primary_keys']
+
+    if primary_keys:
+        html += info_box(f"<strong>Primary Key Column(s):</strong> {', '.join(primary_keys)}", box_type='success')
+
+    html += '    <div class="data-table">\n'
+    html += '        <table>\n'
+    html += """            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Status</th>
+                    <th>Null Count</th>
+                    <th>Null %</th>
+                    <th>Distinct Values</th>
+                </tr>
+            </thead>
+            <tbody>
+"""
+
+    for col_name, col_data in results['column_summary'].items():
+        null_pct = col_data['null_pct']
+        null_count = col_data['null_count']
+        distinct_count = col_data['distinct_count']
+        is_primary_key = col_name in primary_keys
+        status = col_data.get('status', 'UNKNOWN')
+
+        # Handle N/A values for unloaded columns
+        if null_pct == 'N/A' or null_count == 'N/A':
+            null_display = "N/A"
+            null_pct_display = "N/A"
+            null_pct_numeric = 0
+        else:
+            null_display = f"{null_count:,}"
+            null_pct_display = f"{null_pct:.1f}%"
+            null_pct_numeric = null_pct
+
+        # Handle distinct_count
+        if distinct_count == 'N/A':
+            distinct_display = "N/A"
+        elif distinct_count is not None:
+            distinct_display = f"{distinct_count:,}"
+        else:
+            distinct_display = "N/A"
+
+        # Generate status badge
+        badge_html = status_badge(status)
+
+        col_name_display = col_name if not is_primary_key else f"{col_name} (PK)"
+
+        # Build cells
+        bold_class = ' class="td-bold"' if is_primary_key else ''
+        error_class = ' class="td-error"' if null_pct_numeric > 10 else ''
+
+        html += f"""                <tr>
+                    <td{bold_class}>{col_name_display}</td>
+                    <td>{col_data['dtype']}</td>
+                    <td>{badge_html}</td>
+                    <td>{null_display}</td>
+                    <td{error_class}>{null_pct_display}</td>
+                    <td>{distinct_display}</td>
+                </tr>
+"""
+
+    html += """            </tbody>
+        </table>
+    </div>
+"""
     return html

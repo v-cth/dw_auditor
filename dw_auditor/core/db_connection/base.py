@@ -97,16 +97,42 @@ class BaseAdapter(ABC):
             'created_time': str(table_info['creation_time'][0]) if 'creation_time' in table_info.columns and table_info['creation_time'][0] is not None else None,
         }
 
-        # Add table UID
+        # Add table UID (fully qualified name with project/dataset or database/schema)
         metadata['table_uid'] = self._build_table_uid(table_name, effective_schema)
 
-        # Row count
+        # Row count, size, and timestamps from __TABLES__ or equivalent
+        # Try _rowcount_df first (BigQuery), then fall back to _tables_df (Snowflake)
+        source_df = None
+        source_info = None
+
         if self._rowcount_df is not None and len(self._rowcount_df) > 0:
-            rowcount_info = self._rowcount_df.filter(
+            source_info = self._rowcount_df.filter(
                 pl.col(self._rowcount_df.columns[0]) == table_name
             )
-            if len(rowcount_info) > 0:
-                metadata['row_count'] = int(rowcount_info[self._rowcount_df.columns[1]][0]) if rowcount_info[self._rowcount_df.columns[1]][0] is not None else None
+            if len(source_info) > 0:
+                source_df = self._rowcount_df
+
+        # If not found in rowcount_df, try tables_df (Snowflake has these fields in tables)
+        if source_df is None and len(table_info) > 0:
+            source_info = table_info
+            source_df = self._tables_df
+
+        if source_df is not None and source_info is not None and len(source_info) > 0:
+            # Row count
+            if 'row_count' in source_df.columns:
+                metadata['row_count'] = int(source_info['row_count'][0]) if source_info['row_count'][0] is not None else None
+
+            # Size in bytes
+            if 'size_bytes' in source_df.columns:
+                metadata['size_bytes'] = int(source_info['size_bytes'][0]) if source_info['size_bytes'][0] is not None else None
+
+            # Created at timestamp
+            if 'created_at' in source_df.columns:
+                metadata['created_at'] = str(source_info['created_at'][0]) if source_info['created_at'][0] is not None else None
+
+            # Modified at timestamp
+            if 'modified_at' in source_df.columns:
+                metadata['modified_at'] = str(source_info['modified_at'][0]) if source_info['modified_at'][0] is not None else None
 
         # Partition column
         if 'is_partitioning_column' in columns_info.columns:

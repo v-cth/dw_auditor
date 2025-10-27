@@ -114,7 +114,7 @@ class BigQueryAdapter(BaseAdapter):
             print(f"⚠️  Could not fetch primary keys: {e}")
             self._pk_df = pl.DataFrame()
 
-        # Query 4: Row counts from __TABLES__ (filtered, same-project only)
+        # Query 4: Row counts, size, and timestamps from __TABLES__ (filtered, same-project only)
         try:
             if not self.source_project_id:
                 if table_names:
@@ -123,13 +123,22 @@ class BigQueryAdapter(BaseAdapter):
                     )
                 else:
                     table_id_filter = ""
-                rowcount_query = f"SELECT table_id, row_count FROM `{project_for_metadata}.{schema}.__TABLES__` {table_id_filter}"
+                rowcount_query = f"""
+                SELECT
+                    table_id,
+                    row_count,
+                    size_bytes,
+                    TIMESTAMP_MILLIS(creation_time) as created_at,
+                    TIMESTAMP_MILLIS(last_modified_time) as modified_at
+                FROM `{project_for_metadata}.{schema}.__TABLES__`
+                {table_id_filter}
+                """
                 self._rowcount_df = self.conn.sql(rowcount_query).to_polars()
             else:
                 # Cross-project: skip __TABLES__, will use COUNT(*) on demand
                 self._rowcount_df = pl.DataFrame()
         except Exception as e:
-            print(f"⚠️  Could not fetch row counts: {e}")
+            print(f"⚠️  Could not fetch row counts and table info: {e}")
             self._rowcount_df = pl.DataFrame()
 
         self._cached_schema = schema

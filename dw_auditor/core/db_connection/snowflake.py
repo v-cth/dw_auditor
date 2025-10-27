@@ -60,10 +60,17 @@ class SnowflakeAdapter(BaseAdapter):
             table_filter = ""
             table_filter_qualified = ""
 
-        # Query 1: Tables (filtered, includes row_count and clustering_key)
+        # Query 1: Tables (filtered, includes row_count, size, timestamps, and clustering_key)
         try:
             tables_query = f"""
-            SELECT table_name, table_type, created, row_count, clustering_key
+            SELECT
+                table_name,
+                table_type,
+                created,
+                last_altered,
+                row_count,
+                bytes,
+                clustering_key
             FROM {database}.INFORMATION_SCHEMA.TABLES
             WHERE table_schema = '{schema_name}'
               AND table_type = 'BASE TABLE'
@@ -77,9 +84,16 @@ class SnowflakeAdapter(BaseAdapter):
                 'TABLE_NAME': 'table_name',
                 'TABLE_TYPE': 'table_type',
                 'CREATED': 'creation_time',
+                'LAST_ALTERED': 'modified_at',
                 'ROW_COUNT': 'row_count',
+                'BYTES': 'size_bytes',
                 'CLUSTERING_KEY': 'clustering_key'
             })
+
+            # Add created_at as alias for creation_time for consistency with BigQuery
+            self._tables_df = self._tables_df.with_columns(
+                pl.col('creation_time').alias('created_at')
+            )
         except Exception as e:
             print(f"⚠️  Could not fetch tables metadata: {e}")
             self._tables_df = pl.DataFrame()

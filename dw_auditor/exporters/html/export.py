@@ -4,8 +4,8 @@ Main HTML export orchestration
 
 from typing import Dict
 
-from .structure import _generate_header, _generate_metadata_cards, _generate_metadata_section
-from .insights import _generate_column_summary_table, _generate_column_insights
+from .structure import _generate_header, _generate_metadata_cards, _generate_metadata_section, _generate_column_summary_table
+from .insights import _generate_column_insights
 from .checks import _generate_issues_section
 
 

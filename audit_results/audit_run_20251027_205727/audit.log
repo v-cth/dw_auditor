@@ -1,0 +1,25 @@
+📁 Audit run directory: audit_results/audit_run_20251027_205727
+📝 Logs will be saved to: audit_results/audit_run_20251027_205727/audit.log
+🔍 Full audit mode: Running quality checks and profiling/insights
+
+======================================================================
+💰 Estimating BigQuery scan costs...
+======================================================================
+✅ Connected to BIGQUERY
+
+🔍 Pre-fetching metadata for 2 table(s)...
+✅ Metadata cached for all tables
+   📊 fct_avaibility_part: Estimating ALL columns (relationship detection or no filters)
+   🔍 Estimating query: SELECT * FROM `dbt_prod.fct_avaibility_part` ORDER BY RAND() LIMIT 10000
+   📊 dim_station: Estimating ALL columns (relationship detection or no filters)
+   🔍 Estimating query: SELECT * FROM `dbt_prod.dim_station`
+
+📊 Estimated bytes to scan per table:
+   • fct_avaibility_part: 474.40 MB (sampled)
+   • dim_station: 112.29 KB
+
+💾 Total estimated data to scan: 0.47 GB (0.0005 TB)
+💵 Estimated cost (on-demand): $0.00 USD
+
+⚠️  Do you want to proceed with the audit?
+   Type 'y' or 'yes' to continue, or 'n' to cancel: 

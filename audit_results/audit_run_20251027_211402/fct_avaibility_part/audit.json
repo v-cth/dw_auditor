@@ -1,0 +1,284 @@
+{
+  "table_name": "fct_avaibility_part",
+  "total_rows": 3877353,
+  "sampled": true,
+  "analyzed_rows": 10000,
+  "columns": {
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1457,
+      "issues": [
+        {
+          "type": "CASE_DUPLICATES",
+          "count": 1,
+          "examples": [
+            [
+              "place du g\u00e9n\u00e9ral de gaulle",
+              [
+                "Place Du G\u00e9n\u00e9ral De Gaulle",
+                "Place du G\u00e9n\u00e9ral de Gaulle"
+              ]
+            ]
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Trailing Characters",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Case Duplicates",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Numeric Strings",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "duedate": {
+      "dtype": "Datetime(time_unit='ns', time_zone='UTC')",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9929,
+      "issues": [],
+      "checks_run": [
+        {
+          "name": "Timestamp Patterns",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Future Dates",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "bikes_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 70,
+      "issues": [
+        {
+          "type": "VALUE_NOT_GREATER_THAN",
+          "count": 239,
+          "pct": 2.39,
+          "threshold": 0,
+          "operator": ">",
+          "suggestion": "Values should be > 0",
+          "examples": [
+            "0",
+            "0",
+            "0",
+            "0",
+            "0"
+          ]
+        },
+        {
+          "type": "DUPLICATE_VALUES",
+          "count": 9930,
+          "pct": 99.3,
+          "distinct_duplicates": 67,
+          "suggestion": "Column should contain only unique values. Found 67 distinct value(s) with duplicates.",
+          "examples": [
+            "2 [count=740]",
+            "3 [count=690]",
+            "4 [count=678]",
+            "5 [count=617]",
+            "6 [count=571]"
+          ]
+        }
+      ],
+      "checks_run": [
+        {
+          "name": "Numeric Range (> 0)",
+          "status": "FAILED",
+          "issues_count": 1
+        },
+        {
+          "name": "Uniqueness",
+          "status": "FAILED",
+          "issues_count": 1
+        }
+      ]
+    },
+    "collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2620,
+      "issues": [],
+      "checks_run": [
+        {
+          "name": "Timestamp Patterns",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Future Dates",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    },
+    "rounded_collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2620,
+      "issues": [],
+      "checks_run": [
+        {
+          "name": "Timestamp Patterns",
+          "status": "PASSED",
+          "issues_count": 0
+        },
+        {
+          "name": "Future Dates",
+          "status": "PASSED",
+          "issues_count": 0
+        }
+      ]
+    }
+  },
+  "column_summary": {
+    "station_code": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1459,
+      "status": "OK"
+    },
+    "station_name": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1457,
+      "status": "ERROR"
+    },
+    "capacity": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 66,
+      "status": "OK"
+    },
+    "docks_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 72,
+      "status": "OK"
+    },
+    "mechanical": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 61,
+      "status": "OK"
+    },
+    "ebike": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 35,
+      "status": "OK"
+    },
+    "duedate": {
+      "dtype": "Datetime(time_unit='ns', time_zone='UTC')",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 9929,
+      "status": "OK"
+    },
+    "bikes_available": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 70,
+      "status": "ERROR"
+    },
+    "rate_bike_available": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1032,
+      "status": "OK"
+    },
+    "rate_dock_available": {
+      "dtype": "Float64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 1004,
+      "status": "OK"
+    },
+    "bikes_out_of_order": {
+      "dtype": "Int64",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 42,
+      "status": "OK"
+    },
+    "collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2620,
+      "status": "OK"
+    },
+    "rounded_collected_at": {
+      "dtype": "Datetime(time_unit='ns', time_zone=None)",
+      "null_count": 0,
+      "null_pct": 0.0,
+      "distinct_count": 2620,
+      "status": "OK"
+    }
+  },
+  "column_insights": {},
+  "timestamp": "2025-10-27 20:14:22 UTC",
+  "start_time": "2025-10-27T21:14:22.968075",
+  "check_durations": {
+    "numeric_checks": 0.011215999999999999,
+    "string_checks": 0.034687,
+    "date_checks": 0.010816000000000001
+  },
+  "end_time": "2025-10-27T21:14:23.025136",
+  "duration_seconds": 0.06,
+  "data": "shape: (10_000, 13)\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u252c\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 station_c \u2506 station_n \u2506 capacity \u2506 docks_ava \u2506 \u2026 \u2506 rate_dock \u2506 bikes_out \u2506 collected \u2506 rounded_c \u2502\n\u2502 ode       \u2506 ame       \u2506 ---      \u2506 ilable    \u2506   \u2506 _availabl \u2506 _of_order \u2506 _at       \u2506 ollected_ \u2502\n\u2502 ---       \u2506 ---       \u2506 i64      \u2506 ---       \u2506   \u2506 e         \u2506 ---       \u2506 ---       \u2506 at        \u2502\n\u2502 i64       \u2506 str       \u2506          \u2506 i64       \u2506   \u2506 ---       \u2506 i64       \u2506 datetime[ \u2506 ---       \u2502\n\u2502           \u2506           \u2506          \u2506           \u2506   \u2506 f64       \u2506           \u2506 ns]       \u2506 datetime[ \u2502\n\u2502           \u2506           \u2506          \u2506           \u2506   \u2506           \u2506           \u2506           \u2506 ns]       \u2502\n\u255e\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u256a\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2550\u2561\n\u2502 5001      \u2506 Harpe -   \u2506 45       \u2506 20        \u2506 \u2026 \u2506 0.444444  \u2506 3         \u2506 2025-08-2 \u2506 2025-08-2 \u2502\n\u2502           \u2506 Saint-Ger \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 0         \u2506 0         \u2502\n\u2502           \u2506 main      \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 05:06:19  \u2506 05:00:00  \u2502\n\u2502 15063     \u2506 Conventio \u2506 23       \u2506 2         \u2506 \u2026 \u2506 0.086957  \u2506 1         \u2506 2025-09-2 \u2506 2025-09-2 \u2502\n\u2502           \u2506 n - Saint \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 0         \u2506 0         \u2502\n\u2502           \u2506 -Charles  \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 15:06:52  \u2506 15:00:00  \u2502\n\u2502 13118     \u2506 Regnault  \u2506 63       \u2506 16        \u2506 \u2026 \u2506 0.253968  \u2506 0         \u2506 2025-08-1 \u2506 2025-08-1 \u2502\n\u2502           \u2506 - Patay   \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 0         \u2506 0         \u2502\n\u2502           \u2506           \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 06:06:38  \u2506 06:00:00  \u2502\n\u2502 43403     \u2506 Gare RER  \u2506 40       \u2506 30        \u2506 \u2026 \u2506 0.75      \u2506 2         \u2506 2025-08-2 \u2506 2025-08-2 \u2502\n\u2502           \u2506 -         \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 2         \u2506 2         \u2502\n\u2502           \u2506 Canadiens \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 19:05:58  \u2506 19:00:00  \u2502\n\u2502 11048     \u2506 Place     \u2506 43       \u2506 1         \u2506 \u2026 \u2506 0.023256  \u2506 7         \u2506 2025-07-2 \u2506 2025-07-2 \u2502\n\u2502           \u2506 Mireille  \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 9         \u2506 9         \u2502\n\u2502           \u2506 Havet     \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 03:06:36  \u2506 03:00:00  \u2502\n\u2502 \u2026         \u2506 \u2026         \u2506 \u2026        \u2506 \u2026         \u2506 \u2026 \u2506 \u2026         \u2506 \u2026         \u2506 \u2026         \u2506 \u2026         \u2502\n\u2502 26006     \u2506 Bas -     \u2506 30       \u2506 8         \u2506 \u2026 \u2506 0.266667  \u2506 1         \u2506 2025-07-0 \u2506 2025-07-0 \u2502\n\u2502           \u2506 Gabriel   \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 3         \u2506 3         \u2502\n\u2502           \u2506 P\u00e9ri      \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 01:06:12  \u2506 01:00:00  \u2502\n\u2502 5121      \u2506 Square    \u2506 34       \u2506 28        \u2506 \u2026 \u2506 0.823529  \u2506 1         \u2506 2025-08-0 \u2506 2025-08-0 \u2502\n\u2502           \u2506 Ren\u00e9      \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 1         \u2506 1         \u2502\n\u2502           \u2506 Viviani - \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 14:06:16  \u2506 14:00:00  \u2502\n\u2502           \u2506 Montebel\u2026 \u2506          \u2506           \u2506   \u2506           \u2506           \u2506           \u2506           \u2502\n\u2502 21032     \u2506 S\u00e8vres-Ga \u2506 27       \u2506 14        \u2506 \u2026 \u2506 0.518519  \u2506 0         \u2506 2025-08-2 \u2506 2025-08-2 \u2502\n\u2502           \u2506 llieni    \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 0         \u2506 0         \u2502\n\u2502           \u2506           \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 12:06:30  \u2506 12:00:00  \u2502\n\u2502 41405     \u2506 Place de  \u2506 24       \u2506 6         \u2506 \u2026 \u2506 0.25      \u2506 0         \u2506 2025-09-2 \u2506 2025-09-2 \u2502\n\u2502           \u2506 l'Europe  \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 2         \u2506 2         \u2502\n\u2502           \u2506 - Alfortv \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 11:06:39  \u2506 11:00:00  \u2502\n\u2502           \u2506 ill\u2026      \u2506          \u2506           \u2506   \u2506           \u2506           \u2506           \u2506           \u2502\n\u2502 35001     \u2506 Jean      \u2506 22       \u2506 13        \u2506 \u2026 \u2506 0.590909  \u2506 1         \u2506 2025-08-1 \u2506 2025-08-1 \u2502\n\u2502           \u2506 Jaur\u00e8s -  \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 9         \u2506 9         \u2502\n\u2502           \u2506 Ouvri\u00e8res \u2506          \u2506           \u2506   \u2506           \u2506           \u2506 17:06:09  \u2506 17:00:00  \u2502\n\u2502           \u2506 Piv\u00e9re\u2026   \u2506          \u2506           \u2506   \u2506           \u2506           \u2506           \u2506           \u2502\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2534\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+  "table_metadata": {
+    "table_name": "fct_avaibility_part",
+    "table_type": "BASE TABLE",
+    "created_time": "2025-10-22 09:22:21.004000+00:00",
+    "table_uid": "portfolio-402.dbt_prod.fct_avaibility_part",
+    "row_count": 3877353,
+    "size_bytes": 474398555,
+    "created_at": "2025-10-22 09:22:21.004000+00:00",
+    "modified_at": "2025-10-22 09:22:21.004000+00:00",
+    "partition_column": "collected_at",
+    "partition_type": "TIME",
+    "clustering_columns": [
+      "station_code"
+    ]
+  },
+  "phase_timings": {
+    "connection": 3e-06,
+    "metadata": 0.011437,
+    "column_selection": 0.000406,
+    "data_loading": 3.51694,
+    "audit_checks": 0.05748
+  },
+  "config_metadata": {
+    "version": 1,
+    "project": "Bike Availability Data Quality",
+    "description": "Auditing availability fact table and station dimension for data quality issues",
+    "last_modified": "2025-10-24"
+  }
+}

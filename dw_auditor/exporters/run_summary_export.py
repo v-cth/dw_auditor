@@ -247,14 +247,14 @@ def export_run_summary_to_html(all_results: List[Dict], file_path: str = "summar
         table_rows_html += f"""
                     <tr style="border-bottom: 1px solid #f2f2f2;">
                         <td style="padding: 12px 16px; color: #222;"><a href="{table_name}/audit.html" style="color: var(--accent); text-decoration: none; font-weight: 500;">{table_name}</a></td>
-                        <td style="padding: 12px 16px; text-align: right; color: #222;">{total_rows:,}</td>
-                        <td style="padding: 12px 16px; text-align: right; color: #222;">{analyzed_rows:,}</td>
+                        <td style="padding: 12px 16px; text-align: left; color: #222;">{total_rows:,}</td>
+                        <td style="padding: 12px 16px; text-align: left; color: #222;">{analyzed_rows:,}</td>
                         <td style="padding: 12px 16px; color: #222;">{'Yes' if sampled else 'No'}</td>
-                        <td style="padding: 12px 16px; text-align: right; color: #222;">{column_count}</td>
-                        <td style="padding: 12px 16px; text-align: right; color: #222;">{table_issues}</td>
-                        <td style="padding: 12px 16px; text-align: right; color: #222;">{columns_with_issues}</td>
+                        <td style="padding: 12px 16px; text-align: left; color: #222;">{column_count}</td>
+                        <td style="padding: 12px 16px; text-align: left; color: #222;">{table_issues}</td>
+                        <td style="padding: 12px 16px; text-align: left; color: #222;">{columns_with_issues}</td>
                         <td style="padding: 12px 16px;">{status_badge}</td>
-                        <td style="padding: 12px 16px; text-align: right; color: #222;">{duration:.2f}s</td>
+                        <td style="padding: 12px 16px; text-align: left; color: #222;">{duration:.2f}s</td>
                     </tr>
 """
 
@@ -337,14 +337,14 @@ def export_run_summary_to_html(all_results: List[Dict], file_path: str = "summar
                 <thead>
                     <tr style="background: #fafafa; border-bottom: 1px solid #eee;">
                         <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Table Name</th>
-                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Total Rows</th>
-                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Analyzed</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Total Rows</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Analyzed</th>
                         <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Sampled</th>
-                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Columns</th>
-                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Issues</th>
-                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Cols w/ Issues</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Columns</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Issues</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Cols w/ Issues</th>
                         <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Status</th>
-                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Duration</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Duration</th>
                     </tr>
                 </thead>
                 <tbody>

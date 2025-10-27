@@ -1,0 +1,667 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Run Summary</title>
+    <style>
+        
+        :root {
+            --text-main: #000;
+            --text-muted: #666;
+            --border-light: #e5e5e5;
+            --accent: #6606dc;
+            --bg-alt: #fafafa;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #fff;
+            color: var(--text-main);
+            margin: 0;
+            padding: 40px 24px;
+            max-width: 1100px;
+            margin-inline: auto;
+            line-height: 1.6;
+        }
+
+        /* Header layout */
+        .report-header {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 32px;
+        }
+
+        .report-title {
+            font-size: 2.8rem;
+            font-weight: 400;
+            letter-spacing: -0.5px;
+            line-height: 1.1;
+            max-width: 900px;
+            margin: 0;
+        }
+
+        .table-name {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1;
+            color: var(--accent);
+            margin: 0;
+        }
+
+        .table-tag {
+            font-size: 0.9rem;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--text-muted);
+            margin-top: 8px;
+        }
+
+        .meta-line {
+            border-top: 1px solid var(--border-light);
+            padding-top: 14px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 24px;
+            font-size: 0.9rem;
+        }
+
+        .meta-block {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .meta-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            color: var(--text-muted);
+            letter-spacing: 0.5px;
+        }
+
+        .meta-value {
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--accent);
+        }
+
+        /* Summary cards */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+        }
+
+        .card {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 4px;
+        }
+
+        .card h2 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin: 0;
+            color: var(--accent);
+        }
+
+        .card p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
+        .card .status-warning {
+            color: #d97706;
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-light);
+            margin-top: 32px;
+            gap: 32px;
+        }
+
+        .tab {
+            position: relative;
+            padding: 12px 0;
+            font-size: 1rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            cursor: pointer;
+            transition: color 0.2s ease;
+            border: none;
+            background: none;
+        }
+
+        .tab:hover {
+            color: var(--text-main);
+        }
+
+        .tab.active {
+            color: var(--accent);
+        }
+
+        .tab.active::after {
+            content: "";
+            position: absolute;
+            bottom: -1px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: var(--accent);
+        }
+
+        /* Tab content */
+        .tab-content {
+            display: none;
+            padding-top: 28px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Tables */
+        .columns-table {
+            margin-top: 16px;
+            background: #fff;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+            overflow: hidden;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        thead {
+            background: var(--bg-alt);
+        }
+
+        th, td {
+            padding: 12px 16px;
+            text-align: left;
+        }
+
+        th {
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            letter-spacing: 0.5px;
+        }
+
+        tbody tr:nth-child(even) {
+            background: #fcfcfc;
+        }
+
+        tbody tr:hover {
+            background: #f8f5ff !important;
+        }
+
+        td {
+            color: var(--text-main);
+            font-weight: 400;
+        }
+
+        /* Column cards */
+        .column-card {
+            background: white;
+            border: 1px solid var(--border-light);
+            border-radius: 8px;
+            margin-bottom: 16px;
+            overflow: hidden;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+        }
+
+        .column-name {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: var(--text-main);
+        }
+
+        .column-type {
+            background: var(--bg-alt);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        /* Issues */
+        .summary {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 24px;
+            border: 1px solid var(--border-light);
+        }
+
+        .summary.success {
+            border-left: 4px solid #10b981;
+        }
+
+        .summary.warning {
+            border-left: 4px solid #d97706;
+        }
+
+        .summary h2 {
+            margin: 0 0 8px 0;
+            font-size: 1.3rem;
+            font-weight: 600;
+        }
+
+        .summary p {
+            margin: 0;
+            color: var(--text-muted);
+        }
+
+        .issue {
+            background: #fffbeb;
+            border-left: 3px solid #d97706;
+            padding: 12px 16px;
+            margin: 12px 0;
+            border-radius: 4px;
+        }
+
+        .issue-type {
+            font-weight: 600;
+            color: #d97706;
+            margin-bottom: 8px;
+            font-size: 0.95rem;
+        }
+
+        .issue-stats {
+            color: var(--text-muted);
+            margin: 5px 0;
+            font-size: 0.9rem;
+        }
+
+        .suggestion {
+            background: #eff6ff;
+            border-left: 3px solid var(--accent);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 3px;
+            font-size: 0.9rem;
+        }
+
+        .examples {
+            background: var(--bg-alt);
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+            overflow-x: auto;
+        }
+
+        /* Collapsible */
+        .collapsible-header {
+            cursor: pointer;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            padding: 16px;
+            transition: background 0.2s;
+        }
+
+        .collapsible-header:hover {
+            background: var(--bg-alt);
+        }
+
+        .collapse-icon {
+            margin-right: 8px;
+            font-size: 0.9em;
+            transition: transform 0.3s;
+            display: inline-block;
+            font-weight: bold;
+        }
+
+        .collapse-icon.collapsed {
+            transform: rotate(-90deg);
+        }
+
+        .collapsible-content {
+            overflow: hidden;
+            transition: max-height 0.3s ease-out, opacity 0.3s ease-out;
+            padding: 0 16px 16px 16px;
+        }
+
+        .collapsible-content.collapsed {
+            max-height: 0 !important;
+            opacity: 0;
+            padding: 0 16px;
+        }
+
+        /* Footer */
+        .footer {
+            text-align: center;
+            color: var(--text-muted);
+            margin-top: 64px;
+            padding-top: 24px;
+            border-top: 1px solid var(--border-light);
+            font-size: 0.9rem;
+        }
+
+
+
+        /* Summary-specific overrides */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+            margin-bottom: 32px;
+        }
+
+        .status-ok { color: #10b981; }
+        .status-warning { color: #f59e0b; }
+        .status-error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1 style="font-size: 2rem; font-weight: 700; margin: 0 0 0.5rem 0;">Audit Run Summary</h1>
+            <div style="display: flex; gap: 24px; flex-wrap: wrap; font-size: 0.9rem; color: var(--text-muted);">
+                <span>Generated: 2025-10-27 19:12:10 UTC</span>
+                <span>Duration: 0.08s</span>
+            </div>
+        </header>
+
+        <!-- Summary Cards -->
+        <div class="summary-cards" style="border-top: 1px solid var(--border-light); padding-top: 24px; border-bottom: 1px solid var(--border-light); padding-bottom: 24px;">
+            <div class="card">
+                <h2>2</h2>
+                <p>Tables Audited</p>
+            </div>
+            <div class="card">
+                <h2>11,587</h2>
+                <p>Rows Analyzed</p>
+            </div>
+            <div class="card">
+                <h2 class="status-error">5</h2>
+                <p>Issues Found</p>
+            </div>
+            <div class="card">
+                <h2 class="status-ok">0</h2>
+                <p>OK Tables</p>
+            </div>
+            <div class="card">
+                <h2 class="status-warning">2</h2>
+                <p>Warning Tables</p>
+            </div>
+            <div class="card">
+                <h2 class="status-error">0</h2>
+                <p>Error Tables</p>
+            </div>
+        </div>
+
+        <!-- Tables List -->
+        <h3 style="font-size: 1.25rem; font-weight: 600; margin-top: 2rem; margin-bottom: 0.25rem; color: #000;">Audited Tables</h3>
+        <p style="font-size: 0.9rem; color: #666; margin-bottom: 1rem;">Detailed results for each table</p>
+
+        <div style="background: #fff; border: 1px solid #eee; border-radius: 12px; box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04); overflow: hidden;">
+            <table>
+                <thead>
+                    <tr style="background: #fafafa; border-bottom: 1px solid #eee;">
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Table Name</th>
+                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Total Rows</th>
+                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Analyzed</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Sampled</th>
+                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Columns</th>
+                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Issues</th>
+                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Cols w/ Issues</th>
+                        <th style="padding: 12px 16px; text-align: left; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Status</th>
+                        <th style="padding: 12px 16px; text-align: right; font-size: 0.8rem; font-weight: 600; color: #666; text-transform: uppercase;">Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222;"><a href="fct_avaibility_part/audit.html" style="color: var(--accent); text-decoration: none; font-weight: 500;">fct_avaibility_part</a></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">3,877,353</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">10,000</td>
+                        <td style="padding: 12px 16px; color: #222;">Yes</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">13</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">3</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">2</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #92400e;">Warning</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">0.05s</td>
+                    </tr>
+
+                    <tr style="border-bottom: 1px solid #f2f2f2;">
+                        <td style="padding: 12px 16px; color: #222;"><a href="dim_station/audit.html" style="color: var(--accent); text-decoration: none; font-weight: 500;">dim_station</a></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">1,587</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">1,587</td>
+                        <td style="padding: 12px 16px; color: #222;">No</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">9</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">2</td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">2</td>
+                        <td style="padding: 12px 16px;"><span style="font-size: 0.75rem; font-weight: 600; text-transform: uppercase; padding: 2px 8px; border-radius: 999px; background: #fef3c7; color: #92400e;">Warning</span></td>
+                        <td style="padding: 12px 16px; text-align: right; color: #222;">0.03s</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Relationships Section -->
+
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+
+    <section class="relationships-section" style="margin-top: 40px;">
+        <h2 style="font-size: 24px; font-weight: 600; color: #1f2937; margin-bottom: 20px;">
+            Table Relationships
+        </h2>
+        <p style="color: #6b7280; margin-bottom: 20px;">
+            Automatically detected relationships between tables based on column names, data types, and value overlaps.
+        </p>
+
+        <!-- Interactive Network Diagram -->
+        <div style="background: #f0f9ff; border: 1px solid #bae6fd; padding: 12px 16px; border-radius: 6px; margin-bottom: 20px; color: #0c4a6e; font-size: 14px;">
+            <strong>💡 Tip:</strong> Hover over edges (lines) to see relationship details. Drag nodes to rearrange the diagram.
+        </div>
+
+        <div id="relationship-network" style="width: 100%; height: 400px; border: 1px solid #e5e7eb; background-color: white; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 30px;"></div>
+
+        <script type="text/javascript">
+            (function() {
+                var nodes = new vis.DataSet([{"id": "dim_station", "label": "dim_station", "title": "<b>dim_station</b><br>Rows: 1,587<br>Columns: 9"}, {"id": "fct_avaibility_part", "label": "fct_avaibility_part", "title": "<b>fct_avaibility_part</b><br>Rows: 3,877,353<br>Columns: 13"}]);
+                var edges = new vis.DataSet([{"from": "dim_station", "to": "fct_avaibility_part", "label": "", "title": "<b>3 relationship(s) detected:</b><br>\u2022 station_name \u2192 station_name<br>  Confidence: 97.1% | many-to-one<br>\u2022 station_code \u2192 station_code<br>  Confidence: 96.8% | many-to-one<br>\u2022 capacity \u2194 capacity<br>  Confidence: 96.2% | many-to-many<br>", "width": 6.798471337579619, "value": 0.9712101910828026, "color": {"color": "#6606dc", "highlight": "#6606dc"}, "arrows": {"from": {"enabled": true, "scaleFactor": 0.6}}}]);
+
+                var container = document.getElementById('relationship-network');
+                var data = {
+                    nodes: nodes,
+                    edges: edges
+                };
+
+                var options = {
+                    nodes: {
+                        shape: 'box',
+                        font: {
+                            size: 14,
+                            color: 'white',
+                            face: 'Arial, sans-serif',
+                            bold: {
+                                color: 'white'
+                            }
+                        },
+                        color: {
+                            background: '#6606dc',
+                            border: '#5005b8',
+                            highlight: {
+                                background: '#5005b8',
+                                border: '#4004a0'
+                            }
+                        },
+                        margin: 12,
+                        borderWidth: 2,
+                        widthConstraint: {
+                            minimum: 200,
+                            maximum: 300
+                        }
+                    },
+                    edges: {
+                        smooth: {
+                            type: 'cubicBezier',
+                            forceDirection: 'vertical',
+                            roundness: 0.4
+                        },
+                        font: { size: 0 },
+                        shadow: {
+                            enabled: true,
+                            color: 'rgba(0,0,0,0.1)',
+                            size: 3,
+                            x: 0,
+                            y: 2
+                        }
+                    },
+                    physics: {
+                        enabled: true,
+                        barnesHut: {
+                            gravitationalConstant: -5000,
+                            springConstant: 0.04,
+                            springLength: 120
+                        },
+                        stabilization: {
+                            iterations: 150
+                        }
+                    },
+                    interaction: {
+                        hover: true,
+                        tooltipDelay: 100
+                    }
+                };
+
+                var network = new vis.Network(container, data, options);
+            })();
+        </script>
+
+        <!-- Detailed Table View -->
+        <h3 style="font-size: 18px; font-weight: 600; color: #1f2937; margin-bottom: 16px; margin-top: 30px;">
+            Relationship Details
+        </h3>
+
+        <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+            <thead style="background-color: #f9fafb; border-bottom: 2px solid #e5e7eb;">
+                <tr>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563; font-size: 13px;">SOURCE</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #4b5563; font-size: 13px; width: 40px;"></th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563; font-size: 13px;">TARGET</th>
+                    <th style="padding: 12px; text-align: left; font-weight: 600; color: #4b5563; font-size: 13px; width: 200px;">CONFIDENCE</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #4b5563; font-size: 13px; width: 120px;">TYPE</th>
+                    <th style="padding: 12px; text-align: center; font-weight: 600; color: #4b5563; font-size: 13px; width: 100px;">MATCHING</th>
+                </tr>
+            </thead>
+            <tbody>
+    
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 12px;">
+                        <div style="font-weight: 500; color: #1f2937;">fct_avaibility_part</div>
+                        <div style="font-size: 12px; color: #6b7280; font-family: 'Courier New', monospace;">station_name</div>
+                    </td>
+                    <td style="padding: 12px; text-align: center; color: #6606dc; font-size: 18px;">
+                        →
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="font-weight: 500; color: #1f2937;">dim_station</div>
+                        <div style="font-size: 12px; color: #6b7280; font-family: 'Courier New', monospace;">station_name</div>
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="flex: 1; height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; width: 97.1%; background: #10b981;"></div>
+                            </div>
+                            <span style="font-size: 13px; font-weight: 600; color: #10b981; min-width: 42px;">97%</span>
+                        </div>
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #e0e7ff; color: #4338ca;">
+                            many-to-one
+                        </span>
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-weight: 500; color: #4b5563;">
+                        1,457
+                    </td>
+                </tr>
+        
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 12px;">
+                        <div style="font-weight: 500; color: #1f2937;">fct_avaibility_part</div>
+                        <div style="font-size: 12px; color: #6b7280; font-family: 'Courier New', monospace;">station_code</div>
+                    </td>
+                    <td style="padding: 12px; text-align: center; color: #6606dc; font-size: 18px;">
+                        →
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="font-weight: 500; color: #1f2937;">dim_station</div>
+                        <div style="font-size: 12px; color: #6b7280; font-family: 'Courier New', monospace;">station_code</div>
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="flex: 1; height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; width: 96.8%; background: #10b981;"></div>
+                            </div>
+                            <span style="font-size: 13px; font-weight: 600; color: #10b981; min-width: 42px;">97%</span>
+                        </div>
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #e0e7ff; color: #4338ca;">
+                            many-to-one
+                        </span>
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-weight: 500; color: #4b5563;">
+                        1,461
+                    </td>
+                </tr>
+        
+                <tr style="border-bottom: 1px solid #f3f4f6;">
+                    <td style="padding: 12px;">
+                        <div style="font-weight: 500; color: #1f2937;">fct_avaibility_part</div>
+                        <div style="font-size: 12px; color: #6b7280; font-family: 'Courier New', monospace;">capacity</div>
+                    </td>
+                    <td style="padding: 12px; text-align: center; color: #6606dc; font-size: 18px;">
+                        ↔
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="font-weight: 500; color: #1f2937;">dim_station</div>
+                        <div style="font-size: 12px; color: #6b7280; font-family: 'Courier New', monospace;">capacity</div>
+                    </td>
+                    <td style="padding: 12px;">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <div style="flex: 1; height: 8px; background: #f3f4f6; border-radius: 4px; overflow: hidden;">
+                                <div style="height: 100%; width: 96.2%; background: #10b981;"></div>
+                            </div>
+                            <span style="font-size: 13px; font-weight: 600; color: #10b981; min-width: 42px;">96%</span>
+                        </div>
+                    </td>
+                    <td style="padding: 12px; text-align: center;">
+                        <span style="padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: 500; background: #fce7f3; color: #9f1239;">
+                            many-to-many
+                        </span>
+                    </td>
+                    <td style="padding: 12px; text-align: center; font-weight: 500; color: #4b5563;">
+                        66
+                    </td>
+                </tr>
+        
+            </tbody>
+        </table>
+    </section>
+    
+    </div>
+</body>
+</html>

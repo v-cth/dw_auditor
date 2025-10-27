@@ -353,6 +353,221 @@ def _generate_css_styles() -> str:
             font-size: 0.9rem;
         }
 
+        /* Common utility classes */
+        .section-container {
+            background: white;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .section-header {
+            margin-top: 16px;
+            color: #1f2937;
+            font-size: 1.3rem;
+        }
+
+        .section-header-first {
+            margin-top: 0;
+            color: #1f2937;
+            font-size: 1.3rem;
+        }
+
+        .subsection-header {
+            font-size: 1.25rem;
+            font-weight: 600;
+            margin-top: 2rem;
+            margin-bottom: 0.25rem;
+            color: #000;
+        }
+
+        .subsection-description {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1rem;
+        }
+
+        .meta-item {
+            margin-bottom: 16px;
+        }
+
+        .meta-label {
+            color: #6b7280;
+            font-size: 0.9em;
+        }
+
+        .meta-value {
+            color: #1f2937;
+            font-weight: 500;
+            margin-left: 8px;
+        }
+
+        .meta-value-mono {
+            color: #1f2937;
+            font-weight: 500;
+            margin-left: 8px;
+            font-family: 'Courier New', monospace;
+        }
+
+        .divider {
+            margin-top: 24px;
+            padding-top: 16px;
+            border-top: 1px solid #e5e7eb;
+        }
+
+        /* Status badges */
+        .badge {
+            font-size: 0.75rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        .badge-ok {
+            background: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-error {
+            background: #fee2e2;
+            color: #b91c1c;
+        }
+
+        .badge-warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-skipped {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+        .badge-not-loaded {
+            background: #f3f4f6;
+            color: #555;
+        }
+
+        .badge-na {
+            background: #f3f4f6;
+            color: #555;
+        }
+
+        /* Info boxes */
+        .info-box {
+            padding: 12px 15px;
+            margin-bottom: 15px;
+            border-radius: 4px;
+            border-left: 4px solid;
+        }
+
+        .info-box-success {
+            background: #ecfdf5;
+            border-left-color: #10b981;
+        }
+
+        .info-box-info {
+            background: #eff6ff;
+            border-left-color: #3b82f6;
+        }
+
+        /* Tables */
+        .data-table {
+            background: #fff;
+            border: 1px solid #eee;
+            border-radius: 12px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+            margin-bottom: 30px;
+        }
+
+        .data-table table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.95rem;
+        }
+
+        .data-table thead {
+            background: #fafafa;
+            border-bottom: 1px solid #eee;
+        }
+
+        .data-table th {
+            padding: 12px 16px;
+            text-align: left;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #666;
+            text-transform: uppercase;
+        }
+
+        .data-table tbody tr {
+            border-bottom: 1px solid #f2f2f2;
+        }
+
+        .data-table tbody tr:last-child {
+            border-bottom: none;
+        }
+
+        .data-table td {
+            padding: 12px 16px;
+            color: #222;
+        }
+
+        .td-bold {
+            font-weight: bold;
+        }
+
+        .td-error {
+            color: #dc2626;
+            font-weight: bold;
+        }
+
+        /* Insight sections */
+        .insight-section {
+            margin-bottom: 15px;
+        }
+
+        .insight-header {
+            margin: 10px 0 8px 0;
+            color: #6b7280;
+            font-size: 0.95em;
+        }
+
+        .insight-content {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid #e5e7eb;
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            padding: 15px;
+            background: #fafafa;
+            border-radius: 6px;
+        }
+
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .stat-label {
+            font-size: 0.85em;
+            color: #6b7280;
+            margin-bottom: 4px;
+        }
+
+        .stat-value {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1f2937;
+        }
+
 """
 
 
