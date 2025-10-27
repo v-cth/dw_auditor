@@ -25,7 +25,7 @@ class DatabaseConnection:
                 For BigQuery cross-project queries (e.g., public datasets):
                     project_id: Your billing project (where jobs run)
                     source_project_id: Source project containing the data (optional)
-                    dataset_id: Dataset to query
+                    schema: Default dataset/schema to query
         """
         if backend.lower() not in self.SUPPORTED_BACKENDS:
             raise ValueError(
@@ -64,7 +64,7 @@ class DatabaseConnection:
         """Connect to BigQuery"""
         # BigQuery connection parameters
         project_id = self.connection_params.get('project_id')
-        dataset_id = self.connection_params.get('dataset_id')
+        schema = self.connection_params.get('schema')
         credentials_path = self.connection_params.get('credentials_path')
         credentials_json = self.connection_params.get('credentials_json')
 
@@ -82,8 +82,9 @@ class DatabaseConnection:
                 credentials_json = json.loads(credentials_json)
             conn_kwargs['credentials'] = credentials_json
 
-        if dataset_id:
-            conn_kwargs['dataset_id'] = dataset_id
+        # Set default dataset if provided (ibis uses 'dataset_id' parameter name)
+        if schema:
+            conn_kwargs['dataset_id'] = schema
 
         return ibis.bigquery.connect(**conn_kwargs)
 
@@ -125,9 +126,9 @@ class DatabaseConnection:
 
         # For BigQuery cross-project queries (e.g., querying public datasets)
         if self.backend == 'bigquery' and self.source_project_id:
-            dataset = schema or self.connection_params.get('dataset_id')
+            dataset = schema or self.connection_params.get('schema')
             if not dataset:
-                raise ValueError("dataset_id is required for BigQuery cross-project queries")
+                raise ValueError("schema is required for BigQuery cross-project queries")
 
             # Use fully-qualified table name for cross-project access
             full_table_name = f"`{self.source_project_id}.{dataset}.{table_name}`"
@@ -176,7 +177,7 @@ class DatabaseConnection:
             # Execute raw SQL only if explicitly provided
             # For BigQuery with cross-project queries, we need to qualify table names
             if self.backend == 'bigquery':
-                dataset = schema or self.connection_params.get('dataset_id')
+                dataset = schema or self.connection_params.get('schema')
 
                 # If we have a source_project_id (cross-project query), use it
                 if self.source_project_id and dataset:
@@ -309,7 +310,7 @@ class DatabaseConnection:
         try:
             if self.backend == 'bigquery':
                 # BigQuery INFORMATION_SCHEMA.TABLES
-                dataset = schema or self.connection_params.get('dataset_id')
+                dataset = schema or self.connection_params.get('schema')
                 if not dataset:
                     return table_names
 
@@ -374,7 +375,7 @@ class DatabaseConnection:
         try:
             if self.backend == 'bigquery':
                 # BigQuery INFORMATION_SCHEMA.TABLES
-                dataset = schema or self.connection_params.get('dataset_id')
+                dataset = schema or self.connection_params.get('schema')
                 if not dataset:
                     return metadata
 
@@ -517,15 +518,15 @@ class DatabaseConnection:
                 # BigQuery supports primary key declarations (NOT ENFORCED) since 2023
                 # They're stored in INFORMATION_SCHEMA as metadata
                 project_id = self.connection_params.get('project_id')
-                dataset_id = schema or self.connection_params.get('dataset_id')
+                dataset = schema or self.connection_params.get('schema')
 
-                if not dataset_id:
+                if not dataset:
                     return primary_keys
 
                 try:
                     # Query for primary key constraints
                     # Note: BigQuery PK constraints are NOT ENFORCED but exist as metadata
-                    constraints_table = f'{project_id}.{dataset_id}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS'
+                    constraints_table = f'{project_id}.{dataset}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS'
                     constraints = self.conn.table(constraints_table)
                     pk_constraints = (
                         constraints
@@ -541,7 +542,7 @@ class DatabaseConnection:
                         constraint_name = pk_constraints['constraint_name'][0]
 
                         # Get column names for this constraint
-                        key_columns_table = f'{project_id}.{dataset_id}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE'
+                        key_columns_table = f'{project_id}.{dataset}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE'
                         key_columns = self.conn.table(key_columns_table)
                         pk_columns = (
                             key_columns
@@ -621,7 +622,7 @@ class DatabaseConnection:
         try:
             if self.backend == 'bigquery':
                 # BigQuery INFORMATION_SCHEMA.COLUMNS
-                dataset = schema or self.connection_params.get('dataset_id')
+                dataset = schema or self.connection_params.get('schema')
                 if not dataset:
                     return column_schema
 
@@ -711,7 +712,7 @@ class DatabaseConnection:
             # Build the query we'll actually run
             if custom_query:
                 # Use custom query
-                dataset = schema or self.connection_params.get('dataset_id')
+                dataset = schema or self.connection_params.get('schema')
 
                 # Handle cross-project references
                 if self.source_project_id and dataset:
@@ -731,7 +732,7 @@ class DatabaseConnection:
                     query = custom_query
             else:
                 # Build query from table reference
-                dataset = schema or self.connection_params.get('dataset_id')
+                dataset = schema or self.connection_params.get('schema')
 
                 if self.source_project_id and dataset:
                     full_table_name = f"`{self.source_project_id}.{dataset}.{table_name}`"
@@ -797,7 +798,7 @@ class DatabaseConnection:
                 if self.backend == 'bigquery':
                     # BigQuery INFORMATION_SCHEMA uses __TABLES__ for row counts
                     # Note: __TABLES__ may not be accessible for cross-project queries
-                    dataset = schema or self.connection_params.get('dataset_id')
+                    dataset = schema or self.connection_params.get('schema')
                     if not dataset:
                         raise ValueError("Dataset must be specified for BigQuery row count")
 
@@ -907,7 +908,7 @@ def create_connection(backend: str, **connection_params) -> DatabaseConnection:
         conn = create_connection(
             'bigquery',
             project_id='my-project',
-            dataset_id='my_dataset',
+            schema='my_dataset',
             credentials_path='/path/to/credentials.json'
         )
 

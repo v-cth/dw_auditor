@@ -23,7 +23,7 @@ class AuditConfig:
         db_config = config_dict.get('database') or {}
         self.backend = db_config.get('backend')  # 'bigquery' or 'snowflake'
         self.connection_params = db_config.get('connection_params', {})
-        self.schema = db_config.get('schema')
+        self.schema = self.connection_params.get('schema')  # Default schema from connection params
 
         # Tables to audit - normalize format
         # Support both simple list and dict format with primary keys, custom queries, and schemas
@@ -67,7 +67,6 @@ class AuditConfig:
         # Sampling configuration
         sampling = config_dict.get('sampling') or {}
         self.sample_size = sampling.get('sample_size', 100000)
-        self.sample_threshold = sampling.get('sample_threshold', 1000000)
         self.sample_in_db = sampling.get('sample_in_db', True)
 
         # Sampling strategy configuration
@@ -81,16 +80,6 @@ class AuditConfig:
         security = config_dict.get('security') or {}
         self.mask_pii = security.get('mask_pii', True)
         self.custom_pii_keywords = security.get('custom_pii_keywords', [])
-
-        # Audit checks configuration
-        checks = config_dict.get('checks') or {}
-        self.check_trailing_characters = checks.get('trailing_characters', True)
-        self.check_ending_characters = checks.get('ending_characters', False)
-        self.check_case_duplicates = checks.get('case_duplicates', True)
-        self.check_regex_patterns = checks.get('regex_patterns', checks.get('special_characters', False))
-        self.check_numeric_strings = checks.get('numeric_strings', True)
-        self.check_timestamp_patterns = checks.get('timestamp_patterns', True)
-        self.check_date_outliers = checks.get('date_outliers', True)
 
         # Thresholds
         thresholds = config_dict.get('thresholds') or {}
@@ -304,21 +293,11 @@ class AuditConfig:
             'tables': self.tables,
             'sampling': {
                 'sample_size': self.sample_size,
-                'sample_threshold': self.sample_threshold,
                 'sample_in_db': self.sample_in_db
             },
             'security': {
                 'mask_pii': self.mask_pii,
                 'custom_pii_keywords': self.custom_pii_keywords
-            },
-            'checks': {
-                'trailing_characters': self.check_trailing_characters,
-                'ending_characters': self.check_ending_characters,
-                'case_duplicates': self.check_case_duplicates,
-                'regex_patterns': self.check_regex_patterns,
-                'numeric_strings': self.check_numeric_strings,
-                'timestamp_patterns': self.check_timestamp_patterns,
-                'date_outliers': self.check_date_outliers
             },
             'thresholds': {
                 'numeric_string_pct': self.numeric_string_threshold * 100,

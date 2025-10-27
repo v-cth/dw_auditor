@@ -23,19 +23,16 @@ database:
   connection_params:
     # For BigQuery:
     # project_id: Your billing project (where queries are executed)
-    # dataset_id: Dataset to query
+    # schema: Default dataset for queries (can be overridden per-table)
     # source_project_id: (Optional) Source project for cross-project queries
     #                    Use this when querying public datasets or external projects
     #                    Jobs will run in project_id, data read from source_project_id
 
     # Example: Querying public datasets
     project_id: "portfolio-402"  # Your project (you have bigquery.jobs.create here)
+    schema: "dbt_prod"  # Default dataset for queries
     #source_project_id: "bigquery-public-data"  # Public dataset project (read-only)
-    #dataset_id: "crypto_bitcoin"  # Dataset to query, very heavy !!!!!!!
-
-    # Example: Querying your own datasets (no source_project_id needed)
-    # project_id: "portfolio-402"
-    dataset_id: "dbt_prod"
+    #schema: "crypto_bitcoin"  # Dataset to query, very heavy !!!!!!!
 
     #credentials_path: "/path/to/service-account-key.json"
     # Or use credentials_json for JSON string/dict
@@ -45,13 +42,9 @@ database:
     # user: "my-user"
     # password: "my-password"
     # database: "my_database"
+    # schema: "my_schema"  # Default schema for queries
     # warehouse: "my_warehouse"
     # role: "my_role"  # optional
-
-  # Optional: Schema name (overrides connection default)
-  # For BigQuery, this would be the dataset
-  # For Snowflake, this would be the schema
-  schema: null
 
 # Tables to Audit
 # ----------------------------------------------------------------------------
@@ -60,11 +53,10 @@ tables:
   - name: fct_avaibility_part
   - name: dim_station
     primary_key: station_code  # Optional: specify primary key column(s)
-    # schema: dbt_prod          # Optional: override dataset/schema for this table
   # - name: dtm_station_distance
   # - name: transactions
   #   primary_key: transaction_id
-  #   schema: dbt_staging       # Optional: audit tables from different datasets
+  #   schema: dbt_staging       # Optional: override default schema for this table
   #   query: "SELECT * FROM transactions LIMIT 3000"
 
 
@@ -268,11 +260,8 @@ relationship_detection:
 # Sampling Configuration
 # ----------------------------------------------------------------------------
 sampling:
-  # Number of rows to sample if table exceeds threshold
+  # Number of rows to sample (samples when table has more rows than this)
   sample_size: 10000
-
-  # Row count threshold to trigger sampling
-  sample_threshold: 10000
 
   # Use database-native sampling (faster, more secure)
   # If true, sampling happens in the database before loading data
@@ -309,37 +298,6 @@ security:
     - "customer_number"
     - "internal_code"
     - "confidential"
-
-# Quality Checks Configuration
-# ----------------------------------------------------------------------------
-# Enable/disable specific checks (these are legacy global settings, prefer column_checks above)
-checks:
-  # Check for leading/trailing whitespace characters (spaces, tabs, newlines, etc.)
-  trailing_characters: true
-
-  # Check for specific ending characters (e.g., punctuation marks)
-  ending_characters: false
-
-  # Check for values that differ only in case (e.g., "JOHN" vs "john")
-  case_duplicates: true
-
-  # Regex pattern validation/detection
-  # NO DEFAULT - must be explicitly configured with a pattern
-  # Can be: false (disabled, default), string (pattern with contains mode),
-  #         or dict with pattern/mode/description
-  regex_patterns: false
-
-  # Check for string columns containing only numbers
-  numeric_strings: true
-
-  # Check for timestamps that are effectively dates
-  timestamp_patterns: true
-
-  # Check for date/timestamp outliers (very old or future dates)
-  date_outliers: true
-
-  # Check for dates/datetimes that are in the future (relative to current time)
-  future_dates: true
 
 # Detection Thresholds (percentages)
 # ----------------------------------------------------------------------------
@@ -457,7 +415,6 @@ filters:
 #   - dim_time
 # sampling:
 #   sample_size: 500000
-#   sample_threshold: 5000000
 #   sample_in_db: true
 # security:
 #   mask_pii: true
@@ -478,7 +435,7 @@ filters:
 #   numeric_strings: false
 #   timestamp_patterns: false
 # sampling:
-#   sample_threshold: 10000
+#   sample_size: 10000
 # output:
 #   directory: "quick_audit"
 #   formats: [html]

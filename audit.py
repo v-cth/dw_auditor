@@ -124,7 +124,6 @@ Examples:
     # Create auditor
     auditor = SecureTableAuditor(
         sample_size=config.sample_size,
-        sample_threshold=config.sample_threshold,
         min_year=config.min_year,
         max_year=config.max_year,
         outlier_threshold_pct=config.outlier_threshold_pct
@@ -204,9 +203,9 @@ Examples:
                 if custom_query:
                     should_sample = False
                 elif is_cross_project:
-                    should_sample = (row_count is None or row_count > config.sample_threshold)
+                    should_sample = (row_count is None or row_count > config.sample_size)
                     sample_size = config.sample_size if should_sample else None
-                elif row_count and row_count > config.sample_threshold:
+                elif row_count and row_count > config.sample_size:
                     should_sample = True
                     sample_size = config.sample_size
 

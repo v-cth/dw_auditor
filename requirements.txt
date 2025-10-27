@@ -31,10 +31,6 @@ ibis-framework[snowflake]>=9.0.0   # Ibis Snowflake backend
 # Progress bars
 # tqdm>=4.65.0              # Progress bars for batch operations
 
-# Excel file support (if auditing .xlsx files)
-# openpyxl>=3.1.0           # Excel file support
-# xlrd>=2.0.0               # Legacy Excel support
-
 # Data validation
 # pydantic>=2.0.0           # Data validation for config
 

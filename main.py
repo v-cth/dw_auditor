@@ -26,7 +26,7 @@ results = auditor.audit_from_database(
     backend='bigquery',
     connection_params={
         'project_id': 'my-gcp-project',
-        'dataset_id': 'analytics',
+        'schema': 'analytics',
         'credentials_path': '/path/to/service-account-key.json'
     },
     mask_pii=True,          # Auto-mask sensitive columns
@@ -55,7 +55,7 @@ results = auditor.audit_from_database(
     backend='bigquery',
     connection_params={
         'project_id': 'my-project',
-        'dataset_id': 'sales'
+        'schema': 'sales'
     },
     custom_query='SELECT * FROM transactions WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)'
 )
@@ -96,8 +96,7 @@ config = AuditConfig.from_yaml('audit_config.yaml')
 
 # Create auditor with config settings
 auditor = SecureTableAuditor(
-    sample_size=config.sample_size,
-    sample_threshold=config.sample_threshold
+    sample_size=config.sample_size
 )
 
 # Audit tables from config
@@ -168,7 +167,7 @@ results = auditor.audit_from_database(
     backend='bigquery',
     connection_params={
         'project_id': 'my-project',
-        'dataset_id': 'analytics'
+        'schema': 'analytics'
     }
 )
 

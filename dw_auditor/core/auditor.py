@@ -68,21 +68,18 @@ class SecureTableAuditor(AuditorExporterMixin):
     def __init__(
         self,
         sample_size: int = 100000,
-        sample_threshold: int = 1000000,
         min_year: int = 1950,
         max_year: int = 2100,
         outlier_threshold_pct: float = 0.0
     ):
         """
         Args:
-            sample_size: Number of rows to sample if table exceeds threshold
-            sample_threshold: Row count threshold for sampling
+            sample_size: Number of rows to sample (samples when table has more rows than this)
             min_year: Minimum reasonable year for date outlier detection (default: 1950)
             max_year: Maximum reasonable year for date outlier detection (default: 2100)
             outlier_threshold_pct: Minimum percentage to report outliers (default: 0.0 = report all)
         """
         self.sample_size = sample_size
-        self.sample_threshold = sample_threshold
         self.min_year = min_year
         self.max_year = max_year
         self.outlier_threshold_pct = outlier_threshold_pct
@@ -253,7 +250,7 @@ class SecureTableAuditor(AuditorExporterMixin):
                 BigQuery example:
                 {
                     'project_id': 'my-project',
-                    'dataset_id': 'my_dataset',
+                    'schema': 'my_dataset',
                     'credentials_path': '/path/to/credentials.json'
                 }
                 Snowflake example:
@@ -415,9 +412,9 @@ class SecureTableAuditor(AuditorExporterMixin):
                 should_sample = False
                 print(f"ℹ️  Custom query provided - using query as-is (no additional sampling)")
             elif is_cross_project:
-                should_sample = sample_in_db and (row_count is None or row_count > self.sample_threshold)
+                should_sample = sample_in_db and (row_count is None or row_count > self.sample_size)
             else:
-                should_sample = sample_in_db and row_count and row_count > self.sample_threshold
+                should_sample = sample_in_db and row_count and row_count > self.sample_size
 
             if should_sample:
                 method_display = sampling_method
@@ -563,7 +560,7 @@ class SecureTableAuditor(AuditorExporterMixin):
 
         # Sample if needed (only if not already sampled in DB)
         analyzed_rows = len(df)
-        if len(df) > self.sample_threshold and total_row_count is None:
+        if len(df) > self.sample_size and total_row_count is None:
             # Only sample in-memory if we didn't already sample in DB
             df = df.sample(n=min(self.sample_size, len(df)), seed=42)
             analyzed_rows = len(df)
