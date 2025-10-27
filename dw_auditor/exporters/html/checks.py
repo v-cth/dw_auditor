@@ -120,9 +120,10 @@ def _generate_issues_section(results: Dict, has_issues: bool) -> str:
 """
 
                 if 'count' in issue:
+                    pattern_info = f" (pattern: '{issue['pattern']}')" if 'pattern' in issue else ""
                     html += f"""
             <div class="issue-stats">
-                Affected rows: <strong>{issue['count']:,}</strong> ({issue.get('pct', 0):.1f}%)
+                Affected rows: <strong>{issue['count']:,}</strong> ({issue.get('pct', 0):.1f}%){pattern_info}
             </div>
 """
 
@@ -142,10 +143,19 @@ def _generate_issues_section(results: Dict, has_issues: bool) -> str:
             </div>
 """
 
-                if 'special_chars' in issue:
+                # Display regex pattern details
+                if issue['type'] == 'REGEX_PATTERN':
+                    mode_label = "Match validation" if issue.get('mode') == 'match' else "Pattern detection"
                     html += f"""
-            <div class="examples">
-                <strong>Special characters found:</strong> {', '.join(issue['special_chars'])}
+            <div class="issue-stats">
+                <strong>Mode:</strong> {mode_label}<br>
+                <strong>Pattern:</strong> <code>{issue.get('pattern', 'N/A')}</code>
+            </div>
+"""
+                    if issue.get('description'):
+                        html += f"""
+            <div class="suggestion">
+                {issue['description']}
             </div>
 """
 

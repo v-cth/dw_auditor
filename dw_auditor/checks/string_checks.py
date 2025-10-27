@@ -3,7 +3,7 @@ String-based data quality checks
 """
 
 import polars as pl
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 import re
 
 
@@ -19,47 +19,139 @@ def _format_example_with_pk(row_data: Dict, col: str, primary_key_columns: Optio
     return str(row_data[col])
 
 
-def check_trailing_spaces(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None) -> List[Dict]:
-    """Detect trailing or leading spaces"""
+def check_trailing_characters(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None, patterns: Union[str, List[str]] = None) -> List[Dict]:
+    """Detect trailing or leading characters/strings
+
+    Args:
+        df: DataFrame to check
+        col: Column name to check
+        primary_key_columns: Optional primary key columns for context
+        patterns: Characters or strings to check for. Can be:
+                 - Single string of characters: " \t" (checks each character individually)
+                 - List of strings: [" ", "_dim", "_tmp"] (checks for each pattern)
+                 Default: [" ", "\t", "\n", "\r"] (whitespace characters)
+
+    Returns:
+        List of issue dictionaries
+    """
     issues = []
+    non_null_count = df[col].drop_nulls().len()
 
-    # Check for leading spaces
-    leading = df.filter(
-        pl.col(col).is_not_null() &
-        pl.col(col).str.starts_with(" ")
-    )
+    if non_null_count == 0:
+        return issues
 
-    if len(leading) > 0:
-        non_null_count = df[col].drop_nulls().len()
-        examples = leading[col].head(3).to_list()
-        issues.append({
-            'type': 'LEADING_SPACES',
-            'count': len(leading),
-            'pct': len(leading) / non_null_count * 100,
-            'examples': examples
-        })
+    # Default patterns if none provided
+    if patterns is None:
+        patterns = [" ", "\t", "\n", "\r"]
+    elif isinstance(patterns, str):
+        # Convert string to list of individual characters
+        patterns = list(patterns)
 
-    # Check for trailing spaces
-    trailing = df.filter(
-        pl.col(col).is_not_null() &
-        pl.col(col).str.ends_with(" ")
-    )
+    # Check for leading patterns
+    for pattern in patterns:
+        escaped_pattern = re.escape(pattern)
+        leading_regex = f"^{escaped_pattern}"
 
-    if len(trailing) > 0:
-        non_null_count = df[col].drop_nulls().len()
+        leading = df.filter(
+            pl.col(col).is_not_null() &
+            pl.col(col).str.contains(leading_regex)
+        )
 
-        # Format examples with primary key context if available
-        examples = []
-        select_cols = [col] + (primary_key_columns if primary_key_columns else [])
-        for row in trailing.select(select_cols).head(3).iter_rows(named=True):
-            examples.append(f"'{_format_example_with_pk(row, col, primary_key_columns)}'")
+        if len(leading) > 0:
+            # Format examples with primary key context if available
+            examples = []
+            select_cols = [col] + (primary_key_columns if primary_key_columns else [])
+            for row in leading.select(select_cols).head(3).iter_rows(named=True):
+                examples.append(f"'{_format_example_with_pk(row, col, primary_key_columns)}'")
 
-        issues.append({
-            'type': 'TRAILING_SPACES',
-            'count': len(trailing),
-            'pct': len(trailing) / non_null_count * 100,
-            'examples': examples
-        })
+            issues.append({
+                'type': 'LEADING_CHARACTERS',
+                'pattern': pattern,
+                'count': len(leading),
+                'pct': len(leading) / non_null_count * 100,
+                'examples': examples
+            })
+
+    # Check for trailing patterns
+    for pattern in patterns:
+        escaped_pattern = re.escape(pattern)
+        trailing_regex = f"{escaped_pattern}$"
+
+        trailing = df.filter(
+            pl.col(col).is_not_null() &
+            pl.col(col).str.contains(trailing_regex)
+        )
+
+        if len(trailing) > 0:
+            # Format examples with primary key context if available
+            examples = []
+            select_cols = [col] + (primary_key_columns if primary_key_columns else [])
+            for row in trailing.select(select_cols).head(3).iter_rows(named=True):
+                examples.append(f"'{_format_example_with_pk(row, col, primary_key_columns)}'")
+
+            issues.append({
+                'type': 'TRAILING_CHARACTERS',
+                'pattern': pattern,
+                'count': len(trailing),
+                'pct': len(trailing) / non_null_count * 100,
+                'examples': examples
+            })
+
+    return issues
+
+
+def check_ending_characters(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None, patterns: Union[str, List[str]] = None) -> List[Dict]:
+    """Detect strings that end with specific characters or patterns
+
+    Args:
+        df: DataFrame to check
+        col: Column name to check
+        primary_key_columns: Optional primary key columns for context
+        patterns: Characters or strings to check for at the end. Can be:
+                 - Single string of characters: ".,;" (checks each character individually)
+                 - List of strings: [".", "_tmp", "!"] (checks for each pattern)
+                 Default: [".", ",", ";", ":", "!", "?"] (punctuation)
+
+    Returns:
+        List of issue dictionaries with pattern-specific counts
+    """
+    issues = []
+    non_null_count = df[col].drop_nulls().len()
+
+    if non_null_count == 0:
+        return issues
+
+    # Default patterns if none provided
+    if patterns is None:
+        patterns = [".", ",", ";", ":", "!", "?"]
+    elif isinstance(patterns, str):
+        # Convert string to list of individual characters
+        patterns = list(patterns)
+
+    # Check for each ending pattern separately
+    for pattern in patterns:
+        escaped_pattern = re.escape(pattern)
+        ending_regex = f"{escaped_pattern}$"
+
+        ending_with_pattern = df.filter(
+            pl.col(col).is_not_null() &
+            pl.col(col).str.contains(ending_regex)
+        )
+
+        if len(ending_with_pattern) > 0:
+            # Format examples with primary key context if available
+            examples = []
+            select_cols = [col] + (primary_key_columns if primary_key_columns else [])
+            for row in ending_with_pattern.select(select_cols).head(3).iter_rows(named=True):
+                examples.append(_format_example_with_pk(row, col, primary_key_columns))
+
+            issues.append({
+                'type': 'ENDING_CHARACTERS',
+                'pattern': pattern,
+                'count': len(ending_with_pattern),
+                'pct': len(ending_with_pattern) / non_null_count * 100,
+                'examples': examples
+            })
 
     return issues
 
@@ -92,35 +184,60 @@ def check_case_duplicates(df: pl.DataFrame, col: str, primary_key_columns: Optio
     return issues
 
 
-def check_special_chars(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None, pattern: str = r'[^a-zA-Z0-9\s\.,\-_@]') -> List[Dict]:
-    """Detect strings with special characters"""
+def check_regex_patterns(df: pl.DataFrame, col: str, primary_key_columns: Optional[List[str]] = None, pattern: str = None, mode: str = "contains", description: str = None) -> List[Dict]:
+    """Check strings against regex patterns with flexible validation modes
+
+    Args:
+        df: DataFrame to check
+        col: Column name to check
+        primary_key_columns: Optional primary key columns for context
+        pattern: Regex pattern to check against
+        mode: Validation mode - "contains" (flag if pattern found) or "match" (flag if pattern not matched)
+        description: Optional human-readable description for error messages
+
+    Returns:
+        List of issue dictionaries with examples
+    """
     issues = []
 
-    with_special = df.filter(
-        pl.col(col).is_not_null() &
-        pl.col(col).str.contains(pattern)
-    )
+    if pattern is None:
+        return issues
 
-    if len(with_special) > 0:
-        non_null_count = df[col].drop_nulls().len()
+    non_null_count = df[col].drop_nulls().len()
+    if non_null_count == 0:
+        return issues
 
+    if mode == "contains":
+        # Flag rows where pattern IS found (negative validation)
+        violating = df.filter(
+            pl.col(col).is_not_null() &
+            pl.col(col).str.contains(pattern)
+        )
+        issue_description = description or f"Rows containing pattern: {pattern}"
+    elif mode == "match":
+        # Flag rows where pattern is NOT matched (positive validation)
+        violating = df.filter(
+            pl.col(col).is_not_null() &
+            ~pl.col(col).str.contains(f"^{pattern}$")
+        )
+        issue_description = description or f"Rows not matching pattern: {pattern}"
+    else:
+        raise ValueError(f"Invalid mode: {mode}. Must be 'contains' or 'match'")
+
+    if len(violating) > 0:
         # Format examples with primary key context if available
         examples = []
         select_cols = [col] + (primary_key_columns if primary_key_columns else [])
-        for row in with_special.select(select_cols).head(2).iter_rows(named=True):
+        for row in violating.select(select_cols).head(3).iter_rows(named=True):
             examples.append(_format_example_with_pk(row, col, primary_key_columns))
 
-        # Extract unique special characters from examples
-        special_chars = set()
-        for val in with_special[col].head(100).to_list():
-            if val:
-                special_chars.update(re.findall(pattern, str(val)))
-
         issues.append({
-            'type': 'SPECIAL_CHARACTERS',
-            'count': len(with_special),
-            'pct': len(with_special) / non_null_count * 100,
-            'special_chars': list(special_chars)[:10],
+            'type': 'REGEX_PATTERN',
+            'pattern': pattern,
+            'mode': mode,
+            'description': issue_description,
+            'count': len(violating),
+            'pct': len(violating) / non_null_count * 100,
             'examples': examples
         })
 

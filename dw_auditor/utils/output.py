@@ -152,12 +152,19 @@ def print_results(results: Dict):
         for issue in col_data['issues']:
             issue_type = issue['type']
 
-            if issue_type == 'TRAILING_SPACES':
-                print(f"   ⚠️  TRAILING SPACES: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+            if issue_type == 'TRAILING_CHARACTERS':
+                pattern = issue.get('pattern', 'N/A')
+                print(f"   ⚠️  TRAILING CHARACTERS ('{pattern}'): {issue['count']:,} rows ({issue['pct']:.1f}%)")
                 print(f"      Examples: {issue['examples']}")
 
-            elif issue_type == 'LEADING_SPACES':
-                print(f"   ⚠️  LEADING SPACES: {issue['count']:,} rows ({issue['pct']:.1f}%)")
+            elif issue_type == 'LEADING_CHARACTERS':
+                pattern = issue.get('pattern', 'N/A')
+                print(f"   ⚠️  LEADING CHARACTERS ('{pattern}'): {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Examples: {issue['examples'][:3]}")
+
+            elif issue_type == 'ENDING_CHARACTERS':
+                pattern = issue.get('pattern', 'N/A')
+                print(f"   ⚠️  ENDING CHARACTERS ('{pattern}'): {issue['count']:,} rows ({issue['pct']:.1f}%)")
                 print(f"      Examples: {issue['examples'][:3]}")
 
             elif issue_type == 'CASE_DUPLICATES':
@@ -165,10 +172,13 @@ def print_results(results: Dict):
                 for lower_val, variations in issue['examples']:
                     print(f"      '{lower_val}' → {variations}")
 
-            elif issue_type == 'SPECIAL_CHARACTERS':
-                print(f"   ⚠️  SPECIAL CHARS: {issue['count']:,} rows ({issue['pct']:.1f}%)")
-                print(f"      Found chars: {issue['special_chars']}")
-                print(f"      Examples: {issue['examples'][:2]}")
+            elif issue_type == 'REGEX_PATTERN':
+                mode_label = "MATCH" if issue.get('mode') == 'match' else "CONTAINS"
+                print(f"   ⚠️  REGEX PATTERN ({mode_label}): {issue['count']:,} rows ({issue['pct']:.1f}%)")
+                print(f"      Pattern: {issue.get('pattern', 'N/A')}")
+                if issue.get('description'):
+                    print(f"      💡 {issue['description']}")
+                print(f"      Examples: {issue['examples'][:3]}")
 
             elif issue_type == 'NUMERIC_STRINGS':
                 print(f"   ⚠️  NUMERIC STRINGS: {issue['count']:,} rows ({issue['pct']:.1f}%)")

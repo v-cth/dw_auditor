@@ -1,0 +1,23 @@
+table_name,column_name,data_type,status,null_count,null_pct,distinct_count
+fct_avaibility_part,station_code,Int64,OK,0,0.0,1457
+fct_avaibility_part,station_name,String,ERROR,0,0.0,1454
+fct_avaibility_part,capacity,Int64,OK,0,0.0,66
+fct_avaibility_part,docks_available,Int64,OK,0,0.0,72
+fct_avaibility_part,mechanical,Int64,OK,0,0.0,63
+fct_avaibility_part,ebike,Int64,OK,0,0.0,32
+fct_avaibility_part,duedate,"Datetime(time_unit='ns', time_zone='UTC')",OK,0,0.0,9925
+fct_avaibility_part,bikes_available,Int64,ERROR,0,0.0,68
+fct_avaibility_part,rate_bike_available,Float64,OK,0,0.0,1039
+fct_avaibility_part,rate_dock_available,Float64,OK,0,0.0,1037
+fct_avaibility_part,bikes_out_of_order,Int64,OK,0,0.0,41
+fct_avaibility_part,collected_at,"Datetime(time_unit='ns', time_zone=None)",OK,0,0.0,2610
+fct_avaibility_part,rounded_collected_at,"Datetime(time_unit='ns', time_zone=None)",OK,0,0.0,2610
+dim_station,station_code,Int64,OK,0,0.0,1587
+dim_station,station_name,String,ERROR,0,0.0,1570
+dim_station,capacity,Int64,ERROR,0,0.0,72
+dim_station,lon,Float64,OK,0,0.0,1586
+dim_station,lat,Float64,OK,0,0.0,1587
+dim_station,city,String,ERROR,0,0.0,68
+dim_station,is_renting,Boolean,NOT_CHECKED,0,0.0,2
+dim_station,is_returning,Boolean,NOT_CHECKED,0,0.0,2
+dim_station,station_plus,Boolean,NOT_CHECKED,0,0.0,2

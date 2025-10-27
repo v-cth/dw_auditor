@@ -84,15 +84,13 @@ class AuditConfig:
 
         # Audit checks configuration
         checks = config_dict.get('checks') or {}
-        self.check_trailing_spaces = checks.get('trailing_spaces', True)
+        self.check_trailing_characters = checks.get('trailing_characters', True)
+        self.check_ending_characters = checks.get('ending_characters', False)
         self.check_case_duplicates = checks.get('case_duplicates', True)
-        self.check_special_chars = checks.get('special_characters', True)
+        self.check_regex_patterns = checks.get('regex_patterns', checks.get('special_characters', False))
         self.check_numeric_strings = checks.get('numeric_strings', True)
         self.check_timestamp_patterns = checks.get('timestamp_patterns', True)
         self.check_date_outliers = checks.get('date_outliers', True)
-
-        # Special characters configuration
-        self.special_chars_pattern = checks.get('special_chars_pattern', r'[^a-zA-Z0-9\s\.,\-_@]')
 
         # Thresholds
         thresholds = config_dict.get('thresholds') or {}
@@ -314,13 +312,13 @@ class AuditConfig:
                 'custom_pii_keywords': self.custom_pii_keywords
             },
             'checks': {
-                'trailing_spaces': self.check_trailing_spaces,
+                'trailing_characters': self.check_trailing_characters,
+                'ending_characters': self.check_ending_characters,
                 'case_duplicates': self.check_case_duplicates,
-                'special_characters': self.check_special_chars,
+                'regex_patterns': self.check_regex_patterns,
                 'numeric_strings': self.check_numeric_strings,
                 'timestamp_patterns': self.check_timestamp_patterns,
-                'date_outliers': self.check_date_outliers,
-                'special_chars_pattern': self.special_chars_pattern
+                'date_outliers': self.check_date_outliers
             },
             'thresholds': {
                 'numeric_string_pct': self.numeric_string_threshold * 100,

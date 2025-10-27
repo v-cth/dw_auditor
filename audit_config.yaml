@@ -104,9 +104,25 @@ column_checks:
   # Global defaults per data type
   defaults:
     string:
-      trailing_spaces: true
+      # Check for leading/trailing characters or strings
+      # Can be: true (default whitespace), false (disabled),
+      #         string " " (single char), or list [" ", "_dim", "_tmp"] (multiple patterns)
+      trailing_characters: true
+      # Check for specific ending characters or patterns
+      # Can be: true (default punctuation .,;:!?), false (disabled),
+      #         string ".," (check these chars), or list [".", "_tmp"] (multiple patterns)
+      ending_characters: false
       case_duplicates: true
-      special_chars: true
+      # Regex pattern validation/detection
+      # NO DEFAULT - must be explicitly configured with a pattern
+      # Can be: false (disabled, default),
+      #         string "[^a-zA-Z]" (pattern with contains mode),
+      #         or dict with pattern/mode/description:
+      #         regex_patterns:
+      #           pattern: "^[A-Z]{2}\\d{4}$"
+      #           mode: "match"  # or "contains"
+      #           description: "Station code format"
+      regex_patterns: false
       numeric_strings: true
       uniqueness: false  # Set true to flag duplicate values (e.g., for ID columns)
     datetime:
@@ -124,13 +140,28 @@ column_checks:
   #     station_code:
   #       uniqueness: true  # Flag duplicate station codes
   #
-  #     # Skip special chars check for city column (we expect French accents)
+  #     # Check for specific trailing patterns
+  #     table_name:
+  #       trailing_characters: ["_dim", "_tmp"]  # Check if values end with _dim or _tmp
+  #
+  #     # Check for specific ending patterns
+  #     description:
+  #       ending_characters: [".", "!"]  # Check if descriptions end with . or !
+  #
+  #     # Validate station code format
+  #     station_code:
+  #       regex_patterns:
+  #         pattern: "^[A-Z]{2}\\d{4}$"
+  #         mode: "match"
+  #         description: "Station code must be 2 letters + 4 digits"
+  #
+  #     # Detect special characters in city names (but expect some)
   #     city:
-  #       special_chars: false
-  #     # Skip case duplicates and special chars for station_name (expected variation & French accents)
+  #       regex_patterns: false  # Disable - French accents are expected
+  #     # Skip case duplicates and regex checks for station_name (expected variation & French accents)
   #     station_name:
   #       case_duplicates: false
-  #       special_chars: false  # Skip - French accents are expected
+  #       regex_patterns: false  # Disable - French accents are expected
   #
   #     # Numeric range validation (supports 4 boundary operators)
   #     capacity:
@@ -281,16 +312,22 @@ security:
 
 # Quality Checks Configuration
 # ----------------------------------------------------------------------------
-# Enable/disable specific checks
+# Enable/disable specific checks (these are legacy global settings, prefer column_checks above)
 checks:
-  # Check for leading/trailing whitespace
-  trailing_spaces: true
+  # Check for leading/trailing whitespace characters (spaces, tabs, newlines, etc.)
+  trailing_characters: true
+
+  # Check for specific ending characters (e.g., punctuation marks)
+  ending_characters: false
 
   # Check for values that differ only in case (e.g., "JOHN" vs "john")
   case_duplicates: true
 
-  # Check for special characters (emojis, accents, etc.)
-  special_characters: true
+  # Regex pattern validation/detection
+  # NO DEFAULT - must be explicitly configured with a pattern
+  # Can be: false (disabled, default), string (pattern with contains mode),
+  #         or dict with pattern/mode/description
+  regex_patterns: false
 
   # Check for string columns containing only numbers
   numeric_strings: true
@@ -303,10 +340,6 @@ checks:
 
   # Check for dates/datetimes that are in the future (relative to current time)
   future_dates: true
-
-  # Custom regex pattern for special characters
-  # Default: [^a-zA-Z0-9\s\.,\-_@]
-  special_chars_pattern: "[^a-zA-Z0-9\\s\\.,\\-_@]"
 
 # Detection Thresholds (percentages)
 # ----------------------------------------------------------------------------

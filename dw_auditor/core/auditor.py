@@ -8,9 +8,10 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from ..checks.string_checks import (
-    check_trailing_spaces,
+    check_trailing_characters,
+    check_ending_characters,
     check_case_duplicates,
-    check_special_chars,
+    check_regex_patterns,
     check_numeric_strings
 )
 from ..checks.timestamp_checks import check_timestamp_patterns, check_date_outliers, check_future_dates
@@ -583,9 +584,10 @@ class SecureTableAuditor(AuditorExporterMixin):
         # Default check config
         if check_config is None:
             check_config = {
-                'trailing_spaces': True,
+                'trailing_characters': True,
+                'ending_characters': False,
                 'case_duplicates': True,
-                'special_chars': True,
+                'regex_patterns': False,  # No default - must be explicitly configured
                 'numeric_strings': True,
                 'timestamp_patterns': True,
                 'date_outliers': True
@@ -775,13 +777,34 @@ class SecureTableAuditor(AuditorExporterMixin):
 
         # String column checks
         if dtype in [pl.Utf8, pl.String]:
-            if check_config.get('trailing_spaces', True):
+            trailing_config = check_config.get('trailing_characters', True)
+            if trailing_config:
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_trailing_spaces(df, col, primary_key_columns))
+                # Pass patterns parameter if it's not just True
+                if trailing_config is True:
+                    col_result['issues'].extend(check_trailing_characters(df, col, primary_key_columns))
+                else:
+                    col_result['issues'].extend(check_trailing_characters(df, col, primary_key_columns, patterns=trailing_config))
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
-                    'name': 'Trailing Spaces',
+                    'name': 'Trailing Characters',
+                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                    'issues_count': issues_found
+                })
+
+            ending_config = check_config.get('ending_characters', False)
+            if ending_config:
+                before_count = len(col_result['issues'])
+                # Pass patterns parameter if it's not just True
+                if ending_config is True:
+                    col_result['issues'].extend(check_ending_characters(df, col, primary_key_columns))
+                else:
+                    col_result['issues'].extend(check_ending_characters(df, col, primary_key_columns, patterns=ending_config))
+                after_count = len(col_result['issues'])
+                issues_found = after_count - before_count
+                col_result['checks_run'].append({
+                    'name': 'Ending Characters',
                     'status': 'FAILED' if issues_found > 0 else 'PASSED',
                     'issues_count': issues_found
                 })
@@ -797,16 +820,37 @@ class SecureTableAuditor(AuditorExporterMixin):
                     'issues_count': issues_found
                 })
 
-            if check_config.get('special_chars', True):
+            regex_config = check_config.get('regex_patterns', check_config.get('special_chars', False))
+            if regex_config:
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_special_chars(df, col, primary_key_columns))
-                after_count = len(col_result['issues'])
-                issues_found = after_count - before_count
-                col_result['checks_run'].append({
-                    'name': 'Special Characters',
-                    'status': 'FAILED' if issues_found > 0 else 'PASSED',
-                    'issues_count': issues_found
-                })
+
+                # Parse config - can be string (pattern) or dict (full config)
+                # Note: True/False are not valid - must provide explicit pattern
+                if isinstance(regex_config, str):
+                    # String: treat as pattern with contains mode
+                    pattern = regex_config
+                    mode = 'contains'
+                    description = None
+                elif isinstance(regex_config, dict):
+                    # Dict: extract pattern, mode, and description
+                    pattern = regex_config.get('pattern')
+                    mode = regex_config.get('mode', 'contains')
+                    description = regex_config.get('description')
+                else:
+                    # True/False or other - skip check (no default pattern)
+                    pattern = None
+                    mode = 'contains'
+                    description = None
+
+                if pattern:
+                    col_result['issues'].extend(check_regex_patterns(df, col, primary_key_columns, pattern=pattern, mode=mode, description=description))
+                    after_count = len(col_result['issues'])
+                    issues_found = after_count - before_count
+                    col_result['checks_run'].append({
+                        'name': 'Regex Pattern',
+                        'status': 'FAILED' if issues_found > 0 else 'PASSED',
+                        'issues_count': issues_found
+                    })
 
             if check_config.get('numeric_strings', True):
                 before_count = len(col_result['issues'])
