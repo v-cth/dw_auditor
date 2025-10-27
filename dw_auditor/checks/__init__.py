@@ -1,22 +1,48 @@
-"""Data quality check functions"""
+"""Data quality check functions - New class-based architecture with dynamic registry"""
 
-from .string_checks import (
-    check_trailing_characters,
-    check_ending_characters,
-    check_case_duplicates,
-    check_regex_patterns,
-    check_numeric_strings
+# Import all check classes to trigger registration
+from . import (
+    numeric_range_check,
+    string_trailing_check,
+    string_ending_check,
+    string_case_check,
+    string_regex_check,
+    string_numeric_check,
+    timestamp_pattern_check,
+    date_range_check,
+    date_outlier_check,
+    date_future_check,
+    uniqueness_check
 )
-from .timestamp_checks import check_timestamp_patterns, check_date_range, check_date_outliers, check_future_dates
+
+# Export registry and runner functions for public API
+from ..core.registry import (
+    CHECK_REGISTRY,
+    register_check,
+    get_check,
+    list_checks,
+    get_check_info,
+    check_exists
+)
+
+from ..core.runner import (
+    run_check,
+    run_check_sync,
+    run_multiple_checks,
+    validate_check_config
+)
 
 __all__ = [
-    "check_trailing_characters",
-    "check_ending_characters",
-    "check_case_duplicates",
-    "check_regex_patterns",
-    "check_numeric_strings",
-    "check_timestamp_patterns",
-    "check_date_range",
-    "check_date_outliers",
-    "check_future_dates"
+    # Registry functions
+    "CHECK_REGISTRY",
+    "register_check",
+    "get_check",
+    "list_checks",
+    "get_check_info",
+    "check_exists",
+    # Runner functions
+    "run_check",
+    "run_check_sync",
+    "run_multiple_checks",
+    "validate_check_config"
 ]

@@ -7,16 +7,7 @@ from typing import Dict, List, Optional, Union
 from datetime import datetime, timezone
 from pathlib import Path
 
-from ..checks.string_checks import (
-    check_trailing_characters,
-    check_ending_characters,
-    check_case_duplicates,
-    check_regex_patterns,
-    check_numeric_strings
-)
-from ..checks.timestamp_checks import check_timestamp_patterns, check_date_range, check_date_outliers, check_future_dates
-from ..checks.numeric_checks import check_numeric_range
-from ..checks.uniqueness_checks import check_uniqueness
+from ..core.runner import run_check_sync
 from ..utils.security import mask_pii_columns, sanitize_connection_string
 from ..utils.output import print_results
 from .db_connection import DatabaseConnection
@@ -778,9 +769,10 @@ class SecureTableAuditor(AuditorExporterMixin):
                 before_count = len(col_result['issues'])
                 # Pass patterns parameter if it's not just True
                 if trailing_config is True:
-                    col_result['issues'].extend(check_trailing_characters(df, col, primary_key_columns))
+                    results = run_check_sync('trailing_characters', df, col, primary_key_columns)
                 else:
-                    col_result['issues'].extend(check_trailing_characters(df, col, primary_key_columns, patterns=trailing_config))
+                    results = run_check_sync('trailing_characters', df, col, primary_key_columns, patterns=trailing_config)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -794,9 +786,10 @@ class SecureTableAuditor(AuditorExporterMixin):
                 before_count = len(col_result['issues'])
                 # Pass patterns parameter if it's not just True
                 if ending_config is True:
-                    col_result['issues'].extend(check_ending_characters(df, col, primary_key_columns))
+                    results = run_check_sync('ending_characters', df, col, primary_key_columns)
                 else:
-                    col_result['issues'].extend(check_ending_characters(df, col, primary_key_columns, patterns=ending_config))
+                    results = run_check_sync('ending_characters', df, col, primary_key_columns, patterns=ending_config)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -807,7 +800,8 @@ class SecureTableAuditor(AuditorExporterMixin):
 
             if check_config.get('case_duplicates', True):
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_case_duplicates(df, col, primary_key_columns))
+                results = run_check_sync('case_duplicates', df, col, primary_key_columns)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -839,7 +833,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                     description = None
 
                 if pattern:
-                    col_result['issues'].extend(check_regex_patterns(df, col, primary_key_columns, pattern=pattern, mode=mode, description=description))
+                    results = run_check_sync('regex_pattern', df, col, primary_key_columns, pattern=pattern, mode=mode, description=description)
+                    col_result['issues'].extend([r.model_dump() for r in results])
                     after_count = len(col_result['issues'])
                     issues_found = after_count - before_count
                     col_result['checks_run'].append({
@@ -850,7 +845,8 @@ class SecureTableAuditor(AuditorExporterMixin):
 
             if check_config.get('numeric_strings', True):
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_numeric_strings(df, col, primary_key_columns))
+                results = run_check_sync('numeric_strings', df, col, primary_key_columns)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -861,7 +857,8 @@ class SecureTableAuditor(AuditorExporterMixin):
 
             if check_config.get('uniqueness', False):
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_uniqueness(df, col, primary_key_columns))
+                results = run_check_sync('uniqueness', df, col, primary_key_columns)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -874,7 +871,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         elif dtype in [pl.Datetime, pl.Date]:
             if check_config.get('timestamp_patterns', True):
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_timestamp_patterns(df, col))
+                results = run_check_sync('timestamp_patterns', df, col, primary_key_columns)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -903,7 +901,8 @@ class SecureTableAuditor(AuditorExporterMixin):
             # Only run check if at least one range parameter is defined
             if range_params:
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_date_range(df, col, primary_key_columns, **range_params))
+                results = run_check_sync('date_range', df, col, primary_key_columns, **range_params)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
 
@@ -916,10 +915,11 @@ class SecureTableAuditor(AuditorExporterMixin):
 
             if check_config.get('future_dates', True):
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_future_dates(
-                    df, col,
+                results = run_check_sync(
+                    'future_dates', df, col, primary_key_columns,
                     threshold_pct=getattr(self, 'outlier_threshold_pct', 0.0)
-                ))
+                )
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -930,7 +930,8 @@ class SecureTableAuditor(AuditorExporterMixin):
 
             if check_config.get('uniqueness', False):
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_uniqueness(df, col, primary_key_columns))
+                results = run_check_sync('uniqueness', df, col, primary_key_columns)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
@@ -963,7 +964,8 @@ class SecureTableAuditor(AuditorExporterMixin):
             # Only run check if at least one range parameter is defined
             if range_params:
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_numeric_range(df, col, primary_key_columns, **range_params))
+                results = run_check_sync('numeric_range', df, col, primary_key_columns, **range_params)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
 
@@ -977,7 +979,8 @@ class SecureTableAuditor(AuditorExporterMixin):
             # Uniqueness check for numeric columns
             if check_config.get('uniqueness', False):
                 before_count = len(col_result['issues'])
-                col_result['issues'].extend(check_uniqueness(df, col, primary_key_columns))
+                results = run_check_sync('uniqueness', df, col, primary_key_columns)
+                col_result['issues'].extend([r.model_dump() for r in results])
                 after_count = len(col_result['issues'])
                 issues_found = after_count - before_count
                 col_result['checks_run'].append({
