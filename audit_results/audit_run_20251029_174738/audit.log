@@ -1,0 +1,82 @@
+📁 Audit run directory: audit_results/audit_run_20251029_174738
+📝 Logs will be saved to: audit_results/audit_run_20251029_174738/audit.log
+🔍 Discovery mode: Collecting metadata only (skipping quality checks and insights)
+
+🔍 Auto-discovering tables in schema...
+✅ Connected to SNOWFLAKE
+⚠️  Could not fetch primary keys: 002003 (42S02): SQL compilation error:
+Object 'SF_TRIAL.INFORMATION_SCHEMA.KEY_COLUMN_USAGE' does not exist or not authorized.
+📋 Found 7 tables in schema
+🔽 Filtered out 5 tables based on patterns
+✅ Will audit 2 tables
+   Excluded: CAR_SALES, JSON_CONTENT, TABLE_CONFIG, XML_CONTENT, XML_CONTENT_2
+🔒 Closed SNOWFLAKE connection
+✅ Connected to SNOWFLAKE
+
+🔍 Pre-fetching metadata for 2 table(s)...
+⚠️  Could not fetch primary keys: 002003 (42S02): SQL compilation error:
+Object 'SF_TRIAL.INFORMATION_SCHEMA.KEY_COLUMN_USAGE' does not exist or not authorized.
+✅ Metadata cached for all tables
+
+======================================================================
+🔍 Auditing table: TEST_COLUMN_CHECKS
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+🔖 Table UID: SF_TRIAL.PUBLIC.TEST_COLUMN_CHECKS
+📑 Table type: BASE TABLE
+📊 Table has 5 rows
+📊 Loading all 11 columns
+✅ Loaded 5 rows into memory
+
+============================================================
+Auditing: TEST_COLUMN_CHECKS
+Total rows in table: 5
+============================================================
+
+
+📋 Column Summary (All Columns):
+====================================================================================================
+Column Name                    Type            Status       Nulls           Distinct       
+----------------------------------------------------------------------------------------------------
+city_name                      TEXT            - NOT_LOADED N/A             N/A            
+city_with_space                TEXT            - NOT_LOADED N/A             N/A            
+city_with_suffix               TEXT            - NOT_LOADED N/A             N/A            
+city_with_endchar              TEXT            - NOT_LOADED N/A             N/A            
+station_code                   TEXT            - NOT_LOADED N/A             N/A            
+generic_string                 TEXT            - NOT_LOADED N/A             N/A            
+value_ok                       NUMBER          - NOT_LOADED N/A             N/A            
+value_mid                      NUMBER          - NOT_LOADED N/A             N/A            
+value_min                      NUMBER          - NOT_LOADED N/A             N/A            
+event_date                     DATE            - NOT_LOADED N/A             N/A            
+delivery_date                  DATE            - NOT_LOADED N/A             N/A            
+====================================================================================================
+
+✅ No issues found!
+
+
+⏱️  Audit Duration Breakdown:
+   • Total: 0.00s
+
+
+⏱️  Table Audit Phase Breakdown:
+   • Connection: 0.000s
+   • Metadata: 0.021s
+   • Column Selection: 0.001s
+   • Data Loading: 1.162s
+   • Audit Checks: 0.001s
+   • Total Table Audit: 1.18s
+📄 HTML report saved to: audit_results/audit_run_20251029_174738/TEST_COLUMN_CHECKS/audit.html
+🌐 Opened report in browser
+📄 Results saved to: audit_results/audit_run_20251029_174738/TEST_COLUMN_CHECKS/audit.json
+📄 CSV saved to: audit_results/audit_run_20251029_174738/TEST_COLUMN_CHECKS/audit.csv
+📄 Column summary CSV saved to: audit_results/audit_run_20251029_174738/TEST_COLUMN_CHECKS/summary.csv
+
+======================================================================
+🔍 Auditing table: TEST_JSON
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+🔖 Table UID: SF_TRIAL.PUBLIC.TEST_JSON
+📑 Table type: BASE TABLE
+📊 Table has 0 rows
+📊 Loading all 2 columns
+🔒 Closed SNOWFLAKE connection

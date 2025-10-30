@@ -15,12 +15,12 @@ from pydantic import BaseModel, Field, field_validator, model_validator, ConfigD
 
 class TableConfig(BaseModel):
     """Configuration for a single table"""
-    model_config = ConfigDict(protected_namespaces=())  # Allow 'schema' field name
+    model_config = ConfigDict(protected_namespaces=(), populate_by_name=True)
 
     name: str = Field(..., min_length=1, description="Table name")
     primary_key: Optional[Union[str, List[str]]] = Field(None, description="Primary key column(s)")
     query: Optional[str] = Field(None, description="Custom SQL query")
-    schema: Optional[str] = Field(None, description="Override schema/dataset for this table")
+    db_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Override schema/dataset for this table")
 
     @field_validator('primary_key')
     @classmethod
@@ -33,10 +33,10 @@ class TableConfig(BaseModel):
 
 class ConnectionParams(BaseModel):
     """Database connection parameters - flexible to support different backends"""
-    model_config = ConfigDict(extra='allow', protected_namespaces=())  # Allow extra fields and 'schema' field name
+    model_config = ConfigDict(extra='allow', protected_namespaces=(), populate_by_name=True)
 
     # Common fields we want to validate
-    schema: Optional[str] = Field(None, description="Default schema/dataset")
+    db_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Default schema/dataset")
 
 
 class DatabaseConfig(BaseModel):
@@ -47,17 +47,21 @@ class DatabaseConfig(BaseModel):
     @model_validator(mode='after')
     def validate_backend_params(self):
         """Validate backend-specific required parameters"""
-        params = self.connection_params.model_dump()
+        params = self.connection_params.model_dump(by_alias=True)
 
         if self.backend == 'bigquery':
             if 'project_id' not in params:
                 raise ValueError("BigQuery backend requires 'project_id' in connection_params")
 
         elif self.backend == 'snowflake':
-            required = ['account', 'user', 'password', 'database']
+            required = ['account', 'user', 'database']
             missing = [p for p in required if p not in params]
             if missing:
                 raise ValueError(f"Snowflake backend requires: {', '.join(missing)}")
+
+            # Password is required unless using external browser authentication
+            if 'password' not in params and params.get('authenticator') != 'externalbrowser':
+                raise ValueError("Snowflake backend requires 'password' (or set authenticator='externalbrowser' for SSO)")
 
         return self
 
@@ -220,7 +224,7 @@ class AuditConfig:
 
         # Database connection
         self.backend = self._model.database.backend
-        self.connection_params = self._model.database.connection_params.model_dump()
+        self.connection_params = self._model.database.connection_params.model_dump(by_alias=True)
         self.schema = self.connection_params.get('schema')
 
         # Tables - normalize format
@@ -238,8 +242,8 @@ class AuditConfig:
                     self.table_primary_keys[table_entry.name] = table_entry.primary_key
                 if table_entry.query:
                     self.table_queries[table_entry.name] = table_entry.query
-                if table_entry.schema:
-                    self.table_schemas[table_entry.name] = table_entry.schema
+                if table_entry.db_schema:
+                    self.table_schemas[table_entry.name] = table_entry.db_schema
 
         # Table filtering
         if self._model.table_filters:

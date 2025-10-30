@@ -1,0 +1,10 @@
+📁 Audit run directory: audit_results/audit_run_20251029_174145
+📝 Logs will be saved to: audit_results/audit_run_20251029_174145/audit.log
+🔍 Discovery mode: Collecting metadata only (skipping quality checks and insights)
+
+🔍 Auto-discovering tables in schema...
+✅ Connected to SNOWFLAKE
+📋 Found 0 tables in schema
+✅ Will audit 0 tables
+🔒 Closed SNOWFLAKE connection
+⚠️  No tables match the filter criteria

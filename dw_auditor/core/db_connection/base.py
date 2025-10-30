@@ -179,7 +179,7 @@ class BaseAdapter(ABC):
 
         pk_cols = self._pk_df.filter(pl.col('table_name') == table_name)
 
-        return [str(col).lower() for col in pk_cols['column_name'].to_list()]
+        return [str(col) for col in pk_cols['column_name'].to_list()]
 
     def get_row_count(self, table_name: str, schema: Optional[str] = None, approximate: bool = True) -> Optional[int]:
         """Get row count from cached metadata or exact count"""

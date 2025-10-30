@@ -9,15 +9,15 @@
 # Descriptive information about this audit configuration
 # These fields will be displayed in the Metadata tab of HTML reports
 version: 1
-project: "Bike Availability Data Quality"
-description: "Auditing availability fact table and station dimension for data quality issues"
-last_modified: "2025-10-24"
+project: "The first demo"
+description: "Auditing a few tables for data quality issues"
+last_modified: "2025-10-28"
 
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
   # Database backend: 'bigquery' or 'snowflake'
-  backend: "bigquery"
+  backend: "snowflake" #"bigquery"
 
   # Connection parameters (backend-specific)
   connection_params:
@@ -29,8 +29,8 @@ database:
     #                    Jobs will run in project_id, data read from source_project_id
 
     # Example: Querying public datasets
-    project_id: "portfolio-402"  # Your project (you have bigquery.jobs.create here)
-    schema: "dbt_prod"  # Default dataset for queries
+    # project_id: "portfolio-402"  # Your project (you have bigquery.jobs.create here)
+    # schema: "dbt_prod"  # Default dataset for queries
     #source_project_id: "bigquery-public-data"  # Public dataset project (read-only)
     #schema: "crypto_bitcoin"  # Dataset to query, very heavy !!!!!!!
 
@@ -38,13 +38,17 @@ database:
     # Or use credentials_json for JSON string/dict
 
     # For Snowflake (comment out BigQuery params and uncomment these):
-    # account: "my-account"
-    # user: "my-user"
-    # password: "my-password"
-    # database: "my_database"
-    # schema: "my_schema"  # Default schema for queries
-    # warehouse: "my_warehouse"
+    account: "OOQYWEC-ND51384" 
+    user: "VALENTIN"
+    database: "SF_TRIAL"
+    password: "ProfilerSF7$"
+    schema: "PUBLIC"  # Default schema for queries
+    warehouse: "COMPUTE_WH"
     # role: "my_role"  # optional
+
+    # If your organization uses SSO, comment out 'password' and uncomment 'authenticator':
+    #authenticator: "externalbrowser"  # Opens browser for SSO login
+    # Note: When using authenticator='externalbrowser', password is not required
 
 # Tables to Audit
 # ----------------------------------------------------------------------------

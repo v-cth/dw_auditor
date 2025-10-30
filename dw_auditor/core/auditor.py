@@ -98,17 +98,34 @@ class SecureTableAuditor(AuditorExporterMixin):
         Returns:
             List of column names to load (empty list means load all columns)
         """
-        # If storing dataframe for relationship detection, load all columns
-        if store_dataframe:
-            return []
-
         if not table_schema:
             # If we can't get schema, fallback to loading all columns
             return []
 
+        # Define unsupported complex types that Polars cannot handle
+        unsupported_types = ['JSON', 'VARIANT', 'OBJECT', 'ARRAY', 'STRUCT', 'GEOGRAPHY', 'GEOMETRY']
+
+        # If storing dataframe for relationship detection, load all non-complex columns
+        if store_dataframe:
+            result = []
+            for col_name, data_type in table_schema.items():
+                data_type_upper = data_type.upper()
+                if not any(unsupported_type in data_type_upper for unsupported_type in unsupported_types):
+                    result.append(col_name)
+            return result
+
+        # In discovery mode, load all columns except complex types
+        if audit_mode == 'discover':
+            result = []
+            for col_name, data_type in table_schema.items():
+                data_type_upper = data_type.upper()
+                if not any(unsupported_type in data_type_upper for unsupported_type in unsupported_types):
+                    result.append(col_name)
+            return result
+
         columns_to_load = set()
 
-        # Always include primary key columns
+        # Always include primary key columns (but filter complex types)
         if primary_key_columns:
             columns_to_load.update(primary_key_columns)
 
@@ -122,11 +139,16 @@ class SecureTableAuditor(AuditorExporterMixin):
             if include_columns and column_name not in include_columns:
                 continue
 
-            # Determine if this column should be loaded based on data type and config
-            should_load = False
-
             # Map BigQuery types to general categories
             data_type_upper = data_type.upper()
+
+            # Skip unsupported complex types - Polars cannot handle these
+            unsupported_types = ['JSON', 'VARIANT', 'OBJECT', 'ARRAY', 'STRUCT', 'GEOGRAPHY', 'GEOMETRY']
+            if any(unsupported_type in data_type_upper for unsupported_type in unsupported_types):
+                continue
+
+            # Determine if this column should be loaded based on data type and config
+            should_load = False
 
             # String types - load based on mode
             if any(t in data_type_upper for t in ['STRING', 'VARCHAR', 'TEXT', 'CHAR']):
@@ -196,9 +218,6 @@ class SecureTableAuditor(AuditorExporterMixin):
                         col_insights = column_check_config.get_column_insights(table_name, column_name, data_type)
                         if col_insights:
                             should_load = True
-
-            # Skip complex types (STRUCT, ARRAY, JSON, GEOGRAPHY, etc.)
-            # These types don't support standard checks/insights anyway
 
             if should_load:
                 columns_to_load.add(column_name)

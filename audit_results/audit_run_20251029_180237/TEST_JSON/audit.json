@@ -1,0 +1,53 @@
+{
+  "table_name": "TEST_JSON",
+  "total_rows": 0,
+  "sampled": false,
+  "analyzed_rows": 0,
+  "columns": {},
+  "column_summary": {
+    "NAME": {
+      "dtype": "String",
+      "null_count": 0,
+      "null_pct": 0,
+      "distinct_count": 0,
+      "status": "DISCOVERED"
+    },
+    "JSON_CONTENT": {
+      "dtype": "VARIANT",
+      "null_count": "N/A",
+      "null_pct": "N/A",
+      "distinct_count": "N/A",
+      "status": "NOT_LOADED"
+    }
+  },
+  "column_insights": {},
+  "timestamp": "2025-10-29 17:03:03 UTC",
+  "start_time": "2025-10-29T18:03:03.488958",
+  "check_durations": {},
+  "potential_primary_keys": [
+    "NAME"
+  ],
+  "end_time": "2025-10-29T18:03:03.489094",
+  "duration_seconds": 0.0,
+  "data": "shape: (0, 1)\n\u250c\u2500\u2500\u2500\u2500\u2500\u2500\u2510\n\u2502 NAME \u2502\n\u2502 ---  \u2502\n\u2502 str  \u2502\n\u255e\u2550\u2550\u2550\u2550\u2550\u2550\u2561\n\u2514\u2500\u2500\u2500\u2500\u2500\u2500\u2518",
+  "table_metadata": {
+    "table_name": "TEST_JSON",
+    "table_type": "BASE TABLE",
+    "created_time": "2024-03-08 19:57:31.832000+00:00",
+    "table_uid": "SF_TRIAL.PUBLIC.TEST_JSON",
+    "row_count": 0
+  },
+  "phase_timings": {
+    "connection": 1e-06,
+    "metadata": 0.00097,
+    "column_selection": 0.00016,
+    "data_loading": 0.415039,
+    "audit_checks": 0.000217
+  },
+  "config_metadata": {
+    "version": 1,
+    "project": "The first demo",
+    "description": "Auditing a few tables for data quality issues",
+    "last_modified": "2025-10-28"
+  }
+}

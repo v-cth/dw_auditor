@@ -1,11 +1,12 @@
-"""
-CSS and JavaScript assets for HTML reports
-"""
 
-
-def _generate_css_styles() -> str:
-    """Generate CSS styles for the HTML report"""
-    return """
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Audit Run Summary</title>
+    <style>
+        
         :root {
             --text-main: #000;
             --text-muted: #666;
@@ -1110,58 +1111,109 @@ def _generate_css_styles() -> str:
             color: #4b5563;
         }
 
-"""
 
 
-def _generate_javascript() -> str:
-    """Generate JavaScript for interactive features"""
-    return """
-        function toggleCollapse(id) {
-            const content = document.getElementById(id);
-            const icon = document.getElementById(id + '-icon');
-
-            if (content.classList.contains('collapsed')) {
-                content.classList.remove('collapsed');
-                content.style.maxHeight = content.scrollHeight + 'px';
-                icon.classList.remove('collapsed');
-            } else {
-                content.classList.add('collapsed');
-                content.style.maxHeight = '0';
-                icon.classList.add('collapsed');
-            }
+        /* Summary-specific overrides */
+        .summary-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+            gap: 24px;
+            margin-top: 32px;
+            margin-bottom: 32px;
         }
 
-        // Initialize all collapsible sections as collapsed on page load
-        window.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('.collapsible-content').forEach(function(element) {
-                // Start collapsed by default
-                element.classList.add('collapsed');
-                element.style.maxHeight = '0';
-            });
+        .status-ok { color: #10b981; }
+        .status-warning { color: #f59e0b; }
+        .status-error { color: #ef4444; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header>
+            <h1 class="page-title">Audit Run Summary</h1>
+            <div class="header-meta">
+                <span>Generated: 2025-10-29 17:03:02 UTC</span>
+                <span>Duration: 26.44s</span>
+            </div>
+        </header>
 
-            document.querySelectorAll('.collapse-icon').forEach(function(icon) {
-                // Set icons to collapsed state
-                icon.classList.add('collapsed');
-            });
-        });
+        <!-- Summary Cards -->
+        <div class="summary-cards summary-cards-bordered">
+            <div class="card">
+                <h2>2</h2>
+                <p>Tables Audited</p>
+            </div>
+            <div class="card">
+                <h2>5</h2>
+                <p>Rows Analyzed</p>
+            </div>
+            <div class="card">
+                <h2 class="status-error">0</h2>
+                <p>Issues Found</p>
+            </div>
+            <div class="card">
+                <h2 class="status-ok">2</h2>
+                <p>OK Tables</p>
+            </div>
+            <div class="card">
+                <h2 class="status-warning">0</h2>
+                <p>Warning Tables</p>
+            </div>
+            <div class="card">
+                <h2 class="status-error">0</h2>
+                <p>Error Tables</p>
+            </div>
+        </div>
 
-        // Tab switching logic using data-tab attributes
-        window.addEventListener('DOMContentLoaded', function() {
-            const tabs = document.querySelectorAll('.tab');
-            const contents = document.querySelectorAll('.tab-content');
+        <!-- Tables List -->
+        <h3 class="section-title">Audited Tables</h3>
+        <p class="section-subtitle">Detailed results for each table</p>
 
-            tabs.forEach(tab => {
-                tab.addEventListener('click', () => {
-                    // Remove active class from all tabs
-                    tabs.forEach(t => t.classList.remove('active'));
-                    tab.classList.add('active');
+        <div class="data-table">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Table Name</th>
+                        <th>Total Rows</th>
+                        <th>Analyzed</th>
+                        <th>Columns</th>
+                        <th>Issues</th>
+                        <th>Cols w/ Issues</th>
+                        <th>Status</th>
+                        <th>Duration</th>
+                    </tr>
+                </thead>
+                <tbody>
 
-                    // Remove active class from all content sections
-                    contents.forEach(c => c.classList.remove('active'));
-                    // Show the selected tab content using data-tab attribute
-                    document.getElementById(tab.dataset.tab).classList.add('active');
-                });
-            });
-        });
+                    <tr>
+                        <td>TEST_COLUMN_CHECKS</td>
+                        <td>5</td>
+                        <td>5</td>
+                        <td>11</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td><span class="status-badge-ok">OK</span></td>
+                        <td>1.69s</td>
+                    </tr>
 
-"""
+                    <tr>
+                        <td>TEST_JSON</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td>2</td>
+                        <td>0</td>
+                        <td>0</td>
+                        <td><span class="status-badge-ok">OK</span></td>
+                        <td>0.42s</td>
+                    </tr>
+
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Relationships Section -->
+
+    </div>
+</body>
+</html>

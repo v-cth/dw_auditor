@@ -18,24 +18,35 @@ class SnowflakeAdapter(BaseAdapter):
         if self.conn is not None:
             return self.conn
 
-        required_params = ['account', 'user', 'password']
-        for param in required_params:
-            if param not in self.connection_params:
-                raise ValueError(f"Snowflake requires '{param}' parameter")
+        # Check for required parameters
+        if 'account' not in self.connection_params:
+            raise ValueError("Snowflake requires 'account' parameter")
+        if 'user' not in self.connection_params:
+            raise ValueError("Snowflake requires 'user' parameter")
+
+        # Password is required unless using external browser authentication
+        authenticator = self.connection_params.get('authenticator')
+        if not authenticator and 'password' not in self.connection_params:
+            raise ValueError("Snowflake requires 'password' parameter (or set authenticator='externalbrowser' for SSO)")
 
         conn_kwargs = {
             'user': self.connection_params['user'],
-            'password': self.connection_params['password'],
             'account': self.connection_params['account'],
         }
 
-        optional_params = ['database', 'schema', 'warehouse', 'role']
+        # Add password if provided (not needed for externalbrowser)
+        if 'password' in self.connection_params:
+            conn_kwargs['password'] = self.connection_params['password']
+
+        # Add optional parameters
+        optional_params = ['database', 'schema', 'warehouse', 'role', 'authenticator']
         for param in optional_params:
             if param in self.connection_params:
                 conn_kwargs[param] = self.connection_params[param]
 
         self.conn = ibis.snowflake.connect(**conn_kwargs)
-        print(f"✅ Connected to SNOWFLAKE")
+        auth_method = "external browser" if authenticator == 'externalbrowser' else "username/password"
+        print(f"✅ Connected to SNOWFLAKE ({auth_method})")
         return self.conn
 
     def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None):
@@ -113,7 +124,7 @@ class SnowflakeAdapter(BaseAdapter):
             """
             self._columns_df = self.conn.sql(columns_query).to_polars()
 
-            # Normalize column names to lowercase
+            # Normalize metadata column names to lowercase (but keep actual column names as-is for Snowflake)
             self._columns_df = self._columns_df.rename({
                 'TABLE_NAME': 'table_name',
                 'COLUMN_NAME': 'column_name',
@@ -121,10 +132,8 @@ class SnowflakeAdapter(BaseAdapter):
                 'ORDINAL_POSITION': 'ordinal_position'
             })
 
-            # Lowercase actual column names for consistency
-            self._columns_df = self._columns_df.with_columns(
-                pl.col('column_name').str.to_lowercase().alias('column_name')
-            )
+            # Note: Do NOT lowercase 'column_name' values - Snowflake uses uppercase column names
+            # and Ibis expects them to match the database schema exactly
         except Exception as e:
             print(f"⚠️  Could not fetch columns metadata: {e}")
             self._columns_df = pl.DataFrame()
@@ -151,10 +160,7 @@ class SnowflakeAdapter(BaseAdapter):
                 'ORDINAL_POSITION': 'ordinal_position'
             })
 
-            # Lowercase column names
-            self._pk_df = self._pk_df.with_columns(
-                pl.col('column_name').str.to_lowercase().alias('column_name')
-            )
+            # Note: Do NOT lowercase 'column_name' values - Snowflake uses uppercase column names
         except Exception as e:
             print(f"⚠️  Could not fetch primary keys: {e}")
             self._pk_df = pl.DataFrame()
@@ -188,8 +194,7 @@ class SnowflakeAdapter(BaseAdapter):
             self.connect()
 
         if schema:
-            full_name = f"{schema}.{table_name}"
-            return self.conn.table(full_name)
+            return self.conn.table(table_name, database=schema)
         else:
             return self.conn.table(table_name)
 

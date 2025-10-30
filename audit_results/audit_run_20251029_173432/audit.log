@@ -1,0 +1,122 @@
+📁 Audit run directory: audit_results/audit_run_20251029_173432
+📝 Logs will be saved to: audit_results/audit_run_20251029_173432/audit.log
+🔍 Discovery mode: Collecting metadata only (skipping quality checks and insights)
+
+🔍 Auto-discovering tables in schema...
+✅ Connected to SNOWFLAKE
+⚠️  Could not fetch primary keys: 002003 (42S02): SQL compilation error:
+Object 'SF_TRIAL.INFORMATION_SCHEMA.KEY_COLUMN_USAGE' does not exist or not authorized.
+📋 Found 7 tables in schema
+🔽 Filtered out 5 tables based on patterns
+✅ Will audit 2 tables
+   Excluded: CAR_SALES, JSON_CONTENT, TABLE_CONFIG, XML_CONTENT, XML_CONTENT_2
+🔒 Closed SNOWFLAKE connection
+✅ Connected to SNOWFLAKE
+
+🔍 Pre-fetching metadata for 2 table(s)...
+⚠️  Could not fetch primary keys: 002003 (42S02): SQL compilation error:
+Object 'SF_TRIAL.INFORMATION_SCHEMA.KEY_COLUMN_USAGE' does not exist or not authorized.
+✅ Metadata cached for all tables
+
+======================================================================
+🔍 Auditing table: TEST_COLUMN_CHECKS
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+🔖 Table UID: SF_TRIAL.PUBLIC.TEST_COLUMN_CHECKS
+📑 Table type: BASE TABLE
+📊 Table has 5 rows
+📊 Loading all 11 columns
+❌ Error auditing table 'TEST_COLUMN_CHECKS': "PUBLIC.TEST_COLUMN_CHECKS"
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 552, in get_schema
+    with self._safe_raw_sql(query) as cur:
+  File "/Users/v/anaconda3/lib/python3.10/contextlib.py", line 135, in __enter__
+    return next(self.gen)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 703, in _safe_raw_sql
+    with contextlib.closing(self.raw_sql(query, **kwargs)) as cur:
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 711, in raw_sql
+    cur.execute(query, **kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/cursor.py", line 1121, in execute
+    Error.errorhandler_wrapper(self.connection, self, error_class, errvalue)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 286, in errorhandler_wrapper
+    handed_over = Error.hand_to_other_handler(
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 341, in hand_to_other_handler
+    cursor.errorhandler(connection, cursor, error_class, error_value)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 217, in default_errorhandler
+    raise error_class(
+snowflake.connector.errors.ProgrammingError: 002003 (42S02): SQL compilation error:
+Table '"PUBLIC.TEST_COLUMN_CHECKS"' does not exist or not authorized.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 352, in main
+    results = auditor.audit_from_database(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 417, in audit_from_database
+    df = db_conn.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/connection.py", line 76, in execute_query
+    return self.adapter.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/snowflake.py", line 214, in execute_query
+    table = self.get_table(table_name, schema)
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/snowflake.py", line 192, in get_table
+    return self.conn.table(full_name)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/sql/__init__.py", line 85, in table
+    table_schema = self.get_schema(name, catalog=catalog, database=database)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 566, in get_schema
+    raise com.TableNotFound(table.sql(self.dialect)) from e
+ibis.common.exceptions.TableNotFound: "PUBLIC.TEST_COLUMN_CHECKS"
+
+======================================================================
+🔍 Auditing table: TEST_JSON
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+🔖 Table UID: SF_TRIAL.PUBLIC.TEST_JSON
+📑 Table type: BASE TABLE
+📊 Table has 0 rows
+📊 Loading all 2 columns
+❌ Error auditing table 'TEST_JSON': "PUBLIC.TEST_JSON"
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 552, in get_schema
+    with self._safe_raw_sql(query) as cur:
+  File "/Users/v/anaconda3/lib/python3.10/contextlib.py", line 135, in __enter__
+    return next(self.gen)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 703, in _safe_raw_sql
+    with contextlib.closing(self.raw_sql(query, **kwargs)) as cur:
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 711, in raw_sql
+    cur.execute(query, **kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/cursor.py", line 1121, in execute
+    Error.errorhandler_wrapper(self.connection, self, error_class, errvalue)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 286, in errorhandler_wrapper
+    handed_over = Error.hand_to_other_handler(
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 341, in hand_to_other_handler
+    cursor.errorhandler(connection, cursor, error_class, error_value)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 217, in default_errorhandler
+    raise error_class(
+snowflake.connector.errors.ProgrammingError: 002003 (42S02): SQL compilation error:
+Table '"PUBLIC.TEST_JSON"' does not exist or not authorized.
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 352, in main
+    results = auditor.audit_from_database(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 417, in audit_from_database
+    df = db_conn.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/connection.py", line 76, in execute_query
+    return self.adapter.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/snowflake.py", line 214, in execute_query
+    table = self.get_table(table_name, schema)
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/snowflake.py", line 192, in get_table
+    return self.conn.table(full_name)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/sql/__init__.py", line 85, in table
+    table_schema = self.get_schema(name, catalog=catalog, database=database)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 566, in get_schema
+    raise com.TableNotFound(table.sql(self.dialect)) from e
+ibis.common.exceptions.TableNotFound: "PUBLIC.TEST_JSON"
+
+======================================================================
+✅ Audit completed! Results saved to: audit_results/audit_run_20251029_173432
+⏱️  Total duration: 28.22 seconds
+📝 Logs saved to: audit_results/audit_run_20251029_173432/audit.log
+======================================================================
+🔒 Closed SNOWFLAKE connection

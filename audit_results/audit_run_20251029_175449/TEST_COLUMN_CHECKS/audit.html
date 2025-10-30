@@ -1,11 +1,12 @@
-"""
-CSS and JavaScript assets for HTML reports
-"""
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Quality Audit Report - TEST_COLUMN_CHECKS</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
 
-
-def _generate_css_styles() -> str:
-    """Generate CSS styles for the HTML report"""
-    return """
         :root {
             --text-main: #000;
             --text-muted: #666;
@@ -1110,12 +1111,9 @@ def _generate_css_styles() -> str:
             color: #4b5563;
         }
 
-"""
+    </style>
+    <script>
 
-
-def _generate_javascript() -> str:
-    """Generate JavaScript for interactive features"""
-    return """
         function toggleCollapse(id) {
             const content = document.getElementById(id);
             const icon = document.getElementById(id + '-icon');
@@ -1164,4 +1162,227 @@ def _generate_javascript() -> str:
             });
         });
 
-"""
+    </script>
+</head>
+<body>
+    <header class="report-header">
+        <div class="report-title">Data Quality Audit Report</div>
+        <div class="table-name">TEST_COLUMN_CHECKS</div>
+        <div class="table-tag">BASE TABLE</div>
+
+        <div class="meta-line">
+            <div class="meta-block">
+                <div class="meta-label">Generated</div>
+                <div class="summary-meta-value">2025-10-29 16:55:12 UTC</div>
+            </div>
+        </div>
+    </header>
+
+    <nav class="tabs">
+        <div class="tab active" data-tab="summary">Summary</div>
+        <div class="tab" data-tab="insights">Insights</div>
+        <div class="tab" data-tab="checks">Quality Checks</div>
+        <div class="tab" data-tab="metadata">Metadata</div>
+    </nav>
+    
+    <section id="summary" class="tab-content active">
+        <div class="summary-cards">
+            <div class="card">
+                <h2>5</h2>
+                <p>Total Rows</p>
+            </div>
+            <div class="card">
+                <h2>5</h2>
+                <p>Analyzed Rows</p>
+            </div>
+            <div class="card">
+                <h2>All</h2>
+                <p>Columns Audited</p>
+            </div>
+            <div class="card">
+                <h2 class="">Clean</h2>
+                <p>Status</p>
+            </div>
+        </div>
+<h3 class="subsection-header">Column Summary</h3>
+<p class="subsection-description">Basic metrics for all columns in the table</p>
+    <div class="data-table">
+        <table>
+            <thead>
+                <tr>
+                    <th>Column Name</th>
+                    <th>Data Type</th>
+                    <th>Status</th>
+                    <th>Null Count</th>
+                    <th>Null %</th>
+                    <th>Distinct Values</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>city_name</td>
+                    <td>TEXT</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>city_with_space</td>
+                    <td>TEXT</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>city_with_suffix</td>
+                    <td>TEXT</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>city_with_endchar</td>
+                    <td>TEXT</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>station_code</td>
+                    <td>TEXT</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>generic_string</td>
+                    <td>TEXT</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>value_ok</td>
+                    <td>NUMBER</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>value_mid</td>
+                    <td>NUMBER</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>value_min</td>
+                    <td>NUMBER</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>event_date</td>
+                    <td>DATE</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+                <tr>
+                    <td>delivery_date</td>
+                    <td>DATE</td>
+                    <td><span class="badge badge-not-loaded">Not Loaded</span></td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                    <td>N/A</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    </section>
+    
+    <section id="insights" class="tab-content">
+        
+    </section>
+    
+    <section id="checks" class="tab-content">
+        
+    <div class="summary success">
+        <h2>All Quality Checks Passed</h2>
+        <p><strong>0</strong> quality check(s) performed across all columns. No data quality issues detected.</p>
+    </div>
+
+    </section>
+    
+    <section id="metadata" class="tab-content">
+        <div class="section-container">
+<h2 class="section-header-first">Audit Configuration</h2>
+
+            <div class="meta-item">
+                <span class="meta-label">Project:</span>
+                <span class="meta-value">The first demo</span>
+            </div>
+
+            <div class="meta-item">
+                <span class="meta-label">Description:</span>
+                <span class="meta-value">Auditing a few tables for data quality issues</span>
+            </div>
+
+            <div class="meta-item">
+                <span class="meta-label">Config Version:</span>
+                <span class="meta-value">1</span>
+            </div>
+
+            <div class="meta-item">
+                <span class="meta-label">Config Last Modified:</span>
+                <span class="meta-value">2025-10-28</span>
+            </div>
+            <div class="divider"></div>
+<h2 class="section-header">Table Details</h2>
+
+            <div class="meta-item">
+                <span class="meta-label">Table ID:</span>
+                <span class="meta-value-mono">SF_TRIAL.PUBLIC.TEST_COLUMN_CHECKS</span>
+            </div>
+
+            <div class="meta-item">
+                <span class="meta-label">Type:</span>
+                <span class="meta-value">BASE TABLE</span>
+            </div>
+            <div class="divider"></div>
+                <h3 class="subsection-title">Audit Information</h3>
+
+            <div class="meta-item">
+                <span class="meta-label">Generated:</span>
+                <span class="meta-value">2025-10-29 16:55:12 UTC</span>
+            </div>
+
+            <div class="meta-item">
+                <span class="meta-label">Duration:</span>
+                <span class="meta-value">0.00s</span>
+            </div>
+
+            <div class="meta-item">
+                <span class="meta-label">Sampled:</span>
+                <span class="meta-value">No</span>
+            </div>
+        </div>
+    </section>
+
+    <div class="footer">
+        <p>Generated by SecureTableAuditor</p>
+    </div>
+</body>
+</html>

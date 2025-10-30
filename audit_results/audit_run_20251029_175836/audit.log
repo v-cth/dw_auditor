@@ -1,0 +1,94 @@
+📁 Audit run directory: audit_results/audit_run_20251029_175836
+📝 Logs will be saved to: audit_results/audit_run_20251029_175836/audit.log
+🔍 Discovery mode: Collecting metadata only (skipping quality checks and insights)
+
+🔍 Auto-discovering tables in schema...
+✅ Connected to SNOWFLAKE
+⚠️  Could not fetch primary keys: 002003 (42S02): SQL compilation error:
+Object 'SF_TRIAL.INFORMATION_SCHEMA.KEY_COLUMN_USAGE' does not exist or not authorized.
+📋 Found 7 tables in schema
+🔽 Filtered out 5 tables based on patterns
+✅ Will audit 2 tables
+   Excluded: CAR_SALES, JSON_CONTENT, TABLE_CONFIG, XML_CONTENT, XML_CONTENT_2
+🔒 Closed SNOWFLAKE connection
+✅ Connected to SNOWFLAKE
+
+🔍 Pre-fetching metadata for 2 table(s)...
+⚠️  Could not fetch primary keys: 002003 (42S02): SQL compilation error:
+Object 'SF_TRIAL.INFORMATION_SCHEMA.KEY_COLUMN_USAGE' does not exist or not authorized.
+✅ Metadata cached for all tables
+
+======================================================================
+🔍 Auditing table: TEST_COLUMN_CHECKS
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+🔖 Table UID: SF_TRIAL.PUBLIC.TEST_COLUMN_CHECKS
+📑 Table type: BASE TABLE
+📊 Table has 5 rows
+📊 Optimized column loading: selecting 11/11 columns
+❌ Error auditing table 'TEST_COLUMN_CHECKS': Column 'city_name' is not found in table. Existing columns: 'CITY_NAME', 'CITY_WITH_SPACE', 'CITY_WITH_SUFFIX', 'CITY_WITH_ENDCHAR', 'STATION_CODE', 'GENERIC_STRING', 'VALUE_OK', 'VALUE_MID', 'VALUE_MIN', 'EVENT_DATE', 'DELIVERY_DATE'.
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 352, in main
+    results = auditor.audit_from_database(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 436, in audit_from_database
+    df = db_conn.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/connection.py", line 76, in execute_query
+    return self.adapter.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/snowflake.py", line 216, in execute_query
+    table = table.select(columns)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 2553, in select
+    values = self.bind(*exprs, **named_exprs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 661, in bind
+    values = self._fast_bind(*args, **kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 628, in _fast_bind
+    values.extend(bind(self, arg))
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 463, in bind
+    yield ops.Field(table, value).to_expr()
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/common/bases.py", line 72, in __call__
+    return cls.__create__(*args, **kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/common/grounds.py", line 120, in __create__
+    return super().__create__(**kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/operations/relations.py", line 96, in __init__
+    raise IbisTypeError(
+ibis.common.exceptions.IbisTypeError: Column 'city_name' is not found in table. Existing columns: 'CITY_NAME', 'CITY_WITH_SPACE', 'CITY_WITH_SUFFIX', 'CITY_WITH_ENDCHAR', 'STATION_CODE', 'GENERIC_STRING', 'VALUE_OK', 'VALUE_MID', 'VALUE_MIN', 'EVENT_DATE', 'DELIVERY_DATE'.
+
+======================================================================
+🔍 Auditing table: TEST_JSON
+======================================================================
+🔐 Secure audit mode: Direct database query via Ibis (no file export)
+🔖 Table UID: SF_TRIAL.PUBLIC.TEST_JSON
+📑 Table type: BASE TABLE
+📊 Table has 0 rows
+📊 Optimized column loading: selecting 1/2 columns
+❌ Error auditing table 'TEST_JSON': Column 'name' is not found in table. Existing columns: 'NAME', 'JSON_CONTENT'.
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 352, in main
+    results = auditor.audit_from_database(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/auditor.py", line 436, in audit_from_database
+    df = db_conn.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/connection.py", line 76, in execute_query
+    return self.adapter.execute_query(
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/snowflake.py", line 216, in execute_query
+    table = table.select(columns)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 2553, in select
+    values = self.bind(*exprs, **named_exprs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 661, in bind
+    values = self._fast_bind(*args, **kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 628, in _fast_bind
+    values.extend(bind(self, arg))
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/types/relations.py", line 463, in bind
+    yield ops.Field(table, value).to_expr()
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/common/bases.py", line 72, in __call__
+    return cls.__create__(*args, **kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/common/grounds.py", line 120, in __create__
+    return super().__create__(**kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/expr/operations/relations.py", line 96, in __init__
+    raise IbisTypeError(
+ibis.common.exceptions.IbisTypeError: Column 'name' is not found in table. Existing columns: 'NAME', 'JSON_CONTENT'.
+
+======================================================================
+✅ Audit completed! Results saved to: audit_results/audit_run_20251029_175836
+⏱️  Total duration: 25.73 seconds
+📝 Logs saved to: audit_results/audit_run_20251029_175836/audit.log
+======================================================================
+🔒 Closed SNOWFLAKE connection

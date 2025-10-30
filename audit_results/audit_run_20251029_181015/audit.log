@@ -1,0 +1,51 @@
+📁 Audit run directory: audit_results/audit_run_20251029_181015
+📝 Logs will be saved to: audit_results/audit_run_20251029_181015/audit.log
+🔍 Discovery mode: Collecting metadata only (skipping quality checks and insights)
+
+🔍 Auto-discovering tables in schema...
+Warning: Dependency 'keyring' is not installed, cannot cache id token. You might experience multiple authentication pop ups while using ExternalBrowser/OAuth/MFA Authenticator. To avoid this please install keyring module using the following command:
+ pip install snowflake-connector-python[secure-local-storage]
+Traceback (most recent call last):
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 549, in <module>
+    main()
+  File "/Users/v/Documents/GitHub/database_audit/audit.py", line 140, in main
+    db_conn.connect()
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/connection.py", line 57, in connect
+    self.conn = self.adapter.connect()
+  File "/Users/v/Documents/GitHub/database_audit/dw_auditor/core/db_connection/snowflake.py", line 47, in connect
+    self.conn = ibis.snowflake.connect(**conn_kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/__init__.py", line 110, in connect
+    return backend.connect(*args, **kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/__init__.py", line 1051, in connect
+    new_backend.reconnect()
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 445, in reconnect
+    super().reconnect()
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/__init__.py", line 1066, in reconnect
+    self.do_connect(*self._con_args, **self._con_kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/ibis/backends/snowflake/__init__.py", line 261, in do_connect
+    self.con = sc.connect(**connect_args)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/__init__.py", line 54, in Connect
+    return SnowflakeConnection(**kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/connection.py", line 654, in __init__
+    self.connect(**kwargs)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/connection.py", line 1120, in connect
+    self.__open_connection()
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/connection.py", line 1536, in __open_connection
+    self.authenticate_with_retry(self.auth_class)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/connection.py", line 1870, in authenticate_with_retry
+    self._authenticate(auth_instance)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/connection.py", line 1886, in _authenticate
+    auth_instance.prepare(
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/auth/webbrowser.py", line 149, in prepare
+    sso_url = self._get_sso_url(
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/auth/webbrowser.py", line 484, in _get_sso_url
+    self._handle_failure(conn=conn, ret=ret)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/auth/by_plugin.py", line 167, in _handle_failure
+    Error.errorhandler_wrapper(
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 286, in errorhandler_wrapper
+    handed_over = Error.hand_to_other_handler(
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 344, in hand_to_other_handler
+    connection.errorhandler(connection, cursor, error_class, error_value)
+  File "/Users/v/Documents/GitHub/database_audit/audit_env/lib/python3.10/site-packages/snowflake/connector/errors.py", line 217, in default_errorhandler
+    raise error_class(
+snowflake.connector.errors.DatabaseError: 390190 (08001): Failed to connect to DB: OOQYWEC-ND51384.snowflakecomputing.com:443, There was an error related to the SAML Identity Provider account parameter. Contact Snowflake support.
