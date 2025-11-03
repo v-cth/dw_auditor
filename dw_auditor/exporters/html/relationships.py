@@ -174,8 +174,8 @@ def _create_orthogonal_path(start_x: float, start_y: float, start_side: str,
     Returns:
         Tuple of (SVG path string, list of label positions on straight segments)
     """
-    # Base clearance from edges
-    base_clearance = 35
+    # Base clearance from edges - increased to avoid table collisions
+    base_clearance = 60
     clearance = base_clearance + abs(lane_offset)
 
     # Calculate exit points (perpendicular exit from edge)
@@ -226,6 +226,13 @@ def _create_orthogonal_path(start_x: float, start_y: float, start_side: str,
         # Apply lane offset to vertical rail
         exit_y_offset = exit_y + lane_offset
         entry_y_offset = entry_y + lane_offset
+
+        # Check for collision and adjust if needed
+        if _boxes_overlap_segment(all_boxes, exit_x, exit_y_offset, mid_x, exit_y_offset, margin=10):
+            # Route further out
+            exit_y_offset = exit_y + lane_offset + (80 if lane_offset >= 0 else -80)
+            entry_y_offset = entry_y + lane_offset + (80 if lane_offset >= 0 else -80)
+
         waypoints.append((exit_x, exit_y_offset))
         waypoints.append((mid_x, exit_y_offset))
         waypoints.append((mid_x, entry_y_offset))
@@ -237,6 +244,13 @@ def _create_orthogonal_path(start_x: float, start_y: float, start_side: str,
         # Apply lane offset to horizontal rail
         exit_x_offset = exit_x + lane_offset
         entry_x_offset = entry_x + lane_offset
+
+        # Check for collision and adjust if needed
+        if _boxes_overlap_segment(all_boxes, exit_x_offset, exit_y, exit_x_offset, mid_y, margin=10):
+            # Route further out
+            exit_x_offset = exit_x + lane_offset + (80 if lane_offset >= 0 else -80)
+            entry_x_offset = entry_x + lane_offset + (80 if lane_offset >= 0 else -80)
+
         waypoints.append((exit_x_offset, exit_y))
         waypoints.append((exit_x_offset, mid_y))
         waypoints.append((entry_x_offset, mid_y))
@@ -246,15 +260,34 @@ def _create_orthogonal_path(start_x: float, start_y: float, start_side: str,
         if start_side in ['left', 'right']:
             # Start horizontal, apply lane offset to vertical segment
             vert_pos = exit_y + lane_offset
+
+            # Check if the vertical segment would collide
+            if _boxes_overlap_segment(all_boxes, exit_x, vert_pos, entry_x, vert_pos, margin=10):
+                # Route further out vertically
+                vert_pos = exit_y + lane_offset + (80 if exit_y < entry_y else -80)
+
             waypoints.append((entry_x, vert_pos))
         else:
             # Start vertical, apply lane offset to horizontal segment
             horiz_pos = exit_x + lane_offset
+
+            # Check if the horizontal segment would collide
+            if _boxes_overlap_segment(all_boxes, horiz_pos, exit_y, horiz_pos, entry_y, margin=10):
+                # Route further out horizontally
+                horiz_pos = exit_x + lane_offset + (80 if exit_x < entry_x else -80)
+
             waypoints.append((horiz_pos, entry_y))
 
     # Last segment: enter perpendicular to target box
     waypoints.append((entry_x, entry_y))
     waypoints.append((end_x, end_y))
+
+    # Remove consecutive duplicate waypoints
+    cleaned_waypoints = [waypoints[0]]
+    for i in range(1, len(waypoints)):
+        if waypoints[i] != waypoints[i-1]:
+            cleaned_waypoints.append(waypoints[i])
+    waypoints = cleaned_waypoints
 
     # Build SVG path with rounded corners
     path = f"M {waypoints[0][0]},{waypoints[0][1]}"
@@ -537,67 +570,61 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
                 label_start = "1"
                 label_end = "1"
 
-            # Calculate angle for label positioning
-            angle_start = math.atan2(end_y - start_y, end_x - start_x) * 180 / math.pi
-            angle_end = math.atan2(start_y - end_y, start_x - end_x) * 180 / math.pi
-
             # Build tooltip text
             tooltip_text = f"{rel['column1']} ↔ {rel['column2']}&#10;Confidence: {confidence:.1%}&#10;Type: {rel['relationship_type']}&#10;Overlap: {rel['overlap_ratio']:.1%}&#10;Matching: {rel['matching_values']:,}"
 
-            # Calculate bezier curve with proportional tension
-            mid_x = (start_x + end_x) / 2
-            mid_y = (start_y + end_y) / 2
-
-            # Calculate perpendicular offset for control point (creates curve)
-            line_length = math.sqrt((end_x - start_x)**2 + (end_y - start_y)**2)
-            if line_length > 0:
-                # Perpendicular vector
-                perp_x = -(end_y - start_y) / line_length
-                perp_y = (end_x - start_x) / line_length
-                # Proportional curve tension: gentle for short lines, moderate for long lines
-                # Use logarithmic scaling to avoid extreme curves
-                if line_length < 150:
-                    curve_factor = 0.08  # Gentle curve for short lines
-                elif line_length < 350:
-                    curve_factor = 0.12  # Medium curve
-                else:
-                    curve_factor = 0.15  # Fuller curve for long lines
-                curve_amount = line_length * curve_factor
-                # Control point offset (alternate direction for multiple relationships)
-                control_offset = curve_amount * (1 if i % 2 == 0 else -1)
-                control_x = mid_x + perp_x * control_offset
-                control_y = mid_y + perp_y * control_offset
+            # Calculate lane offset for multiple parallel relationships
+            if num_rels > 1:
+                lane_offset = (i - (num_rels - 1) / 2) * 15
             else:
-                control_x = mid_x
-                control_y = mid_y
+                lane_offset = 0
 
-            # Quadratic bezier path
-            path_d = f"M {start_x},{start_y} Q {control_x},{control_y} {end_x},{end_y}"
+            # Collect all box dimensions for collision detection
+            all_box_dims = list(table_dimensions.values())
 
-            # Calculate label positions and angles
-            dx = end_x - start_x
-            dy = end_y - start_y
-            line_len = math.sqrt(dx*dx + dy*dy)
-            if line_len > 0:
-                # Unit vector along the line
-                ux = dx / line_len
-                uy = dy / line_len
-                # Position labels 22px from endpoints
-                label_start_x = start_x + ux * 22
-                label_start_y = start_y + uy * 22
-                label_end_x = end_x - ux * 22
-                label_end_y = end_y - uy * 22
-                # Calculate rotation angle
-                angle_deg = math.atan2(dy, dx) * 180 / math.pi
+            # Create orthogonal path with collision avoidance
+            path_d, label_positions = _create_orthogonal_path(
+                start_x, start_y, start_side,
+                end_x, end_y, end_side,
+                lane_offset, all_box_dims,
+                corner_radius=4
+            )
+
+            # Position cardinality labels based on edge sides (perpendicular offset from exit/entry)
+            # Start label: offset perpendicular to the start edge
+            if start_side == 'top' or start_side == 'bottom':
+                label_start_x = start_x
+                label_start_y = start_y + (22 if start_side == 'bottom' else -22)
+            else:  # left or right
+                label_start_x = start_x + (22 if start_side == 'right' else -22)
+                label_start_y = start_y
+
+            # End label: offset perpendicular to the end edge
+            if end_side == 'top' or end_side == 'bottom':
+                label_end_x = end_x
+                label_end_y = end_y + (22 if end_side == 'bottom' else -22)
+            else:  # left or right
+                label_end_x = end_x + (22 if end_side == 'right' else -22)
+                label_end_y = end_y
+
+            # Position column name label on the longest straight segment
+            if label_positions:
+                # Find the longest segment
+                max_len = 0
+                best_pos = label_positions[0]
+                for j in range(len(label_positions) - 1):
+                    seg_len = math.sqrt((label_positions[j+1][0] - label_positions[j][0])**2 +
+                                       (label_positions[j+1][1] - label_positions[j][1])**2)
+                    if seg_len > max_len:
+                        max_len = seg_len
+                        # Place label at midpoint of this segment
+                        best_pos = ((label_positions[j][0] + label_positions[j+1][0]) / 2,
+                                   (label_positions[j][1] + label_positions[j+1][1]) / 2)
+                col_label_x, col_label_y = best_pos
             else:
-                label_start_x, label_start_y = start_x, start_y
-                label_end_x, label_end_y = end_x, end_y
-                angle_deg = 0
-
-            # Position column name label with perpendicular offset to avoid line overlap
-            label_offset_y = -10 if i % 2 == 0 else 10
-            col_label_x = control_x
-            col_label_y = control_y + label_offset_y
+                # Fallback if no label positions
+                col_label_x = (start_x + end_x) / 2
+                col_label_y = (start_y + end_y) / 2
 
             relationship_lines_svg += f"""
         <g class="er-relationship" data-table1="{rel['table1']}" data-table2="{rel['table2']}" data-rel-id="rel-{rel_idx}">
@@ -617,16 +644,14 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle">
                 {label_end}
             </text>
-            <!-- Column name label with background and rotation -->
-            <g transform="rotate({angle_deg}, {col_label_x}, {col_label_y})">
-                <rect x="{col_label_x - len(rel['column1']) * 3.5}" y="{col_label_y - 8}"
-                      width="{len(rel['column1']) * 7}" height="16"
-                      fill="white" rx="3" opacity="0.9"/>
-                <text x="{col_label_x}" y="{col_label_y}" font-family="Inter, sans-serif" font-size="10"
-                      fill="{line_color}" text-anchor="middle" dominant-baseline="middle" font-weight="500">
-                    {rel['column1']}
-                </text>
-            </g>
+            <!-- Column name label with background (no rotation for orthogonal lines) -->
+            <rect x="{col_label_x - len(rel['column1']) * 3.5}" y="{col_label_y - 8}"
+                  width="{len(rel['column1']) * 7}" height="16"
+                  fill="white" rx="3" opacity="0.9"/>
+            <text x="{col_label_x}" y="{col_label_y}" font-family="Inter, sans-serif" font-size="10"
+                  fill="{line_color}" text-anchor="middle" dominant-baseline="middle" font-weight="500">
+                {rel['column1']}
+            </text>
         </g>
         """
             rel_idx += 1
@@ -1033,67 +1058,61 @@ def generate_standalone_relationships_report(
                 label_start = "1"
                 label_end = "1"
 
-            # Calculate angle for label positioning
-            angle_start = math.atan2(end_y - start_y, end_x - start_x) * 180 / math.pi
-            angle_end = math.atan2(start_y - end_y, start_x - end_x) * 180 / math.pi
-
             # Build tooltip text
             tooltip_text = f"{rel['column1']} ↔ {rel['column2']}&#10;Confidence: {confidence:.1%}&#10;Type: {rel['relationship_type']}&#10;Overlap: {rel['overlap_ratio']:.1%}&#10;Matching: {rel['matching_values']:,}"
 
-            # Calculate bezier curve with proportional tension
-            mid_x = (start_x + end_x) / 2
-            mid_y = (start_y + end_y) / 2
-
-            # Calculate perpendicular offset for control point (creates curve)
-            line_length = math.sqrt((end_x - start_x)**2 + (end_y - start_y)**2)
-            if line_length > 0:
-                # Perpendicular vector
-                perp_x = -(end_y - start_y) / line_length
-                perp_y = (end_x - start_x) / line_length
-                # Proportional curve tension: gentle for short lines, moderate for long lines
-                # Use logarithmic scaling to avoid extreme curves
-                if line_length < 150:
-                    curve_factor = 0.08  # Gentle curve for short lines
-                elif line_length < 350:
-                    curve_factor = 0.12  # Medium curve
-                else:
-                    curve_factor = 0.15  # Fuller curve for long lines
-                curve_amount = line_length * curve_factor
-                # Control point offset (alternate direction for multiple relationships)
-                control_offset = curve_amount * (1 if i % 2 == 0 else -1)
-                control_x = mid_x + perp_x * control_offset
-                control_y = mid_y + perp_y * control_offset
+            # Calculate lane offset for multiple parallel relationships
+            if num_rels > 1:
+                lane_offset = (i - (num_rels - 1) / 2) * 15
             else:
-                control_x = mid_x
-                control_y = mid_y
+                lane_offset = 0
 
-            # Quadratic bezier path
-            path_d = f"M {start_x},{start_y} Q {control_x},{control_y} {end_x},{end_y}"
+            # Collect all box dimensions for collision detection
+            all_box_dims = list(table_dimensions.values())
 
-            # Calculate label positions and angles
-            dx = end_x - start_x
-            dy = end_y - start_y
-            line_len = math.sqrt(dx*dx + dy*dy)
-            if line_len > 0:
-                # Unit vector along the line
-                ux = dx / line_len
-                uy = dy / line_len
-                # Position labels 22px from endpoints
-                label_start_x = start_x + ux * 22
-                label_start_y = start_y + uy * 22
-                label_end_x = end_x - ux * 22
-                label_end_y = end_y - uy * 22
-                # Calculate rotation angle
-                angle_deg = math.atan2(dy, dx) * 180 / math.pi
+            # Create orthogonal path with collision avoidance
+            path_d, label_positions = _create_orthogonal_path(
+                start_x, start_y, start_side,
+                end_x, end_y, end_side,
+                lane_offset, all_box_dims,
+                corner_radius=4
+            )
+
+            # Position cardinality labels based on edge sides (perpendicular offset from exit/entry)
+            # Start label: offset perpendicular to the start edge
+            if start_side == 'top' or start_side == 'bottom':
+                label_start_x = start_x
+                label_start_y = start_y + (22 if start_side == 'bottom' else -22)
+            else:  # left or right
+                label_start_x = start_x + (22 if start_side == 'right' else -22)
+                label_start_y = start_y
+
+            # End label: offset perpendicular to the end edge
+            if end_side == 'top' or end_side == 'bottom':
+                label_end_x = end_x
+                label_end_y = end_y + (22 if end_side == 'bottom' else -22)
+            else:  # left or right
+                label_end_x = end_x + (22 if end_side == 'right' else -22)
+                label_end_y = end_y
+
+            # Position column name label on the longest straight segment
+            if label_positions:
+                # Find the longest segment
+                max_len = 0
+                best_pos = label_positions[0]
+                for j in range(len(label_positions) - 1):
+                    seg_len = math.sqrt((label_positions[j+1][0] - label_positions[j][0])**2 +
+                                       (label_positions[j+1][1] - label_positions[j][1])**2)
+                    if seg_len > max_len:
+                        max_len = seg_len
+                        # Place label at midpoint of this segment
+                        best_pos = ((label_positions[j][0] + label_positions[j+1][0]) / 2,
+                                   (label_positions[j][1] + label_positions[j+1][1]) / 2)
+                col_label_x, col_label_y = best_pos
             else:
-                label_start_x, label_start_y = start_x, start_y
-                label_end_x, label_end_y = end_x, end_y
-                angle_deg = 0
-
-            # Position column name label with perpendicular offset to avoid line overlap
-            label_offset_y = -10 if i % 2 == 0 else 10
-            col_label_x = control_x
-            col_label_y = control_y + label_offset_y
+                # Fallback if no label positions
+                col_label_x = (start_x + end_x) / 2
+                col_label_y = (start_y + end_y) / 2
 
             relationship_lines_svg += f"""
         <g class="er-relationship" data-table1="{rel['table1']}" data-table2="{rel['table2']}" data-rel-id="rel-{rel_idx}">
@@ -1113,16 +1132,14 @@ def generate_standalone_relationships_report(
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle">
                 {label_end}
             </text>
-            <!-- Column name label with background and rotation -->
-            <g transform="rotate({angle_deg}, {col_label_x}, {col_label_y})">
-                <rect x="{col_label_x - len(rel['column1']) * 3.5}" y="{col_label_y - 8}"
-                      width="{len(rel['column1']) * 7}" height="16"
-                      fill="white" rx="3" opacity="0.9"/>
-                <text x="{col_label_x}" y="{col_label_y}" font-family="Inter, sans-serif" font-size="10"
-                      fill="{line_color}" text-anchor="middle" dominant-baseline="middle" font-weight="500">
-                    {rel['column1']}
-                </text>
-            </g>
+            <!-- Column name label with background (no rotation for orthogonal lines) -->
+            <rect x="{col_label_x - len(rel['column1']) * 3.5}" y="{col_label_y - 8}"
+                  width="{len(rel['column1']) * 7}" height="16"
+                  fill="white" rx="3" opacity="0.9"/>
+            <text x="{col_label_x}" y="{col_label_y}" font-family="Inter, sans-serif" font-size="10"
+                  fill="{line_color}" text-anchor="middle" dominant-baseline="middle" font-weight="500">
+                {rel['column1']}
+            </text>
         </g>
         """
             rel_idx += 1
