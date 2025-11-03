@@ -12,7 +12,7 @@ def main():
     print("="*60)
     print("Secure Data Warehouse Table Auditor")
     print("="*60)
-    print("\n📖 Usage Examples:\n")
+    print("\nUsage Examples:\n")
 
     # Example 1: Audit directly from database (RECOMMENDED)
     print("# Example 1: Direct database audit with BigQuery")

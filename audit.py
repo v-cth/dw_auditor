@@ -78,6 +78,11 @@ Examples:
         action='store_true',
         help='Check mode: run quality checks only (skip profiling/insights)'
     )
+    parser.add_argument(
+        '--yes', '-y',
+        action='store_true',
+        help='Automatically answer yes to prompts (proceed without confirmation)'
+    )
     mode_group.add_argument(
         '--insight', '-i',
         action='store_true',
@@ -150,7 +155,7 @@ Examples:
 
     # Auto-discover tables if enabled and no explicit list provided
     if not tables_to_audit and config.auto_discover:
-        print(f"\n🔍 Auto-discovering tables in schema...")
+        print(f"\nAuto-discovering tables in schema...")
 
         # Create temporary database connection for discovery
         from dw_auditor.core.db_connection import DatabaseConnection
@@ -167,8 +172,8 @@ Examples:
             # Show filtering results
             excluded_count = len(all_tables) - len(tables_to_audit)
             if excluded_count > 0:
-                print(f"🔽 Filtered out {excluded_count} tables based on patterns")
-            print(f"✅ Will audit {len(tables_to_audit)} tables")
+                print(f"Filtered out {excluded_count} tables based on patterns")
+            print(f"Will audit {len(tables_to_audit)} tables")
 
             # Show excluded tables if there are any
             if excluded_count > 0 and excluded_count <= 10:
@@ -179,13 +184,13 @@ Examples:
             db_conn.close()
 
         if not tables_to_audit:
-            print(f"⚠️  No tables match the filter criteria")
+            print(f"No tables match the filter criteria")
             sys.exit(0)
 
     # Estimate BigQuery bytes scanned and get user confirmation (BigQuery only)
     if config.backend == 'bigquery' and audit_mode != 'discover':
         print(f"\n{'='*70}")
-        print(f"💰 Estimating BigQuery scan costs...")
+        print(f"Estimating BigQuery scan costs...")
         print(f"{'='*70}")
 
         # Create shared connection for estimation (will be reused for audit)
@@ -193,19 +198,19 @@ Examples:
         shared_db_conn = DatabaseConnection(config.backend, **config.connection_params)
         shared_db_conn.connect()
 
-        # Pre-fetch metadata once for all tables being audited
+        # Pre-fetch ALL metadata once per schema before auditing to avoid duplicates
         if tables_to_audit:
-            print(f"\n🔍 Pre-fetching metadata for {len(tables_to_audit)} table(s)...")
+            print(f"\nPre-fetching metadata for {len(tables_to_audit)} table(s)...")
             # Group tables by schema to handle multi-schema audits
             from collections import defaultdict
             tables_by_schema = defaultdict(list)
             for table in tables_to_audit:
                 schema = config.get_table_schema(table)
                 tables_by_schema[schema].append(table)
-            # Prefetch metadata for each schema
+        # Prefetch filtered metadata per schema (only tables to audit)
             for schema, tables in tables_by_schema.items():
                 shared_db_conn.prefetch_metadata(schema, tables)
-            print(f"✅ Metadata cached for all tables")
+            print(f"Metadata cached for all tables")
 
         db_conn = shared_db_conn  # Alias for the estimation code
 
@@ -218,63 +223,22 @@ Examples:
                 sampling_config = config.get_table_sampling_config(table)
                 custom_query = config.table_queries.get(table, None)
 
-                # Determine if we'll sample based on same logic as audit
+                # For estimation, avoid metadata lookups to prevent duplicate queries
                 row_count = None
                 is_cross_project = hasattr(db_conn, 'source_project_id') and db_conn.source_project_id
 
-                if not custom_query and not is_cross_project:
-                    try:
-                        row_count = db_conn.get_row_count(table, config.get_table_schema(table))
-                    except:
-                        pass
-
-                # Determine sample size for estimation
+                # Determine sample size for estimation (no row_count checks to avoid metadata)
                 should_sample = False
                 sample_size = None
-
                 if custom_query:
                     should_sample = False
                 elif is_cross_project:
-                    should_sample = (row_count is None or row_count > config.sample_size)
-                    sample_size = config.sample_size if should_sample else None
-                elif row_count and row_count > config.sample_size:
-                    should_sample = True
-                    sample_size = config.sample_size
+                    # Heuristic without row_count
+                    should_sample = False
+                    sample_size = None
 
-                # Determine which columns will be loaded (optimization)
+                # For estimation, avoid determining columns to prevent metadata access
                 columns_to_load = None
-                try:
-                    # Get primary key from config
-                    user_defined_primary_key = config.table_primary_keys.get(table, None)
-
-                    # Get table schema
-                    table_schema = db_conn.get_table_schema(table, config.get_table_schema(table))
-
-                    if table_schema:
-                        # Determine columns using same logic as audit
-                        columns_to_load = auditor.determine_columns_to_load(
-                            table_schema=table_schema,
-                            table_name=table,
-                            column_check_config=config,
-                            primary_key_columns=user_defined_primary_key,
-                            include_columns=config.include_columns if config.include_columns else None,
-                            exclude_columns=config.exclude_columns if config.exclude_columns else None,
-                            audit_mode=audit_mode,
-                            store_dataframe=config.relationship_detection_enabled  # Load all columns if relationships enabled
-                        )
-
-                        # If empty list returned, it means "load all columns"
-                        if columns_to_load is not None and len(columns_to_load) == 0:
-                            print(f"   📊 {table}: Estimating ALL columns (relationship detection or no filters)")
-                            columns_to_load = None
-                        elif columns_to_load:
-                            print(f"   📊 {table}: Estimating {len(columns_to_load)} columns: {', '.join(columns_to_load[:5])}{'...' if len(columns_to_load) > 5 else ''}")
-                        else:
-                            print(f"   📊 {table}: Estimating ALL columns")
-                except Exception as e:
-                    # If column determination fails, estimate will use all columns
-                    print(f"   ⚠️  Could not determine columns for {table}, estimating all columns: {e}")
-                    pass
 
                 # Estimate bytes for this table
                 bytes_estimate = db_conn.estimate_bytes_scanned(
@@ -284,7 +248,7 @@ Examples:
                     sample_size=sample_size,
                     sampling_method=sampling_config['method'],
                     sampling_key_column=sampling_config['key_column'],
-                    columns=columns_to_load if columns_to_load else None
+                    columns=None
                 )
 
                 if bytes_estimate is not None:
@@ -300,7 +264,7 @@ Examples:
 
         # Display estimates
         if table_estimates:
-            print(f"\n📊 Estimated bytes to scan per table:")
+            print(f"\nEstimated bytes to scan per table:")
             for est in table_estimates:
                 bytes_val = est['bytes']
                 if bytes_val >= 1_000_000_000_000:  # TB
@@ -325,42 +289,46 @@ Examples:
             print(f"\n💾 Total estimated data to scan: {total_gb:.2f} GB ({total_tb:.4f} TB)")
             print(f"💵 Estimated cost (on-demand): ${estimated_cost:.2f} USD")
 
-            # Ask for confirmation
-            print(f"\n⚠️  Do you want to proceed with the audit?")
-            try:
-                response = input(f"   Type 'y' or 'yes' to continue, or 'n' to cancel: ").strip().lower()
-            except (EOFError, KeyboardInterrupt):
-                # Handle non-interactive environments or Ctrl+C
-                print(f"\n⚠️  Running in non-interactive mode, proceeding with audit...")
-                print(f"   (Use --yes flag in future to skip this prompt)")
+            # Ask for confirmation (or auto-approve with --yes)
+            if args.yes:
+                print(f"\n  Proceeding with audit (auto-approved via --yes)")
                 response = 'yes'
+            else:
+                print(f"\n  Do you want to proceed with the audit?")
+                try:
+                    response = input(f"   Type 'y' or 'yes' to continue, or 'n' to cancel: ").strip().lower()
+                except (EOFError, KeyboardInterrupt):
+                    # Handle non-interactive environments or Ctrl+C
+                    print(f"\n  Running in non-interactive mode, proceeding with audit...")
+                    print(f"   (Use --yes flag in future to skip this prompt)")
+                    response = 'yes'
 
             if response not in ['y', 'yes']:
-                print(f"\n❌ Audit cancelled by user")
+                print(f"\nAudit cancelled by user")
                 sys.exit(0)
 
-            print(f"\n✅ Proceeding with audit...")
+            print(f"\n Proceeding with audit...")
         else:
-            print(f"⚠️  Could not estimate bytes (will proceed without confirmation)")
+            print(f" Could not estimate bytes (will proceed without confirmation)")
     else:
         # Create shared database connection if estimation didn't create one
         from dw_auditor.core.db_connection import DatabaseConnection
         shared_db_conn = DatabaseConnection(config.backend, **config.connection_params)
         shared_db_conn.connect()
 
-        # Pre-fetch metadata for all tables being audited
+        # Pre-fetch ALL metadata once per schema before auditing to avoid duplicates
         if tables_to_audit:
-            print(f"\n🔍 Pre-fetching metadata for {len(tables_to_audit)} table(s)...")
+            print(f"\nPre-fetching metadata for {len(tables_to_audit)} table(s)...")
             # Group tables by schema to handle multi-schema audits
             from collections import defaultdict
             tables_by_schema = defaultdict(list)
             for table in tables_to_audit:
                 schema = config.get_table_schema(table)
                 tables_by_schema[schema].append(table)
-            # Prefetch metadata for each schema
+        # Prefetch filtered metadata per schema (only tables to audit)
             for schema, tables in tables_by_schema.items():
                 shared_db_conn.prefetch_metadata(schema, tables)
-            print(f"✅ Metadata cached for all tables")
+            print(f"Metadata cached for all tables")
 
     # Audit tables
     all_table_results = []
@@ -431,9 +399,9 @@ Examples:
                     if config.auto_open_html:
                         try:
                             webbrowser.open(f'file://{output_file.absolute()}')
-                            print(f"🌐 Opened report in browser")
+                            print(f"Opened report in browser")
                         except Exception as e:
-                            print(f"⚠️  Could not open browser: {e}")
+                            print(f"Could not open browser: {e}")
 
                 if 'json' in config.export_formats:
                     output_file = table_dir / 'audit.json'
@@ -444,16 +412,16 @@ Examples:
                     output_file = table_dir / 'audit.csv'
                     df = auditor.export_results_to_dataframe(results)
                     df.write_csv(str(output_file))
-                    print(f"📄 CSV saved to: {output_file}")
+                    print(f"CSV saved to: {output_file}")
 
                     # Export column summary CSV
                     summary_file = table_dir / 'summary.csv'
                     summary_df = auditor.export_column_summary_to_dataframe(results)
                     summary_df.write_csv(str(summary_file))
-                    print(f"📄 Column summary CSV saved to: {summary_file}")
+                    print(f"Column summary CSV saved to: {summary_file}")
 
             except Exception as e:
-                print(f"❌ Error auditing table '{table}': {e}")
+                print(f"Error auditing table '{table}': {e}")
                 import traceback
                 traceback.print_exc()
                 continue
@@ -462,7 +430,7 @@ Examples:
         detected_relationships = []
         if config.relationship_detection_enabled and len(all_table_results) >= 2:
             print(f"\n{'='*70}")
-            print(f"🔗 Detecting table relationships...")
+            print(f"Detecting table relationships...")
             print(f"{'='*70}")
 
             try:

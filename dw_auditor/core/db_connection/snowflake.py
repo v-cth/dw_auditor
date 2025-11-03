@@ -53,7 +53,13 @@ class SnowflakeAdapter(BaseAdapter):
         return self.conn
 
     def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None):
-        """Fetch metadata for schema in 3 queries (filtered by table_names if provided)"""
+        """Fetch metadata for schema in fewer queries (filtered by table_names if provided)
+
+        Optimizations:
+        - Tables query already includes row_count/bytes/timestamps (1 query)
+        - Combine COLUMNS with PRIMARY KEY info via join, then split in-memory (1 query)
+        - Early-return if identical request already satisfied (de-dup)
+        """
         if self.conn is None:
             self.connect()
 
@@ -70,9 +76,22 @@ class SnowflakeAdapter(BaseAdapter):
             table_filter = f"AND table_name IN ({table_list})"
             # For queries with JOINs where table_name is ambiguous, qualify with table alias
             table_filter_qualified = f"AND tc.table_name IN ({table_list})"
+            table_filter_columns = f"AND c.table_name IN ({table_list})"
         else:
             table_filter = ""
             table_filter_qualified = ""
+            table_filter_columns = ""
+
+        # Early return if identical request already cached
+        try:
+            current_set = None if table_names is None else set(t.upper() for t in table_names)
+            if self._cached_schema == schema:
+                if getattr(self, "_fetched_tables", None) is None and current_set is None:
+                    return
+                if getattr(self, "_fetched_tables", None) is not None and current_set is not None and current_set.issubset(self._fetched_tables):
+                    return
+        except Exception:
+            pass
 
         # Query 1: Tables (filtered, includes row_count, size, timestamps, and clustering_key)
         try:
@@ -112,60 +131,73 @@ class SnowflakeAdapter(BaseAdapter):
             print(f"⚠️  Could not fetch tables metadata: {e}")
             self._tables_df = pl.DataFrame()
 
-        # Query 2: Columns (filtered)
+        # Query 2: Columns + Primary Keys (single joined query), then split to two frames
         try:
-            columns_query = f"""
+            columns_pk_query = f"""
+            WITH PK AS (
+                SELECT
+                    tc.TABLE_NAME,
+                    kcu.COLUMN_NAME,
+                    kcu.ORDINAL_POSITION AS PK_ORDINAL_POSITION
+                FROM {database}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                JOIN {database}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                    ON tc.CONSTRAINT_NAME = kcu.CONSTRAINT_NAME
+                    AND tc.TABLE_SCHEMA = kcu.TABLE_SCHEMA
+                WHERE tc.TABLE_SCHEMA = '{schema_name}'
+                  AND tc.CONSTRAINT_TYPE = 'PRIMARY KEY'
+                  {table_filter_qualified}
+            )
             SELECT
-                table_name,
-                column_name,
-                data_type,
-                ordinal_position
-            FROM {database}.INFORMATION_SCHEMA.COLUMNS
-            WHERE table_schema = '{schema_name}'
-              {table_filter}
-            ORDER BY table_name, ordinal_position
+                c.TABLE_NAME,
+                c.COLUMN_NAME,
+                c.DATA_TYPE,
+                c.ORDINAL_POSITION,
+                IFF(pk.COLUMN_NAME IS NOT NULL, TRUE, FALSE) AS IS_PK,
+                pk.PK_ORDINAL_POSITION
+            FROM {database}.INFORMATION_SCHEMA.COLUMNS c
+            LEFT JOIN PK pk
+              ON c.TABLE_NAME = pk.TABLE_NAME AND c.COLUMN_NAME = pk.COLUMN_NAME
+            WHERE c.TABLE_SCHEMA = '{schema_name}'
+              {table_filter_columns}
+            ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION
             """
-            self._columns_df = self.conn.sql(columns_query).to_polars()
+            combined_df = self.conn.sql(columns_pk_query).to_polars()
 
-            # Normalize metadata column names to lowercase (but keep actual column names as-is for Snowflake)
-            self._columns_df = self._columns_df.rename({
+            # Normalize metadata column names to lowercase (keep actual Snowflake column names as-is)
+            combined_df = combined_df.rename({
                 'TABLE_NAME': 'table_name',
                 'COLUMN_NAME': 'column_name',
                 'DATA_TYPE': 'data_type',
-                'ORDINAL_POSITION': 'ordinal_position'
+                'ORDINAL_POSITION': 'ordinal_position',
+                'IS_PK': 'is_pk',
+                'PK_ORDINAL_POSITION': 'pk_ordinal_position'
             })
 
-            # Note: Do NOT lowercase 'column_name' values - Snowflake uses uppercase column names
-            # and Ibis expects them to match the database schema exactly
+            # Build columns dataframe
+            self._columns_df = combined_df.select([
+                pl.col('table_name'),
+                pl.col('column_name'),
+                pl.col('data_type'),
+                pl.col('ordinal_position')
+            ])
+
+            # Build primary keys dataframe
+            if combined_df.height > 0:
+                self._pk_df = (
+                    combined_df
+                    .filter(pl.col('is_pk') == True)  # noqa: E712
+                    .select([
+                        pl.col('table_name'),
+                        pl.col('column_name'),
+                        pl.col('pk_ordinal_position').alias('ordinal_position')
+                    ])
+                    .sort(['table_name', 'ordinal_position'])
+                )
+            else:
+                self._pk_df = pl.DataFrame()
         except Exception as e:
-            print(f"⚠️  Could not fetch columns metadata: {e}")
+            print(f"⚠️  Could not fetch columns/primary key metadata: {e}")
             self._columns_df = pl.DataFrame()
-
-        # Query 3: Primary keys (filtered)
-        try:
-            pk_query = f"""
-            SELECT tc.table_name, kcu.column_name, kcu.ordinal_position
-            FROM {database}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-            JOIN {database}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
-                ON tc.constraint_name = kcu.constraint_name
-                AND tc.table_schema = kcu.table_schema
-            WHERE tc.table_schema = '{schema_name}'
-              AND tc.constraint_type = 'PRIMARY KEY'
-              {table_filter_qualified}
-            ORDER BY tc.table_name, kcu.ordinal_position
-            """
-            self._pk_df = self.conn.sql(pk_query).to_polars()
-
-            # Normalize column names
-            self._pk_df = self._pk_df.rename({
-                'TABLE_NAME': 'table_name',
-                'COLUMN_NAME': 'column_name',
-                'ORDINAL_POSITION': 'ordinal_position'
-            })
-
-            # Note: Do NOT lowercase 'column_name' values - Snowflake uses uppercase column names
-        except Exception as e:
-            print(f"⚠️  Could not fetch primary keys: {e}")
             self._pk_df = pl.DataFrame()
 
         # Snowflake includes row_count in TABLES query, so use that

@@ -51,98 +51,162 @@ class BigQueryAdapter(BaseAdapter):
         return self.conn
 
     def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None):
-        """Fetch metadata for schema in 4 queries (filtered by table_names if provided)"""
+        """Fetch metadata for schema in fewer queries (filtered by table_names if provided)
+
+        Optimizations:
+        - Combine TABLES with __TABLES__ metadata (same-project only)
+        - Combine COLUMNS with PRIMARY KEY info via joins, then split in-memory
+        """
+        # Early return if identical request already cached
+        try:
+            current_set = None if table_names is None else set(table_names)
+            if self._cached_schema == schema:
+                if getattr(self, "_fetched_tables", None) is None and current_set is None:
+                    return
+                if getattr(self, "_fetched_tables", None) is not None and current_set is not None and current_set.issubset(self._fetched_tables):
+                    return
+        except Exception:
+            pass
         if self.conn is None:
             self.connect()
 
         project_for_metadata = self.source_project_id or self.connection_params.get('project_id')
 
-        # Build WHERE clause for table filtering
+        # Build WHERE clause for table filtering (always qualify with aliases)
         if table_names:
             table_list = ", ".join(f"'{t}'" for t in table_names)
-            table_filter = f"AND table_name IN ({table_list})"
+            table_filter_tables = f"AND t.table_name IN ({table_list})"
             table_filter_only = f"WHERE table_name IN ({table_list})"
             # For queries with JOINs where table_name is ambiguous, qualify with table alias
             table_filter_qualified = f"AND tc.table_name IN ({table_list})"
+            table_filter_columns = f"WHERE c.table_name IN ({table_list})"
         else:
-            table_filter = ""
+            table_filter_tables = ""
             table_filter_only = ""
             table_filter_qualified = ""
+            table_filter_columns = ""
 
-        # Query 1: Tables (filtered)
-        try:
-            tables_query = f"""
-            SELECT table_name, table_type, creation_time
-            FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES`
-            WHERE table_type IN ('BASE TABLE', 'TABLE') {table_filter}
-            ORDER BY table_name
-            """
-            self._tables_df = self.conn.sql(tables_query).to_polars()
-        except Exception as e:
-            print(f"⚠️  Could not fetch tables metadata: {e}")
-            self._tables_df = pl.DataFrame()
+        # Build signatures to avoid duplicate metadata queries for the same schema+table set
+        tables_sig = None if not table_names else frozenset(table_names)
+        if not hasattr(self, "_last_tables_sig"):
+            self._last_tables_sig = {}
+        if not hasattr(self, "_last_columns_sig"):
+            self._last_columns_sig = {}
 
-        # Query 2: Columns (filtered)
+        # Query 1: Tables (+ row counts when same-project) (filtered)
         try:
-            columns_query = f"""
-            SELECT
-                table_name,
-                column_name,
-                data_type,
-                ordinal_position,
-                is_partitioning_column,
-                clustering_ordinal_position
-            FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.COLUMNS`
-            {table_filter_only}
-            ORDER BY table_name, ordinal_position
-            """
-            self._columns_df = self.conn.sql(columns_query).to_polars()
-        except Exception as e:
-            print(f"⚠️  Could not fetch columns metadata: {e}")
-            self._columns_df = pl.DataFrame()
-
-        # Query 3: Primary keys (filtered)
-        try:
-            pk_query = f"""
-            SELECT tc.table_name, kcu.column_name, kcu.ordinal_position
-            FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS` tc
-            JOIN `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE` kcu
-                ON tc.constraint_name = kcu.constraint_name
-                AND tc.table_name = kcu.table_name
-            WHERE tc.constraint_type = 'PRIMARY KEY' {table_filter_qualified}
-            ORDER BY tc.table_name, kcu.ordinal_position
-            """
-            self._pk_df = self.conn.sql(pk_query).to_polars()
-        except Exception as e:
-            print(f"⚠️  Could not fetch primary keys: {e}")
-            self._pk_df = pl.DataFrame()
-
-        # Query 4: Row counts, size, and timestamps from __TABLES__ (filtered, same-project only)
-        try:
-            if not self.source_project_id:
-                if table_names:
-                    table_id_filter = "WHERE table_id IN ({})".format(
-                        ", ".join(f"'{t}'" for t in table_names)
-                    )
-                else:
-                    table_id_filter = ""
-                rowcount_query = f"""
-                SELECT
-                    table_id,
-                    row_count,
-                    size_bytes,
-                    TIMESTAMP_MILLIS(creation_time) as created_at,
-                    TIMESTAMP_MILLIS(last_modified_time) as modified_at
-                FROM `{project_for_metadata}.{schema}.__TABLES__`
-                {table_id_filter}
-                """
-                self._rowcount_df = self.conn.sql(rowcount_query).to_polars()
+            logger.debug(f"[metadata] bq TABLES schema={schema} filter={table_names if table_names else 'ALL'}")
+            if self._last_tables_sig.get(schema) == tables_sig:
+                logger.debug(f"[metadata] bq TABLES schema={schema} skipped (duplicate)")
             else:
-                # Cross-project: skip __TABLES__, will use COUNT(*) on demand
-                self._rowcount_df = pl.DataFrame()
+                if not self.source_project_id:
+                    # Same-project: join INFORMATION_SCHEMA.TABLES with __TABLES__ once
+                    tables_query = f"""
+                    SELECT
+                        t.table_name,
+                        t.table_type,
+                        t.creation_time,
+                        rt.row_count,
+                        rt.size_bytes,
+                        TIMESTAMP_MILLIS(rt.creation_time) AS created_at,
+                        TIMESTAMP_MILLIS(rt.last_modified_time) AS modified_at
+                    FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
+                    LEFT JOIN `{project_for_metadata}.{schema}.__TABLES__` rt
+                        ON rt.table_id = t.table_name
+                    WHERE t.table_type IN ('BASE TABLE', 'TABLE') {table_filter_tables}
+                    ORDER BY t.table_name
+                    """
+                    self._tables_df = self.conn.sql(tables_query).to_polars()
+                    # Backwards-compat: also expose rowcount-like frame for existing users
+                    self._rowcount_df = self._tables_df.select([
+                        pl.col("table_name").alias("table_id"),
+                        pl.col("row_count"),
+                        pl.col("size_bytes"),
+                        pl.col("created_at"),
+                        pl.col("modified_at"),
+                    ])
+                    self._last_tables_sig[schema] = tables_sig
+                else:
+                    # Cross-project: cannot use __TABLES__ across projects; only TABLES
+                    tables_query = f"""
+                    SELECT t.table_name, t.table_type, t.creation_time
+                    FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
+                    WHERE t.table_type IN ('BASE TABLE', 'TABLE') {table_filter_tables}
+                    ORDER BY t.table_name
+                    """
+                    self._tables_df = self.conn.sql(tables_query).to_polars()
+                    self._rowcount_df = pl.DataFrame()
+                    self._last_tables_sig[schema] = tables_sig
         except Exception as e:
-            print(f"⚠️  Could not fetch row counts and table info: {e}")
+            print(f"⚠️  Could not fetch tables/rowcount metadata: {e}")
+            self._tables_df = pl.DataFrame()
             self._rowcount_df = pl.DataFrame()
+
+        # Query 2: Columns + Primary Keys (single joined query), then split to two frames
+        try:
+            logger.debug(f"[metadata] bq COLUMNS+PK schema={schema} filter={table_names if table_names else 'ALL'}")
+            if self._last_columns_sig.get(schema) == tables_sig:
+                logger.debug(f"[metadata] bq COLUMNS+PK schema={schema} skipped (duplicate)")
+            else:
+                columns_pk_query = f"""
+            WITH pk AS (
+                SELECT
+                    tc.table_name,
+                    kcu.column_name,
+                    kcu.ordinal_position AS pk_ordinal_position
+                FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLE_CONSTRAINTS` tc
+                JOIN `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.KEY_COLUMN_USAGE` kcu
+                    ON tc.constraint_name = kcu.constraint_name
+                    AND tc.table_name = kcu.table_name
+                WHERE tc.constraint_type = 'PRIMARY KEY' {table_filter_qualified}
+            )
+            SELECT
+                c.table_name,
+                c.column_name,
+                c.data_type,
+                c.ordinal_position,
+                c.is_partitioning_column,
+                c.clustering_ordinal_position,
+                CASE WHEN pk.column_name IS NOT NULL THEN TRUE ELSE FALSE END AS is_pk,
+                pk.pk_ordinal_position
+            FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.COLUMNS` c
+            LEFT JOIN pk
+                ON c.table_name = pk.table_name AND c.column_name = pk.column_name
+            {table_filter_columns}
+            ORDER BY c.table_name, c.ordinal_position
+            """
+                combined_df = self.conn.sql(columns_pk_query).to_polars()
+
+            # Build columns dataframe
+            self._columns_df = combined_df.select([
+                pl.col("table_name"),
+                pl.col("column_name"),
+                pl.col("data_type"),
+                pl.col("ordinal_position"),
+                pl.col("is_partitioning_column"),
+                pl.col("clustering_ordinal_position"),
+            ])
+
+            # Build primary keys dataframe
+            if combined_df.height > 0:
+                self._pk_df = (
+                    combined_df
+                    .filter(pl.col("is_pk") == True)  # noqa: E712
+                    .select([
+                        pl.col("table_name"),
+                        pl.col("column_name"),
+                        pl.col("pk_ordinal_position").alias("ordinal_position"),
+                    ])
+                    .sort(["table_name", "ordinal_position"])
+                )
+            else:
+                self._pk_df = pl.DataFrame()
+            if self._last_columns_sig.get(schema) != tables_sig:
+                self._last_columns_sig[schema] = tables_sig
+        except Exception as e:
+            print(f"Could not fetch columns/primary key metadata: {e}")
+            self._columns_df = pl.DataFrame()
+            self._pk_df = pl.DataFrame()
 
         self._cached_schema = schema
 

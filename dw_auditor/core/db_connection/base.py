@@ -6,6 +6,7 @@ from abc import ABC, abstractmethod
 from typing import Dict, List, Optional, Any
 import ibis
 import polars as pl
+import logging
 
 
 class BaseAdapter(ABC):
@@ -21,6 +22,9 @@ class BaseAdapter(ABC):
         self._pk_df: Optional[pl.DataFrame] = None
         self._rowcount_df: Optional[pl.DataFrame] = None
         self._cached_schema: Optional[str] = None
+        # Track which tables have been prefetched for the cached schema
+        # None => all tables fetched; set(str) => subset fetched
+        self._fetched_tables: Optional[set[str]] = None
 
     @abstractmethod
     def connect(self) -> ibis.BaseBackend:
@@ -41,9 +45,39 @@ class BaseAdapter(ABC):
         pass
 
     def _ensure_metadata(self, schema: str, table_names: Optional[List[str]] = None):
-        """Fetch metadata if not cached or schema changed"""
+        """Fetch metadata if not cached or schema changed; avoid unnecessary refetches."""
+        logger = logging.getLogger(__name__)
+        # Initial or schema change: fetch exactly what's requested (or all if None)
         if self._tables_df is None or self._cached_schema != schema:
+            logger.debug(f"[metadata] fetch INIT schema={schema} tables={'ALL' if table_names is None else ','.join(table_names)}")
             self._fetch_all_metadata(schema, table_names)
+            self._fetched_tables = None if table_names is None else set(table_names)
+            return
+
+        # Same schema and we have some cache
+        if table_names is None:
+            # Caller wants full coverage. If we don't already have all, upgrade to all.
+            if self._fetched_tables is not None:
+                logger.debug(f"[metadata] fetch UPGRADE schema={schema} tables=ALL (from subset of {len(self._fetched_tables)})")
+                self._fetch_all_metadata(schema, None)
+                self._fetched_tables = None
+            return
+
+        # Caller wants a subset of tables
+        requested = set(table_names)
+        if self._fetched_tables is None:
+            # Already have full coverage
+            return
+
+        if requested.issubset(self._fetched_tables):
+            # Already covered
+            return
+
+        # Need to extend cache to cover union of requested and existing subset
+        union_tables = self._fetched_tables | requested
+        logger.debug(f"[metadata] fetch EXTEND schema={schema} tables={','.join(sorted(list(union_tables)))}")
+        self._fetch_all_metadata(schema, sorted(list(union_tables)))
+        self._fetched_tables = set(union_tables)
 
     def prefetch_metadata(self, schema: str, table_names: List[str]):
         """
@@ -53,7 +87,34 @@ class BaseAdapter(ABC):
             schema: Schema/dataset name
             table_names: List of table names to fetch metadata for
         """
-        self._fetch_all_metadata(schema, table_names)
+        # Deduplicate prefetches within the same schema
+        requested = set(table_names) if table_names else set()
+
+        # If switching schema, just fetch and reset tracking
+        if self._cached_schema != schema:
+            self._fetch_all_metadata(schema, table_names)
+            self._fetched_tables = None if not table_names else set(table_names)
+            return
+
+        # Same schema
+        if self._fetched_tables is None:
+            # Already fetched all tables; no need to fetch subset again
+            return
+
+        if not table_names:
+            # Requesting all tables now; upgrade cache to all
+            self._fetch_all_metadata(schema, None)
+            self._fetched_tables = None
+            return
+
+        # If requested subset is already covered, skip
+        if self._fetched_tables is not None and requested.issubset(self._fetched_tables):
+            return
+
+        # Need to extend cached subset to cover the union
+        union_tables = requested if self._fetched_tables is None else (self._fetched_tables | requested)
+        self._fetch_all_metadata(schema, sorted(list(union_tables)))
+        self._fetched_tables = set(union_tables)
 
     @abstractmethod
     def get_table(self, table_name: str, schema: Optional[str] = None) -> ibis.expr.types.Table:
@@ -81,7 +142,7 @@ class BaseAdapter(ABC):
         if not effective_schema:
             return {}
 
-        self._ensure_metadata(effective_schema)
+        self._ensure_metadata(effective_schema, [table_name])
 
         # Filter tables_df
         table_info = self._tables_df.filter(pl.col('table_name') == table_name)
@@ -157,7 +218,7 @@ class BaseAdapter(ABC):
         if not effective_schema:
             return {}
 
-        self._ensure_metadata(effective_schema)
+        self._ensure_metadata(effective_schema, [table_name])
 
         table_cols = self._columns_df.filter(pl.col('table_name') == table_name)
 
@@ -172,7 +233,7 @@ class BaseAdapter(ABC):
         if not effective_schema:
             return []
 
-        self._ensure_metadata(effective_schema)
+        self._ensure_metadata(effective_schema, [table_name])
 
         if self._pk_df is None or len(self._pk_df) == 0:
             return []
@@ -188,7 +249,7 @@ class BaseAdapter(ABC):
             return None
 
         if approximate:
-            self._ensure_metadata(effective_schema)
+            self._ensure_metadata(effective_schema, [table_name])
 
             if self._rowcount_df is not None and len(self._rowcount_df) > 0:
                 rowcount_info = self._rowcount_df.filter(
@@ -212,7 +273,8 @@ class BaseAdapter(ABC):
         if not effective_schema:
             return []
 
-        self._ensure_metadata(effective_schema)
+        # Listing all tables requires full coverage
+        self._ensure_metadata(effective_schema, None)
 
         if self._tables_df is None or len(self._tables_df) == 0:
             return []
@@ -252,6 +314,7 @@ class BaseAdapter(ABC):
             self._pk_df = None
             self._rowcount_df = None
             self._cached_schema = None
+            self._fetched_tables = None
 
     def __enter__(self):
         """Context manager entry"""
