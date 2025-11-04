@@ -6,6 +6,7 @@ import ibis
 import polars as pl
 import json
 import logging
+import os
 from typing import Optional, List, Dict, Any
 
 from .base import BaseAdapter
@@ -34,6 +35,9 @@ class BigQueryAdapter(BaseAdapter):
 
         if not project_id:
             raise ValueError("BigQuery requires 'project_id' parameter")
+
+        # Set environment variable to prevent "No project ID" warning from BigQuery client
+        os.environ['GOOGLE_CLOUD_PROJECT'] = project_id
 
         conn_kwargs = {'project_id': project_id}
 

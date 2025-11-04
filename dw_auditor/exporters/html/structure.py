@@ -206,10 +206,20 @@ def _generate_metadata_section(results: Dict) -> str:
         if 'clustering_key' in metadata and metadata['clustering_key']:
             html += meta_item("Clustering Key", metadata['clustering_key'])
 
-        # Primary key
+        # Primary key with source badge
         if 'primary_key_columns' in metadata and metadata['primary_key_columns']:
             pk_cols = ', '.join(metadata['primary_key_columns'])
-            html += meta_item("Primary Key", pk_cols)
+            pk_source = metadata.get('primary_key_source', 'unknown')
+
+            # Create inline badge for metadata display
+            if pk_source == 'user_config':
+                badge = ' <span style="background: #6606dc; color: white; padding: 1px 5px; border-radius: 3px; font-size: 10px;">CONFIG</span>'
+            elif pk_source == 'information_schema':
+                badge = ' <span style="background: #3b82f6; color: white; padding: 1px 5px; border-radius: 3px; font-size: 10px;">DATABASE</span>'
+            else:
+                badge = ''
+
+            html += meta_item("Primary Key", f"{pk_cols}{badge}")
 
     # Audit metadata
     html += '            <div class="divider"></div>\n'
@@ -232,15 +242,35 @@ def _generate_column_summary_table(results: Dict) -> str:
 
     html = subsection_header("Column Summary", "Basic metrics for all columns in the table")
 
-    # Show primary key information if available
+    # Show primary key information with source badge
     primary_keys = []
+    pk_source = None
+
+    # Priority 1: Explicit PKs (config or database metadata)
     if 'table_metadata' in results and 'primary_key_columns' in results['table_metadata']:
         primary_keys = results['table_metadata']['primary_key_columns']
+        pk_source = results['table_metadata'].get('primary_key_source', 'unknown')
+
+    # Priority 2: Auto-detected (only if no explicit PK)
     elif 'potential_primary_keys' in results:
         primary_keys = results['potential_primary_keys']
+        pk_source = 'auto_detected'
 
     if primary_keys:
-        html += info_box(f"<strong>Primary Key Column(s):</strong> {', '.join(primary_keys)}", box_type='success')
+        # Create source badge
+        if pk_source == 'user_config':
+            badge = '<span style="background: #6606dc; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 8px;">CONFIG</span>'
+        elif pk_source == 'information_schema':
+            badge = '<span style="background: #3b82f6; color: white; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 8px;">DATABASE</span>'
+        elif pk_source == 'auto_detected':
+            badge = '<span style="background: #f59e0b; color: #1f2937; padding: 2px 6px; border-radius: 3px; font-size: 11px; margin-left: 8px;">AUTO-DETECTED</span>'
+        else:
+            badge = ''
+
+        html += info_box(
+            f"<strong>Primary Key Column(s):</strong> {', '.join(primary_keys)}{badge}",
+            box_type='success'
+        )
 
     html += '    <div class="data-table">\n'
     html += '        <table>\n'
