@@ -107,6 +107,7 @@ class BigQueryAdapter(BaseAdapter):
                         t.table_name,
                         t.table_type,
                         t.creation_time,
+                        t.description,
                         rt.row_count,
                         rt.size_bytes,
                         TIMESTAMP_MILLIS(rt.creation_time) AS created_at,
