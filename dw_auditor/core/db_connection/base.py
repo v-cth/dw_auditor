@@ -144,13 +144,17 @@ class BaseAdapter(ABC):
 
         self._ensure_metadata(effective_schema, [table_name])
 
-        # Filter tables_df
-        table_info = self._tables_df.filter(pl.col('table_name') == table_name)
+        # Filter tables_df by both schema and table_name
+        table_info = self._tables_df.filter(
+            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
+        )
         if len(table_info) == 0:
             return {}
 
         # Filter columns_df for partition/clustering info
-        columns_info = self._columns_df.filter(pl.col('table_name') == table_name)
+        columns_info = self._columns_df.filter(
+            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
+        )
 
         metadata = {
             'table_name': str(table_info['table_name'][0]),
@@ -167,8 +171,9 @@ class BaseAdapter(ABC):
         source_info = None
 
         if self._rowcount_df is not None and len(self._rowcount_df) > 0:
+            # Filter by schema and table (first column is schema_name in new approach)
             source_info = self._rowcount_df.filter(
-                pl.col(self._rowcount_df.columns[0]) == table_name
+                (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == table_name)
             )
             if len(source_info) > 0:
                 source_df = self._rowcount_df
@@ -220,7 +225,9 @@ class BaseAdapter(ABC):
 
         self._ensure_metadata(effective_schema, [table_name])
 
-        table_cols = self._columns_df.filter(pl.col('table_name') == table_name)
+        table_cols = self._columns_df.filter(
+            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
+        )
 
         return {
             str(row['column_name']): str(row['data_type'])
@@ -238,7 +245,9 @@ class BaseAdapter(ABC):
         if self._pk_df is None or len(self._pk_df) == 0:
             return []
 
-        pk_cols = self._pk_df.filter(pl.col('table_name') == table_name)
+        pk_cols = self._pk_df.filter(
+            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
+        )
 
         return [str(col) for col in pk_cols['column_name'].to_list()]
 
@@ -253,10 +262,10 @@ class BaseAdapter(ABC):
 
             if self._rowcount_df is not None and len(self._rowcount_df) > 0:
                 rowcount_info = self._rowcount_df.filter(
-                    pl.col(self._rowcount_df.columns[0]) == table_name
+                    (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == table_name)
                 )
-                if len(rowcount_info) > 0:
-                    return int(rowcount_info[self._rowcount_df.columns[1]][0])
+                if len(rowcount_info) > 0 and 'row_count' in rowcount_info.columns:
+                    return int(rowcount_info['row_count'][0])
 
         # Fallback to exact count
         try:

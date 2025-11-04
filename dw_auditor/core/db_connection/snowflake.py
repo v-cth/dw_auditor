@@ -107,7 +107,7 @@ class SnowflakeAdapter(BaseAdapter):
                 clustering_key
             FROM {database}.INFORMATION_SCHEMA.TABLES
             WHERE table_schema = '{schema_name}'
-              AND table_type = 'BASE TABLE'
+              AND table_type IN ('BASE TABLE', 'VIEW', 'MATERIALIZED VIEW')
               {table_filter}
             ORDER BY table_name
             """

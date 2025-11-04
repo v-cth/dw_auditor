@@ -103,6 +103,7 @@ class BigQueryAdapter(BaseAdapter):
                     # Same-project: join INFORMATION_SCHEMA.TABLES with __TABLES__ once
                     tables_query = f"""
                     SELECT
+                        '{schema}' AS schema_name,
                         t.table_name,
                         t.table_type,
                         t.creation_time,
@@ -113,13 +114,28 @@ class BigQueryAdapter(BaseAdapter):
                     FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
                     LEFT JOIN `{project_for_metadata}.{schema}.__TABLES__` rt
                         ON rt.table_id = t.table_name
-                    WHERE t.table_type IN ('BASE TABLE', 'TABLE') {table_filter_tables}
+                    WHERE t.table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MATERIALIZED VIEW') {table_filter_tables}
                     ORDER BY t.table_name
                     """
                     logger.debug(f"[query] BigQuery metadata tables query:\n{tables_query}")
-                    self._tables_df = self.conn.sql(tables_query).to_polars()
-                    # Backwards-compat: also expose rowcount-like frame for existing users
+                    new_tables_df = self.conn.sql(tables_query).to_polars()
+
+                    # Append to existing DataFrames instead of replacing
+                    if self._tables_df is None or len(self._tables_df) == 0:
+                        self._tables_df = new_tables_df
+                    else:
+                        # Remove any existing rows for this schema+tables combination to avoid duplicates
+                        if table_names:
+                            self._tables_df = self._tables_df.filter(
+                                ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
+                            )
+                        else:
+                            self._tables_df = self._tables_df.filter(pl.col("schema_name") != schema)
+                        self._tables_df = pl.concat([self._tables_df, new_tables_df])
+
+                    # Backwards-compat: also expose rowcount-like frame
                     self._rowcount_df = self._tables_df.select([
+                        pl.col("schema_name"),
                         pl.col("table_name").alias("table_id"),
                         pl.col("row_count"),
                         pl.col("size_bytes"),
@@ -130,19 +146,34 @@ class BigQueryAdapter(BaseAdapter):
                 else:
                     # Cross-project: cannot use __TABLES__ across projects; only TABLES
                     tables_query = f"""
-                    SELECT t.table_name, t.table_type, t.creation_time
+                    SELECT '{schema}' AS schema_name, t.table_name, t.table_type, t.creation_time
                     FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
-                    WHERE t.table_type IN ('BASE TABLE', 'TABLE') {table_filter_tables}
+                    WHERE t.table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MATERIALIZED VIEW') {table_filter_tables}
                     ORDER BY t.table_name
                     """
                     logger.debug(f"[query] BigQuery metadata tables query (cross-project):\n{tables_query}")
-                    self._tables_df = self.conn.sql(tables_query).to_polars()
+                    new_tables_df = self.conn.sql(tables_query).to_polars()
+
+                    # Append to existing DataFrames
+                    if self._tables_df is None or len(self._tables_df) == 0:
+                        self._tables_df = new_tables_df
+                    else:
+                        if table_names:
+                            self._tables_df = self._tables_df.filter(
+                                ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
+                            )
+                        else:
+                            self._tables_df = self._tables_df.filter(pl.col("schema_name") != schema)
+                        self._tables_df = pl.concat([self._tables_df, new_tables_df])
+
                     self._rowcount_df = pl.DataFrame()
                     self._last_tables_sig[schema] = tables_sig
         except Exception as e:
             print(f"⚠️  Could not fetch tables/rowcount metadata: {e}")
-            self._tables_df = pl.DataFrame()
-            self._rowcount_df = pl.DataFrame()
+            if self._tables_df is None:
+                self._tables_df = pl.DataFrame()
+            if self._rowcount_df is None:
+                self._rowcount_df = pl.DataFrame()
 
         # Query 2: Columns + Primary Keys (single joined query), then split to two frames
         try:
@@ -162,6 +193,7 @@ class BigQueryAdapter(BaseAdapter):
                 WHERE tc.constraint_type = 'PRIMARY KEY' {table_filter_qualified}
             )
             SELECT
+                '{schema}' AS schema_name,
                 c.table_name,
                 c.column_name,
                 c.data_type,
@@ -180,14 +212,15 @@ class BigQueryAdapter(BaseAdapter):
                 combined_df = self.conn.sql(columns_pk_query).to_polars()
 
                 # Split into columns and PK DataFrames
-                base_columns_df, self._pk_df = split_columns_pk_dataframe(
+                base_columns_df, new_pk_df = split_columns_pk_dataframe(
                     combined_df,
                     is_pk_column="is_pk",
                     pk_ordinal_column="pk_ordinal_position"
                 )
 
                 # Add BigQuery-specific columns (partition, clustering)
-                self._columns_df = base_columns_df.select([
+                new_columns_df = base_columns_df.select([
+                    pl.col("schema_name"),
                     pl.col("table_name"),
                     pl.col("column_name"),
                     pl.col("data_type"),
@@ -196,11 +229,39 @@ class BigQueryAdapter(BaseAdapter):
                     pl.col("clustering_ordinal_position"),
                 ])
 
+                # Append to existing DataFrames
+                if self._columns_df is None or len(self._columns_df) == 0:
+                    self._columns_df = new_columns_df
+                else:
+                    # Remove any existing rows for this schema+tables combination
+                    if table_names:
+                        self._columns_df = self._columns_df.filter(
+                            ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
+                        )
+                    else:
+                        self._columns_df = self._columns_df.filter(pl.col("schema_name") != schema)
+                    self._columns_df = pl.concat([self._columns_df, new_columns_df])
+
+                # Append PK DataFrame
+                if self._pk_df is None or len(self._pk_df) == 0:
+                    self._pk_df = new_pk_df
+                else:
+                    # Remove any existing rows for this schema+tables combination
+                    if table_names:
+                        self._pk_df = self._pk_df.filter(
+                            ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
+                        )
+                    else:
+                        self._pk_df = self._pk_df.filter(pl.col("schema_name") != schema)
+                    self._pk_df = pl.concat([self._pk_df, new_pk_df])
+
                 self._last_columns_sig[schema] = tables_sig
         except Exception as e:
             print(f"Could not fetch columns/primary key metadata: {e}")
-            self._columns_df = pl.DataFrame()
-            self._pk_df = pl.DataFrame()
+            if self._columns_df is None:
+                self._columns_df = pl.DataFrame()
+            if self._pk_df is None:
+                self._pk_df = pl.DataFrame()
 
         self._cached_schema = schema
 

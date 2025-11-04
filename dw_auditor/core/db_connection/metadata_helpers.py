@@ -113,14 +113,20 @@ def split_columns_pk_dataframe(
 
     # Build primary keys dataframe
     if combined_df.height > 0:
+        # Include schema_name if it exists
+        select_cols = []
+        if "schema_name" in combined_df.columns:
+            select_cols.append(pl.col("schema_name"))
+        select_cols.extend([
+            pl.col("table_name"),
+            pl.col("column_name"),
+            pl.col(pk_ordinal_column).alias("ordinal_position"),
+        ])
+
         pk_df = (
             combined_df
             .filter(pl.col(is_pk_column) == True)  # noqa: E712
-            .select([
-                pl.col("table_name"),
-                pl.col("column_name"),
-                pl.col(pk_ordinal_column).alias("ordinal_position"),
-            ])
+            .select(select_cols)
             .sort(["table_name", "ordinal_position"])
         )
     else:

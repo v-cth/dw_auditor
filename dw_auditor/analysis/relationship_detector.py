@@ -326,3 +326,68 @@ class PolarsRelationshipDetector:
         set1 = set(series1.drop_nulls().unique().to_list())
         set2 = set(series2.drop_nulls().unique().to_list())
         return len(set1.intersection(set2))
+
+
+def detect_and_display_relationships(
+    all_table_results: list,
+    confidence_threshold: float = 0.7
+) -> list:
+    """
+    Detect relationships between tables and display results
+
+    Args:
+        all_table_results: List of audit results (must include 'data' key with DataFrame)
+        confidence_threshold: Minimum confidence threshold (0.0 to 1.0)
+
+    Returns:
+        List of detected relationships
+    """
+    print(f"\n{'='*70}")
+    print(f"Detecting table relationships...")
+    print(f"{'='*70}")
+
+    detected_relationships = []
+
+    try:
+        detector = PolarsRelationshipDetector()
+
+        # Add all audited tables with their DataFrames
+        for result in all_table_results:
+            if 'data' in result:  # Check if DataFrame was stored
+                detector.add_table(result['table_name'], result['data'])
+                print(f"   Added table: {result['table_name']}")
+
+        # Detect relationships
+        detected_relationships = detector.detect_relationships(
+            confidence_threshold=confidence_threshold
+        )
+
+        print(f"\n✅ Found {len(detected_relationships)} relationships (confidence >= {confidence_threshold:.0%})")
+
+        # Show detected relationships
+        if detected_relationships:
+            print(f"\nDetected Relationships:")
+            for rel in sorted(detected_relationships, key=lambda x: x['confidence'], reverse=True):
+                # Format relationship with direction
+                if rel['direction'] == 'table1_to_table2':
+                    rel_str = f"{rel['table1']}.{rel['column1']} → {rel['table2']}.{rel['column2']}"
+                elif rel['direction'] == 'table2_to_table1':
+                    rel_str = f"{rel['table1']}.{rel['column1']} ← {rel['table2']}.{rel['column2']}"
+                else:
+                    rel_str = f"{rel['table1']}.{rel['column1']} ↔ {rel['table2']}.{rel['column2']}"
+
+                print(f"   • {rel_str}")
+                print(f"     Confidence: {rel['confidence']:.1%} | Type: {rel['relationship_type']} | "
+                      f"Matching values: {rel['matching_values']} | Overlap: {rel['overlap_ratio']:.1%}")
+
+        # Remove DataFrames from results to save memory (no longer needed)
+        for result in all_table_results:
+            if 'data' in result:
+                del result['data']
+
+    except Exception as e:
+        print(f"⚠️  Error detecting relationships: {e}")
+        import traceback
+        traceback.print_exc()
+
+    return detected_relationships
