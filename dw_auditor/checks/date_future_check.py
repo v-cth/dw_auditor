@@ -13,10 +13,9 @@ from datetime import datetime, date, timezone
 class FutureDateParams(BaseModel):
     """Parameters for future date check
 
-    Attributes:
-        threshold_pct: Minimum percentage to report as issue (default: 0.0 = report all)
+    No parameters required - always reports if future dates detected.
     """
-    threshold_pct: float = Field(default=0.0, ge=0.0, le=100.0)
+    pass
 
 
 @register_check("future_dates")
@@ -34,8 +33,7 @@ class FutureDateCheck(BaseCheck):
     - Timezone-aware datetimes: compared against UTC now
     - Timezone-naive datetimes: compared against local now
 
-    Configuration example:
-        {"future_dates": {"threshold_pct": 0.0}}
+    Always reports if future dates detected (no threshold).
     """
 
     display_name = "Future Date Detection"
@@ -49,7 +47,7 @@ class FutureDateCheck(BaseCheck):
         """Execute future date check
 
         Returns:
-            List with single CheckResult if future dates found above threshold
+            List with single CheckResult if future dates found
         """
         results = []
 
@@ -81,37 +79,35 @@ class FutureDateCheck(BaseCheck):
         if len(future_rows) > 0:
             pct_future = len(future_rows) / non_null_count * 100
 
-            # Only report if above threshold
-            if pct_future >= self.config.threshold_pct:
-                # Convert dates/datetimes to formatted strings
-                examples = [str(val) if val else None for val in future_rows[self.col].head(5).to_list()]
+            # Convert dates/datetimes to formatted strings
+            examples = [str(val) if val else None for val in future_rows[self.col].head(5).to_list()]
 
-                # Calculate how far into the future
-                if col_dtype == pl.Date:
-                    max_future_date = future_rows[self.col].max()
-                    days_in_future = (max_future_date - current_ref).days if max_future_date else 0
-                else:
-                    max_future_date = future_rows[self.col].max()
-                    if max_future_date:
-                        if hasattr(col_dtype, 'time_zone') and col_dtype.time_zone is not None:
-                            # For timezone-aware, both should be timezone-aware
-                            time_diff = max_future_date - current_ref
-                        else:
-                            # For timezone-naive
-                            time_diff = max_future_date - current_ref
-                        days_in_future = time_diff.days
+            # Calculate how far into the future
+            if col_dtype == pl.Date:
+                max_future_date = future_rows[self.col].max()
+                days_in_future = (max_future_date - current_ref).days if max_future_date else 0
+            else:
+                max_future_date = future_rows[self.col].max()
+                if max_future_date:
+                    if hasattr(col_dtype, 'time_zone') and col_dtype.time_zone is not None:
+                        # For timezone-aware, both should be timezone-aware
+                        time_diff = max_future_date - current_ref
                     else:
-                        days_in_future = 0
+                        # For timezone-naive
+                        time_diff = max_future_date - current_ref
+                    days_in_future = time_diff.days
+                else:
+                    days_in_future = 0
 
-                results.append(CheckResult(
-                    type='FUTURE_DATES',
-                    count=len(future_rows),
-                    pct=pct_future,
-                    max_days_future=days_in_future,
-                    current_reference=str(current_ref),
-                    max_future_value=str(max_future_date) if max_future_date else None,
-                    suggestion=f'Found {len(future_rows)} dates in the future - check if these are valid or data entry errors',
-                    examples=examples
-                ))
+            results.append(CheckResult(
+                type='FUTURE_DATES',
+                count=len(future_rows),
+                pct=pct_future,
+                max_days_future=days_in_future,
+                current_reference=str(current_ref),
+                max_future_value=str(max_future_date) if max_future_date else None,
+                suggestion=f'Found {len(future_rows)} dates in the future - check if these are valid or data entry errors',
+                examples=examples
+            ))
 
         return results

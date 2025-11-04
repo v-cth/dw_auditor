@@ -12,24 +12,19 @@ import polars as pl
 class NumericStringsParams(BaseModel):
     """Parameters for numeric strings check
 
-    Attributes:
-        threshold: Percentage threshold (0.0-1.0) above which to flag column
-                  Default: 0.8 (80% of values must be numeric to flag)
+    No parameters required - always reports if numeric strings detected.
     """
-    threshold: float = Field(default=0.8, ge=0.0, le=1.0)
+    pass
 
 
 @register_check("numeric_strings")
 class NumericStringsCheck(BaseCheck):
-    """Detect string columns that contain only numeric values
+    """Detect string columns that contain numeric values
 
     Identifies columns stored as strings but containing numeric data,
     which might indicate incorrect data typing.
 
-    Only flags if a high percentage of values are numeric (configurable).
-
-    Configuration example:
-        {"numeric_strings": {"threshold": 0.9}}
+    Always reports if numeric strings are detected (no threshold).
     """
 
     display_name = "Numeric Strings Detection"
@@ -43,7 +38,7 @@ class NumericStringsCheck(BaseCheck):
         """Execute numeric strings check
 
         Returns:
-            List with single CheckResult if threshold exceeded
+            List with single CheckResult if numeric strings found
         """
         results = []
 
@@ -60,10 +55,9 @@ class NumericStringsCheck(BaseCheck):
             pl.col(self.col).str.contains(f'^{numeric_pattern}$')
         )
 
-        # Only flag if a high percentage are numeric
-        pct_numeric = len(numeric_strings) / non_null_count
-
-        if pct_numeric > self.config.threshold:
+        # Report if any numeric strings found
+        if len(numeric_strings) > 0:
+            pct_numeric = len(numeric_strings) / non_null_count
             examples = numeric_strings[self.col].head(3).to_list()
             results.append(CheckResult(
                 type='NUMERIC_STRINGS',

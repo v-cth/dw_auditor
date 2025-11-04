@@ -369,8 +369,7 @@ def main():
 
     # Create auditor
     auditor = SecureTableAuditor(
-        sample_size=config.sample_size,
-        outlier_threshold_pct=config.outlier_threshold_pct
+        sample_size=config.sample_size
     )
 
     # Get tables to audit

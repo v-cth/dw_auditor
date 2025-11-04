@@ -94,14 +94,6 @@ class SecurityConfig(BaseModel):
     custom_pii_keywords: List[str] = Field(default_factory=list, description="Custom PII keywords")
 
 
-class ThresholdsConfig(BaseModel):
-    """Detection thresholds"""
-    numeric_string_pct: float = Field(80.0, ge=0.0, le=100.0, description="Percentage threshold for numeric strings")
-    constant_hour_pct: float = Field(90.0, ge=0.0, le=100.0, description="Percentage threshold for constant hour")
-    midnight_pct: float = Field(95.0, ge=0.0, le=100.0, description="Percentage threshold for midnight timestamps")
-    outlier_threshold_pct: float = Field(0.0, ge=0.0, le=100.0, description="Minimum percentage to report outliers")
-
-
 class NumberFormat(BaseModel):
     """Number formatting for reports"""
     thousand_separator: str = Field(',', max_length=1, description="Thousand separator character")
@@ -176,7 +168,6 @@ class AuditConfigModel(BaseModel):
     table_filters: Optional[TableFilters] = None
     sampling: SamplingConfig = Field(default_factory=SamplingConfig)
     security: SecurityConfig = Field(default_factory=SecurityConfig)
-    thresholds: ThresholdsConfig = Field(default_factory=ThresholdsConfig)
     output: OutputConfig = Field(default_factory=OutputConfig)
     filters: FiltersConfig = Field(default_factory=FiltersConfig)
     column_checks: Optional[ColumnChecksConfig] = None
@@ -268,12 +259,6 @@ class AuditConfig:
         # Security
         self.mask_pii = self._model.security.mask_pii
         self.custom_pii_keywords = self._model.security.custom_pii_keywords
-
-        # Thresholds (convert percentages to decimals)
-        self.numeric_string_threshold = self._model.thresholds.numeric_string_pct / 100
-        self.constant_hour_threshold = self._model.thresholds.constant_hour_pct / 100
-        self.midnight_threshold = self._model.thresholds.midnight_pct / 100
-        self.outlier_threshold_pct = self._model.thresholds.outlier_threshold_pct
 
         # Output
         self.output_dir = Path(self._model.output.directory)
@@ -471,12 +456,6 @@ class AuditConfig:
             'security': {
                 'mask_pii': self.mask_pii,
                 'custom_pii_keywords': self.custom_pii_keywords
-            },
-            'thresholds': {
-                'numeric_string_pct': self.numeric_string_threshold * 100,
-                'constant_hour_pct': self.constant_hour_threshold * 100,
-                'midnight_pct': self.midnight_threshold * 100,
-                'outlier_threshold_pct': self.outlier_threshold_pct
             },
             'output': {
                 'directory': str(self.output_dir),

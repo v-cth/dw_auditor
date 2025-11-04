@@ -12,14 +12,9 @@ import polars as pl
 class TimestampPatternParams(BaseModel):
     """Parameters for timestamp pattern check
 
-    Attributes:
-        constant_hour_threshold: Percentage threshold (0.0-1.0) for flagging constant hour
-                                Default: 0.9 (90% of values have same hour)
-        midnight_threshold: Percentage threshold (0.0-1.0) for flagging midnight timestamps
-                           Default: 0.95 (95% of values are at midnight)
+    No parameters required - always reports patterns if detected.
     """
-    constant_hour_threshold: float = Field(default=0.9, ge=0.0, le=1.0)
-    midnight_threshold: float = Field(default=0.95, ge=0.0, le=1.0)
+    pass
 
 
 @register_check("timestamp_patterns")
@@ -27,13 +22,12 @@ class TimestampPatternCheck(BaseCheck):
     """Detect timestamp patterns (same hour, effectively dates)
 
     Identifies timestamps that have suspicious patterns:
-    - Constant hour: Most timestamps share the same hour (suggests date-only data)
-    - Always midnight: Most timestamps are at 00:00:00 (suggests DATE type is more appropriate)
+    - Constant hour: Timestamps share the same hour (suggests date-only data)
+    - Always midnight: Timestamps are at 00:00:00 (suggests DATE type is more appropriate)
 
     Only checks Datetime columns - skips Date columns automatically.
 
-    Configuration example:
-        {"timestamp_patterns": {"constant_hour_threshold": 0.9, "midnight_threshold": 0.95}}
+    Always reports patterns if detected (no threshold).
     """
 
     display_name = "Timestamp Pattern Detection"
@@ -68,7 +62,7 @@ class TimestampPatternCheck(BaseCheck):
             pl.col(self.col).dt.second().alias('second'),
         ])
 
-        # Check unique hours
+        # Check unique hours - report if most timestamps share same hour
         unique_hours = time_analysis['hour'].n_unique()
 
         if unique_hours <= 3:
@@ -78,28 +72,27 @@ class TimestampPatternCheck(BaseCheck):
             most_common = hour_counts.row(0, named=True)
             pct_same_hour = most_common['count'] / non_null_count
 
-            if pct_same_hour > self.config.constant_hour_threshold:
-                # Convert datetimes to formatted strings
-                examples = [str(val) if val else None for val in non_null_df[self.col].head(3).to_list()]
-                results.append(CheckResult(
-                    type='CONSTANT_HOUR',
-                    hour=most_common['hour'],
-                    count=most_common['count'],
-                    pct=pct_same_hour * 100,
-                    suggestion='Timestamp appears to be date-only, consider using DATE type',
-                    examples=examples
-                ))
+            # Report constant hour pattern
+            # Convert datetimes to formatted strings
+            examples = [str(val) if val else None for val in non_null_df[self.col].head(3).to_list()]
+            results.append(CheckResult(
+                type='CONSTANT_HOUR',
+                hour=most_common['hour'],
+                count=most_common['count'],
+                pct=pct_same_hour * 100,
+                suggestion='Timestamp appears to be date-only, consider using DATE type',
+                examples=examples
+            ))
 
-        # Check if all times are midnight
+        # Check if times are midnight - report if found
         midnight_count = time_analysis.filter(
             (pl.col('hour') == 0) &
             (pl.col('minute') == 0) &
             (pl.col('second') == 0)
         ).height
 
-        midnight_pct = midnight_count / non_null_count
-
-        if midnight_pct > self.config.midnight_threshold:
+        if midnight_count > 0:
+            midnight_pct = midnight_count / non_null_count
             # Convert datetimes to formatted strings
             examples = [str(val) if val else None for val in non_null_df[self.col].head(3).to_list()]
             results.append(CheckResult(

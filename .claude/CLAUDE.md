@@ -105,7 +105,13 @@ Then import in `checks/__init__.py` and use: `run_check_sync('my_check', df, col
 **Sampling**: Use `.sample(fraction=)` not `.limit()` for statistical validity
 **HTML**: Use `format_number()` helper for thousand separators, avoid label overlap with vertical stacking
 
-## Recent Changes (October 2025)
+## Recent Changes (October 2025-November 2025)
+
+**Nov 4**: Simplified threshold strategy
+- Removed percentage-based reporting thresholds (80%, 90%, 95%)
+- All checks now report issues regardless of percentage affected
+- Kept boundary thresholds (greater_than, less_than, min_year, max_year)
+- Zero threshold configuration needed - cleaner UX
 
 **Oct 27**: Class-based check framework (926 lines → 11 modular classes)
 - Abstract BaseCheck + registry + runner

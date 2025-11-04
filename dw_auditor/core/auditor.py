@@ -105,16 +105,13 @@ class SecureTableAuditor(AuditorExporterMixin):
 
     def __init__(
         self,
-        sample_size: int = 100000,
-        outlier_threshold_pct: float = 0.0
+        sample_size: int = 100000
     ):
         """
         Args:
             sample_size: Number of rows to sample (samples when table has more rows than this)
-            outlier_threshold_pct: Minimum percentage to report outliers (default: 0.0 = report all)
         """
         self.sample_size = sample_size
-        self.outlier_threshold_pct = outlier_threshold_pct
         self.audit_log = []
 
     def _get_table_metadata(

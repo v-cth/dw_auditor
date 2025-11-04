@@ -15,11 +15,9 @@ class DateOutlierParams(BaseModel):
     Attributes:
         min_year: Minimum reasonable year (default: 1950)
         max_year: Maximum reasonable year (default: 2100)
-        outlier_threshold_pct: Minimum percentage to report as issue (default: 0.0 = report all)
     """
     min_year: int = Field(default=1950, ge=1000, le=9999)
     max_year: int = Field(default=2100, ge=1000, le=9999)
-    outlier_threshold_pct: float = Field(default=0.0, ge=0.0, le=100.0)
 
 
 @register_check("date_outliers")
@@ -33,8 +31,10 @@ class DateOutlierCheck(BaseCheck):
 
     These often indicate data errors, placeholder values, or default timestamps.
 
+    Always reports outliers if detected (no percentage threshold).
+
     Configuration example:
-        {"date_outliers": {"min_year": 1950, "max_year": 2100, "outlier_threshold_pct": 0.1}}
+        {"date_outliers": {"min_year": 1950, "max_year": 2100}}
     """
 
     display_name = "Date Outlier Detection"
@@ -69,43 +69,37 @@ class DateOutlierCheck(BaseCheck):
         too_old = non_null_df.filter(pl.col(self.col).dt.year() < self.config.min_year)
         if len(too_old) > 0:
             pct_old = len(too_old) / non_null_count * 100
+            # Convert dates/datetimes to formatted strings
+            examples = [str(val) if val else None for val in too_old[self.col].head(5).to_list()]
+            min_year_found = year_col['year'].min()
 
-            # Only report if above threshold
-            if pct_old >= self.config.outlier_threshold_pct:
-                # Convert dates/datetimes to formatted strings
-                examples = [str(val) if val else None for val in too_old[self.col].head(5).to_list()]
-                min_year_found = year_col['year'].min()
-
-                results.append(CheckResult(
-                    type='DATES_TOO_OLD',
-                    count=len(too_old),
-                    pct=pct_old,
-                    min_year_found=int(min_year_found),
-                    threshold_year=self.config.min_year,
-                    suggestion=f'Found dates before {self.config.min_year} - check if these are valid or data errors',
-                    examples=examples
-                ))
+            results.append(CheckResult(
+                type='DATES_TOO_OLD',
+                count=len(too_old),
+                pct=pct_old,
+                min_year_found=int(min_year_found),
+                threshold_year=self.config.min_year,
+                suggestion=f'Found dates before {self.config.min_year} - check if these are valid or data errors',
+                examples=examples
+            ))
 
         # Find dates after max_year
         too_future = non_null_df.filter(pl.col(self.col).dt.year() > self.config.max_year)
         if len(too_future) > 0:
             pct_future = len(too_future) / non_null_count * 100
+            # Convert dates/datetimes to formatted strings
+            examples = [str(val) if val else None for val in too_future[self.col].head(5).to_list()]
+            max_year_found = year_col['year'].max()
 
-            # Only report if above threshold
-            if pct_future >= self.config.outlier_threshold_pct:
-                # Convert dates/datetimes to formatted strings
-                examples = [str(val) if val else None for val in too_future[self.col].head(5).to_list()]
-                max_year_found = year_col['year'].max()
-
-                results.append(CheckResult(
-                    type='DATES_TOO_FUTURE',
-                    count=len(too_future),
-                    pct=pct_future,
-                    max_year_found=int(max_year_found),
-                    threshold_year=self.config.max_year,
-                    suggestion=f'Found dates after {self.config.max_year} - check if these are valid or placeholder values',
-                    examples=examples
-                ))
+            results.append(CheckResult(
+                type='DATES_TOO_FUTURE',
+                count=len(too_future),
+                pct=pct_future,
+                max_year_found=int(max_year_found),
+                threshold_year=self.config.max_year,
+                suggestion=f'Found dates after {self.config.max_year} - check if these are valid or placeholder values',
+                examples=examples
+            ))
 
         # Check for specific problematic years
         problematic_years = [1900, 1970, 2099, 2999, 9999]
@@ -117,20 +111,18 @@ class DateOutlierCheck(BaseCheck):
                 count = year_data['count'][0]
                 pct = count / non_null_count * 100
 
-                # Only report if above threshold
-                if pct >= self.config.outlier_threshold_pct:
-                    # Convert dates/datetimes to formatted strings
-                    examples = [str(val) if val else None for val in non_null_df.filter(
-                        pl.col(self.col).dt.year() == problem_year
-                    )[self.col].head(5).to_list()]
+                # Convert dates/datetimes to formatted strings
+                examples = [str(val) if val else None for val in non_null_df.filter(
+                    pl.col(self.col).dt.year() == problem_year
+                )[self.col].head(5).to_list()]
 
-                    results.append(CheckResult(
-                        type='SUSPICIOUS_YEAR',
-                        year=problem_year,
-                        count=int(count),
-                        pct=pct,
-                        suggestion=f'Year {problem_year} appears frequently - often used as placeholder/default value',
-                        examples=examples
-                    ))
+                results.append(CheckResult(
+                    type='SUSPICIOUS_YEAR',
+                    year=problem_year,
+                    count=int(count),
+                    pct=pct,
+                    suggestion=f'Year {problem_year} appears frequently - often used as placeholder/default value',
+                    examples=examples
+                ))
 
         return results
