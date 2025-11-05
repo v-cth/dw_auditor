@@ -31,6 +31,9 @@ pyyaml>=6.0                 # YAML configuration file parsing
 # ----------------------------------------------------------------------------
 # Uncomment for additional functionality
 
+# HTML report generation (required for export_to_html)
+jinja2>=3.0.0               # Template engine for HTML reports
+
 # Rich console output
 # rich>=13.0.0              # Beautiful terminal formatting
 
