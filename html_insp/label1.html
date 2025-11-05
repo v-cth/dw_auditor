@@ -1,0 +1,333 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Data Quality Audit Report</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --accent: #7c3aed;
+      --accent-light: #ede9fe;
+      --text-main: #111;
+      --text-muted: #6b7280;
+      --warning: #d97706;
+      --border-light: #e5e7eb;
+      --bg-light: #fafafa;
+    }
+
+    body {
+      font-family: 'Inter', sans-serif;
+      color: var(--text-main);
+      background: #fff;
+      margin: 0;
+      padding: 40px 24px;
+      max-width: 1100px;
+      margin-inline: auto;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .report-title {
+      font-size: 2.6rem;
+      font-weight: 600;
+    }
+
+    .table-name {
+      font-size: 1.8rem;
+      font-weight: 700;
+      color: var(--accent);
+    }
+
+    .table-tag {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    .meta-line {
+      border-top: 1px solid var(--border-light);
+      display: flex;
+      flex-wrap: wrap;
+      gap: 24px;
+      margin-top: 16px;
+      padding-top: 10px;
+    }
+
+    .meta-block {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .meta-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .meta-value {
+      font-size: 0.95rem;
+      color: var(--accent);
+      font-weight: 500;
+    }
+
+    /* === Tabs === */
+    .tabs {
+      display: flex;
+      gap: 32px;
+      border-bottom: 1px solid var(--border-light);
+      margin-top: 32px;
+    }
+
+    .tab {
+      position: relative;
+      padding: 12px 0;
+      font-size: 1rem;
+      font-weight: 500;
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: color 0.2s ease;
+    }
+
+    .tab:hover {
+      color: var(--text-main);
+    }
+
+    .tab.active {
+      color: var(--accent);
+    }
+
+    .tab.active::after {
+      content: "";
+      position: absolute;
+      bottom: -1px;
+      left: 0;
+      width: 100%;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    /* === Section Content === */
+    .tab-content {
+      display: none;
+      padding-top: 24px;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    /* === Summary Cards === */
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 24px;
+      margin-top: 24px;
+    }
+
+    .card h2 {
+      font-size: 2rem;
+      margin: 0;
+      color: var(--accent);
+      font-weight: 600;
+    }
+
+    .card p {
+      font-size: 0.9rem;
+      color: var(--text-muted);
+      margin: 0;
+    }
+
+    .card .status-warning {
+      color: var(--warning);
+    }
+
+    /* === Table Styles === */
+    .columns-table {
+      margin-top: 24px;
+      border-radius: 10px;
+      overflow: hidden;
+      border: 1px solid var(--border-light);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.95rem;
+    }
+
+    thead {
+      background: var(--bg-light);
+      text-align: left;
+      font-weight: 600;
+      color: var(--text-muted);
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    th, td {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border-light);
+    }
+
+    tr:hover td {
+      background: #f9fafb;
+    }
+
+    td:first-child {
+      font-weight: 500;
+      color: var(--text-main);
+    }
+
+    /* Data Type Label */
+    .datatype-label {
+      font-family: 'Inter', monospace;
+      background: #f9fafb;
+      border: 1px solid var(--border-light);
+      border-radius: 6px;
+      padding: 6px 10px;
+      color: var(--text-muted);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.9rem;
+    }
+
+    .datatype-tag {
+      background: var(--accent-light);
+      color: var(--accent);
+      font-weight: 500;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.8rem;
+      letter-spacing: -0.2px;
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div class="report-title">Data Quality Audit Report</div>
+    <div class="table-name">fct_availability_part</div>
+    <div class="table-tag">Base Table</div>
+
+    <div class="meta-line">
+      <div class="meta-block">
+        <div class="meta-label">Generated</div>
+        <div class="meta-value">2025-10-22 19:35:11</div>
+      </div>
+      <div class="meta-block">
+        <div class="meta-label">Partitioned By</div>
+        <div class="meta-value">collected_at (TIME)</div>
+      </div>
+      <div class="meta-block">
+        <div class="meta-label">Clustered By</div>
+        <div class="meta-value">station_code</div>
+      </div>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <div class="tab active" data-tab="summary">Summary</div>
+    <div class="tab" data-tab="columns">Columns</div>
+    <div class="tab" data-tab="issues">Issues</div>
+    <div class="tab" data-tab="metadata">Metadata</div>
+  </nav>
+
+  <section id="summary" class="tab-content active">
+    <div class="summary-cards">
+      <div class="card">
+        <h2>3,877,353</h2>
+        <p>Total Rows</p>
+      </div>
+      <div class="card">
+        <h2>10,000</h2>
+        <p>Analyzed Rows</p>
+      </div>
+      <div class="card">
+        <h2>1</h2>
+        <p>Columns Audited</p>
+      </div>
+      <div class="card">
+        <h2 class="status-warning">Issues Found</h2>
+        <p>Status</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="columns" class="tab-content">
+    <h3>Column Summary</h3>
+    <p style="color:var(--text-muted); font-size:0.9rem;">Basic metrics for all columns in the table</p>
+    <div class="columns-table">
+      <table>
+        <thead>
+          <tr>
+            <th>Column Name</th>
+            <th>Data Type</th>
+            <th>Status</th>
+            <th>Null %</th>
+            <th>Unique %</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>station_code</td>
+            <td>Int64</td>
+            <td>N/A</td>
+            <td>0.00%</td>
+            <td>98.1%</td>
+          </tr>
+          <tr>
+            <td>collected_at</td>
+            <td>
+              <div class="datatype-label">
+                Datetime(
+                <span class="datatype-tag">time_unit='ns'</span>,
+                <span class="datatype-tag">time_zone=None</span>
+                )
+              </div>
+            </td>
+            <td>N/A</td>
+            <td>0.00%</td>
+            <td>100%</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section id="issues" class="tab-content">
+    <h3>Issues Detected</h3>
+    <ul>
+      <li>Missing values in column <code>x</code></li>
+      <li>Duplicate entries detected for <code>station_code</code></li>
+    </ul>
+  </section>
+
+  <section id="metadata" class="tab-content">
+    <h3>Metadata</h3>
+    <p>Schema: portfolio-402.dbt_prod</p>
+    <p>Audited at: 2025-10-22 19:35:11</p>
+  </section>
+
+  <script>
+    const tabs = document.querySelectorAll('.tab');
+    const contents = document.querySelectorAll('.tab-content');
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        tabs.forEach(t => t.classList.remove('active'));
+        tab.classList.add('active');
+        contents.forEach(c => c.classList.remove('active'));
+        document.getElementById(tab.dataset.tab).classList.add('active');
+      });
+    });
+  </script>
+
+</body>
+</html>

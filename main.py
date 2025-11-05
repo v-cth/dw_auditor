@@ -12,34 +12,52 @@ def main():
     print("="*60)
     print("Secure Data Warehouse Table Auditor")
     print("="*60)
-    print("\n📖 Usage Examples:\n")
+    print("\nUsage Examples:\n")
 
     # Example 1: Audit directly from database (RECOMMENDED)
-    print("# Example 1: Direct database audit (no file export)")
+    print("# Example 1: Direct database audit with BigQuery")
     print("-" * 60)
     print("""
 auditor = SecureTableAuditor()
 
-# PostgreSQL
+# BigQuery
 results = auditor.audit_from_database(
     table_name='users',
-    connection_string='postgresql://user:pass@localhost:5432/mydb',
-    schema='public',
+    backend='bigquery',
+    connection_params={
+        'project_id': 'my-gcp-project',
+        'schema': 'analytics',
+        'credentials_path': '/path/to/service-account-key.json'
+    },
     mask_pii=True,          # Auto-mask sensitive columns
     sample_in_db=True        # Sample in DB for speed
 )
 
-# MySQL
+# Snowflake
 results = auditor.audit_from_database(
-    table_name='orders',
-    connection_string='mysql://user:pass@localhost:3306/mydb'
+    table_name='ORDERS',
+    backend='snowflake',
+    connection_params={
+        'account': 'my-account',
+        'user': 'my-user',
+        'password': 'my-password',
+        'database': 'ANALYTICS_DB',
+        'warehouse': 'COMPUTE_WH',
+        'schema': 'PUBLIC'
+    },
+    mask_pii=True,
+    sample_in_db=True
 )
 
-# Custom query
+# Custom query with BigQuery
 results = auditor.audit_from_database(
-    table_name='custom_query',
-    connection_string='postgresql://user:pass@localhost:5432/mydb',
-    custom_query='SELECT * FROM large_table WHERE created_at > NOW() - INTERVAL 30 DAY'
+    table_name='recent_transactions',
+    backend='bigquery',
+    connection_params={
+        'project_id': 'my-project',
+        'schema': 'sales'
+    },
+    custom_query='SELECT * FROM transactions WHERE date >= DATE_SUB(CURRENT_DATE(), INTERVAL 30 DAY)'
 )
 """)
 
@@ -78,17 +96,18 @@ config = AuditConfig.from_yaml('audit_config.yaml')
 
 # Create auditor with config settings
 auditor = SecureTableAuditor(
-    sample_size=config.sample_size,
-    sample_threshold=config.sample_threshold
+    sample_size=config.sample_size
 )
 
 # Audit tables from config
 for table in config.tables:
     results = auditor.audit_from_database(
         table_name=table,
-        connection_string=config.connection_string,
+        backend=config.backend,
+        connection_params=config.connection_params,
         schema=config.schema,
-        mask_pii=config.mask_pii
+        mask_pii=config.mask_pii,
+        custom_pii_keywords=config.custom_pii_keywords
     )
 
     # Export based on config
@@ -126,15 +145,14 @@ print(audit_log)
     print("\n📦 Required packages:")
     print("-" * 60)
     print("""
-pip install polars connectorx pyyaml
+pip install -r requirements.txt
 
-# connectorx supports:
-# - PostgreSQL
-# - MySQL
-# - SQLite
-# - SQL Server
-# - Oracle
-# - And more...
+# Or install manually:
+pip install polars ibis-framework[bigquery,snowflake] google-cloud-bigquery snowflake-connector-python pyyaml
+
+# Supported databases via Ibis:
+# - BigQuery (Google Cloud)
+# - Snowflake
 """)
 
     # Demo the export features
@@ -145,8 +163,12 @@ pip install polars connectorx pyyaml
 # Run audit
 auditor = SecureTableAuditor()
 results = auditor.audit_from_database(
-    'users',
-    'postgresql://user:pass@localhost/db'
+    table_name='users',
+    backend='bigquery',
+    connection_params={
+        'project_id': 'my-project',
+        'schema': 'analytics'
+    }
 )
 
 # Export to DataFrame for analysis

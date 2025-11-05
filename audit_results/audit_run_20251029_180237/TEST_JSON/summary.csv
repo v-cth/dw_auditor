@@ -1,0 +1,3 @@
+table_name,column_name,data_type,status,null_count,null_pct,distinct_count
+TEST_JSON,NAME,String,DISCOVERED,0,0,0
+TEST_JSON,JSON_CONTENT,VARIANT,NOT_LOADED,N/A,N/A,N/A

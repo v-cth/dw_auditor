@@ -1,137 +1,241 @@
 # Data Warehouse Table Auditor
 
-High-performance data quality checks for data warehouses with security best practices.
+**High-performance data quality auditing for BigQuery & Snowflake with automatic relationship detection.**
 
-## Project Structure
+✅ Find data issues before they cause problems
+🔗 Discover table relationships automatically
+🎨 Beautiful HTML reports with ER diagrams
 
-```
-database_audit/
-├── dw_auditor/                 # Main package
-│   ├── __init__.py             # Package exports
-│   ├── core/                   # Core auditing logic
-│   │   ├── __init__.py
-│   │   ├── auditor.py          # Main auditor class
-│   │   └── config.py           # Configuration management
-│   ├── checks/                 # Data quality checks
-│   │   ├── __init__.py
-│   │   ├── string_checks.py    # String validation checks
-│   │   └── timestamp_checks.py # Timestamp validation checks
-│   ├── utils/                  # Utility functions
-│   │   ├── __init__.py
-│   │   ├── security.py         # PII masking & security
-│   │   └── output.py           # Console output formatting
-│   └── exporters/              # Export functionality
-│       ├── __init__.py
-│       ├── dataframe_export.py # DataFrame export
-│       ├── json_export.py      # JSON export
-│       └── html_export.py      # HTML report generation
-├── main.py                     # Example usage/entry point
-├── audit_config.yaml           # Configuration file
-└── requirements.txt            # Dependencies
-```
+---
 
-## Features
-
-- **Direct Database Auditing**: Query tables directly without exporting files
-- **PII Protection**: Automatic masking of sensitive columns
-- **Smart Sampling**: Database-native sampling for large tables
-- **Multiple Checks**: Trailing spaces, case duplicates, special characters, numeric strings, timestamp patterns
-- **Flexible Export**: HTML reports, JSON, CSV, or Polars DataFrames
-- **Audit Logging**: Track all audit activities with sanitized connection strings
-
-## Installation
+## 🚀 Quick Start
 
 ```bash
-pip install -r requirements.txt
+# 1. Install uv (one-time setup)
+curl -LsSf https://astral.sh/uv/install.sh | sh
+# Or on Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
+# Or with pip: pip install uv
+
+# 2. Clone and setup
+git clone <your-repo>
+cd database_audit
+
+# 3. Install dependencies (creates venv automatically)
+uv sync
+
+# 4. Configure your database (edit audit_config.yaml)
+database:
+  backend: "bigquery"
+  connection_params:
+    project_id: "your-project"
+    schema: "your_dataset"
+
+tables:
+  - name: users
+  - name: orders
+
+# 5. Run the audit
+uv run python audit.py
+
+# 6. Open the HTML report
+open audit_results/audit_run_*/summary.html
 ```
 
-## Quick Start
+### Why uv?
+- ⚡ **10-100x faster** than pip for installs
+- 🔒 **Lock file** for reproducible builds (`uv.lock`)
+- 🐍 **Python version management** built-in
+- 🔧 **Drop-in replacement** for pip/venv
 
-### Basic Usage
+> **Note**: If you prefer pip, you can still use: `pip install -e .`
 
-```python
-from dw_auditor import SecureTableAuditor
+---
 
-auditor = SecureTableAuditor()
+## ✨ Key Features
 
-# Audit from database
-results = auditor.audit_from_database(
-    table_name='users',
-    connection_string='postgresql://user:pass@localhost:5432/mydb',
-    schema='public',
-    mask_pii=True
-)
+🔍 **11 Quality Checks** - Detect trailing spaces, case duplicates, regex patterns, range violations, future dates, and more
 
-# Export results
-auditor.export_results_to_html(results, 'report.html')
+📊 **Automatic Profiling** - Distributions, top values, quantiles, string lengths, date ranges
+
+🔗 **Relationship Detection** - Automatically discover foreign keys and generate ER diagrams
+
+🎨 **Rich HTML Reports** - 4-tab interface (Summary/Insights/Checks/Metadata) with visual gradients and timelines
+
+🏢 **Enterprise Ready** - Multi-schema auditing, VIEW support, PII masking, custom queries
+
+🔒 **Secure by Design** - Zero data exports, database-native operations via Ibis
+
+---
+
+## 📋 What You Can Audit
+
+- **Tables & Views** - Base tables, VIEWs, and MATERIALIZED VIEWs
+- **Multiple Schemas** - Audit across datasets/databases in one run
+- **Custom Queries** - Audit filtered data (e.g., "last 7 days only")
+- **Large Tables** - Database-native sampling (BigQuery TABLESAMPLE, Snowflake SAMPLE)
+
+---
+
+## 🎯 Use Cases
+
+- **Data Migration** - Validate data before/after migrations
+- **Post-ETL Quality Gates** - Catch issues in transformation pipelines
+- **Schema Discovery** - Fast metadata exploration with `--discover` mode
+- **Relationship Mapping** - Understand foreign keys in legacy systems
+- **CI/CD Integration** - Automated quality checks in deployment pipelines
+- **Compliance Audits** - PII detection and masking for governance
+
+---
+
+## 📊 Example Output
+
+### Console
+```
+📋 Column Summary (All Columns):
+==================================================
+Column Name          Type        Status      Nulls
+--------------------------------------------------
+user_id             int64       ✓ OK        0 (0.0%)
+email               string      ✗ ERROR     2 (1.2%)
+created_at          datetime    ✓ OK        0 (0.0%)
+
+🔍 Issues Found:
+⚠️  EMAIL REGEX: 2 values don't match pattern
+   Examples: 'invalid.email@', 'user@domain'
 ```
 
-### Using Configuration File
+### HTML Report Tabs
+1. **Summary** - Overview, primary keys, table metadata
+2. **Insights** - Visual distributions with gradient bars, top values
+3. **Quality Checks** - Issues with examples and primary key context
+4. **Metadata** - Audit config, duration, ER diagram with relationships
 
-```python
-from dw_auditor import AuditConfig, SecureTableAuditor
+---
 
-# Load configuration
-config = AuditConfig.from_yaml('audit_config.yaml')
+## ⚙️ Configuration Examples
 
-# Create auditor
-auditor = SecureTableAuditor(
-    sample_size=config.sample_size,
-    sample_threshold=config.sample_threshold
-)
+### Minimal Setup
+```yaml
+database:
+  backend: "bigquery"
+  connection_params:
+    project_id: "my-project"
+    schema: "analytics"
 
-# Audit tables
-for table in config.tables:
-    results = auditor.audit_from_database(
-        table_name=table,
-        connection_string=config.connection_string,
-        schema=config.schema,
-        mask_pii=config.mask_pii
-    )
+tables:
+  - name: users
+  - name: orders
 ```
 
-## Modules
+### Multi-Schema Auditing
+```yaml
+tables:
+  - name: raw_customers
+    schema: raw_data
+  - name: stg_customers
+    schema: staging
+  - name: prod_customers
+    schema: production
+```
 
-### Core (`dw_auditor/core/`)
+### Custom Quality Checks
+```yaml
+column_checks:
+  tables:
+    users:
+      email:
+        regex_patterns:
+          pattern: "^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"
+          mode: "match"
+      age:
+        greater_than_or_equal: 18
+        less_than: 120
+```
 
-- **`auditor.py`**: Main `SecureTableAuditor` class that coordinates all auditing
-- **`config.py`**: `AuditConfig` class for YAML-based configuration
+### Relationship Detection
+```yaml
+relationship_detection:
+  enabled: true
+  confidence_threshold: 0.7   # 70% confidence to detect
+  min_confidence_display: 0.5 # Show relationships >= 50%
+```
 
-### Checks (`dw_auditor/checks/`)
+**Full configuration guide**: See inline comments in [`audit_config.yaml`](./audit_config.yaml)
 
-- **`string_checks.py`**: String validation (trailing spaces, case duplicates, special chars, numeric strings)
-- **`timestamp_checks.py`**: Timestamp validation (constant hour, midnight detection)
+---
 
-### Utils (`dw_auditor/utils/`)
+## 🔧 Advanced Usage
 
-- **`security.py`**: PII masking and connection string sanitization
-- **`output.py`**: Console output formatting and summary statistics
-
-### Exporters (`dw_auditor/exporters/`)
-
-- **`dataframe_export.py`**: Export to Polars DataFrame
-- **`json_export.py`**: Export to JSON format
-- **`html_export.py`**: Generate beautiful HTML reports
-
-## Configuration
-
-See `audit_config.yaml` for a complete configuration example with:
-- Database connection settings
-- Sampling configuration
-- Security settings (PII masking)
-- Check enablement/disablement
-- Thresholds
-- Output formats
-- Column filters
-
-## Examples
-
-Run the example file to see usage patterns:
-
+### Discovery Mode (Metadata Only)
 ```bash
-python main.py
+python audit.py --discover
+```
+Fast scan that shows all tables/views without loading data.
+
+### Custom Config File
+```bash
+python audit.py my_custom_config.yaml
 ```
 
-## License
+### Auto-confirm Prompts
+```bash
+python audit.py --yes
+```
 
-MIT
+---
+
+## 📚 Documentation
+
+- **[Configuration Reference](./audit_config.yaml)** - Inline documentation for all options
+- **[Quality Checks Guide](./doc/checks.md)** - All 11 checks with examples
+- **[Architecture Guide](./.claude/CLAUDE.md)** - How it works, extending checks
+
+---
+
+## 🛠️ Troubleshooting
+
+### Installation
+**Using uv**: Make sure uv is installed: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+**Using pip**: You can still install with: `pip install -e .` (reads from pyproject.toml)
+
+### Authentication
+**BigQuery**: Use `gcloud auth application-default login` or set `credentials_path` in config
+**Snowflake**: Check username/password or use `authenticator: externalbrowser` for SSO
+
+### Performance
+- Use `sample_in_db: true` for large tables (database-native sampling)
+- Increase `sample_size` carefully (default: 10,000 rows)
+- Use `--discover` for metadata-only scans
+
+### Memory Issues
+- Reduce `sample_size` in config
+- Audit fewer tables per run
+- Disable expensive insights (e.g., reduce `quantiles` count)
+
+---
+
+## 🏗️ Architecture
+
+Built on modern Python data tools:
+- **Ibis** - Database abstraction (lazy SQL generation, no data exports)
+- **Polars** - Fast DataFrame processing
+- **Pydantic** - Type-safe configuration validation
+
+**Design**: All computation happens in your database. No data is exported to files.
+
+---
+
+## 📝 License
+
+MIT License - See [LICENSE](./LICENSE) file
+
+---
+
+## 🤝 Contributing
+
+Want to add a custom check? The framework is extensible:
+- Review the [developer guide](./.claude/CLAUDE.md#check-framework-architecture)
+- Check existing checks in `dw_auditor/checks/`
+- Follow the class-based pattern with `@register_check` decorator
+
+Pull requests welcome!

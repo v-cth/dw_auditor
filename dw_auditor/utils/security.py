@@ -34,17 +34,18 @@ def mask_pii_columns(df: pl.DataFrame, custom_keywords: List[str] = None) -> pl.
     if custom_keywords:
         pii_keywords.extend(custom_keywords)
 
-    masked_cols = []
-    for col in df.columns:
-        col_lower = col.lower()
-        if any(kw in col_lower for kw in pii_keywords):
-            masked_cols.append(col)
-            # Replace with masked value
-            df = df.with_columns(
-                pl.lit("***PII_MASKED***").alias(col)
-            )
+    # Identify all columns that need masking
+    masked_cols = [
+        col for col in df.columns
+        if any(kw in col.lower() for kw in pii_keywords)
+    ]
 
+    # Apply masking to all identified columns in a single operation
     if masked_cols:
+        df = df.with_columns([
+            pl.lit("***PII_MASKED***").alias(col)
+            for col in masked_cols
+        ])
         print(f"🔒 Masked PII columns: {', '.join(masked_cols)}\n")
 
     return df
