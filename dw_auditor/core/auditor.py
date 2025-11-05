@@ -734,12 +734,19 @@ class SecureTableAuditor(AuditorExporterMixin):
                     column_check_config=column_check_config,
                     audit_mode=audit_mode,
                     table_schema=table_schema,
-                    store_dataframe=store_dataframe
+                    store_dataframe=store_dataframe,
+                    db_conn=db_conn,
+                    schema=schema
                 )
 
             # Add table metadata and phase timings to results
             if table_metadata:
                 results['table_metadata'] = table_metadata
+
+            # Extract conversion duration from results and add to phase timings
+            if 'conversion_duration' in results:
+                phase_timings['type_conversion'] = results['conversion_duration']
+
             results['phase_timings'] = phase_timings
 
             # Clear from memory
@@ -799,7 +806,9 @@ class SecureTableAuditor(AuditorExporterMixin):
         column_check_config: Optional['AuditConfig'] = None,
         audit_mode: Union[str, AuditMode] = 'full',
         table_schema: Optional[Dict[str, str]] = None,
-        store_dataframe: bool = False
+        store_dataframe: bool = False,
+        db_conn: Optional['DatabaseConnection'] = None,
+        schema: Optional[str] = None
     ) -> Dict:
         """
         Main audit function - runs all checks on a Polars DataFrame
@@ -844,7 +853,9 @@ class SecureTableAuditor(AuditorExporterMixin):
         original_schema = {col: str(df[col].dtype) for col in df.columns}
 
         # Attempt automatic type conversions on string columns before auditing
+        conversion_start = datetime.now()
         df, conversion_log = self._attempt_type_conversions(df)
+        conversion_duration = (datetime.now() - conversion_start).total_seconds()
 
         # Create a mapping of converted types for easy lookup
         converted_types = {conv['column']: {'from': conv['from_type'], 'to': conv['to_type']}
@@ -996,6 +1007,7 @@ class SecureTableAuditor(AuditorExporterMixin):
         duration = (end_time - start_time).total_seconds()
         results['end_time'] = end_time.isoformat()
         results['duration_seconds'] = round(duration, 2)
+        results['conversion_duration'] = conversion_duration
 
         print_results(results)
 

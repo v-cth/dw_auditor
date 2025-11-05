@@ -202,7 +202,7 @@ class BigQueryAdapter(BaseAdapter):
                     column_name,
                     description
                 FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.COLUMN_FIELD_PATHS`
-                {table_filter_columns}
+                {table_filter_only}
             )
             SELECT
                 '{schema}' AS schema_name,
