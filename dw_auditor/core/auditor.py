@@ -743,9 +743,32 @@ class SecureTableAuditor(AuditorExporterMixin):
             if table_metadata:
                 results['table_metadata'] = table_metadata
 
-            # Extract conversion duration from results and add to phase timings
-            if 'conversion_duration' in results:
-                phase_timings['type_conversion'] = results['conversion_duration']
+            # Extract conversion and insights durations, and reorder phase_timings
+            # Type conversion and insights happen inside audit_checks, so we need to:
+            # 1. Subtract them from audit_checks time
+            # 2. Insert them as separate phases in correct order
+            conversion_time = results.get('conversion_duration', 0)
+            insights_time = results.get('insights_duration', 0)
+
+            if conversion_time > 0 or insights_time > 0:
+                # Adjust audit_checks to exclude type_conversion and insights
+                if 'audit_checks' in phase_timings:
+                    phase_timings['audit_checks'] -= (conversion_time + insights_time)
+
+                # Rebuild dict with correct order
+                ordered_timings = {}
+                for key, value in phase_timings.items():
+                    if key == 'audit_checks':
+                        # Insert type_conversion before audit_checks
+                        if conversion_time > 0:
+                            ordered_timings['type_conversion'] = conversion_time
+                    ordered_timings[key] = value
+                    if key == 'audit_checks':
+                        # Insert insights after audit_checks
+                        if insights_time > 0:
+                            ordered_timings['data_insights'] = insights_time
+
+                phase_timings = ordered_timings
 
             results['phase_timings'] = phase_timings
 
@@ -889,6 +912,7 @@ class SecureTableAuditor(AuditorExporterMixin):
         # Analyze each column and track check durations
         potential_keys = []
         check_durations = {}
+        insights_duration = 0.0
 
         # Fetch column descriptions if available
         column_descriptions = {}
@@ -990,7 +1014,9 @@ class SecureTableAuditor(AuditorExporterMixin):
             if audit_mode not in ['discover', 'checks'] and column_check_config and hasattr(column_check_config, 'get_column_insights') and column_check_config.insights_enabled:
                 col_insights_config = column_check_config.get_column_insights(table_name, col, col_dtype)
                 if col_insights_config:
+                    insights_start = datetime.now()
                     insights = generate_column_insights(df, col, col_insights_config)
+                    insights_duration += (datetime.now() - insights_start).total_seconds()
                     if insights:
                         results['column_insights'][col] = insights
 
@@ -1008,6 +1034,7 @@ class SecureTableAuditor(AuditorExporterMixin):
         results['end_time'] = end_time.isoformat()
         results['duration_seconds'] = round(duration, 2)
         results['conversion_duration'] = conversion_duration
+        results['insights_duration'] = insights_duration
 
         print_results(results)
 
