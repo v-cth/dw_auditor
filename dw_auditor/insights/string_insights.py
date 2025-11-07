@@ -34,7 +34,7 @@ class StringInsights(BaseInsight):
         """Validate parameters using Pydantic"""
         self.config = StringInsightsParams(**self.params)
 
-    async def generate(self) -> List[InsightResult]:
+    def generate(self) -> List[InsightResult]:
         """Generate string insights
 
         Returns:

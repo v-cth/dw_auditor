@@ -5,11 +5,11 @@ Column insights rendering (string/numeric/datetime insights for the Insights tab
 from typing import Dict, List, Any
 
 
-def _insights_to_dict(insights: List[Any]) -> Dict:
-    """Convert List[InsightResult] to Dict for easy lookup
+def _insights_to_dict(insights: List[Dict]) -> Dict:
+    """Convert List[dict] to Dict for easy lookup
 
     Args:
-        insights: List of InsightResult objects
+        insights: List of insight dictionaries (serialized from InsightResult objects)
 
     Returns:
         Dictionary with insight types as keys and values
@@ -17,11 +17,11 @@ def _insights_to_dict(insights: List[Any]) -> Dict:
     result = {}
 
     for insight in insights:
-        insight_type = insight.type
-        value = insight.value
+        insight_type = insight['type']
+        value = insight['value']
 
         # Handle different insight types
-        if insight_type in ['top_values', 'boolean_distribution', 'most_common_dates', 'most_common_hours', 'most_common_days']:
+        if insight_type in ['top_values', 'boolean_distribution', 'most_common_dates', 'most_common_hours', 'most_common_days', 'histogram']:
             # Lists of dicts
             result[insight_type] = value
 
@@ -332,6 +332,51 @@ def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",",
 """
 
         html += """
+                </div>
+            </div>
+"""
+
+    # Histogram visualization
+    if 'histogram' in insights_dict and insights_dict['histogram']:
+        buckets = insights_dict['histogram']
+        max_count = max(bucket['count'] for bucket in buckets) if buckets else 1
+
+        html += """
+            <div class="insight-section" style="margin-top: 20px;">
+                <h4 class="insight-header">Distribution Histogram:</h4>
+                <div class="insight-content" style="padding: 15px;">
+                    <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 200px; gap: 2px; padding: 15px;">
+"""
+
+        for bucket in buckets:
+            bar_height = (bucket['count'] / max_count * 100) if max_count > 0 else 0
+
+            # Color gradient based on cumulative percentage
+            cumulative_pct = bucket.get('cumulative_pct', 0)
+            if cumulative_pct <= 25:
+                bar_color = '#dbeafe'  # Very light blue
+            elif cumulative_pct <= 50:
+                bar_color = '#93c5fd'  # Light blue
+            elif cumulative_pct <= 75:
+                bar_color = '#60a5fa'  # Medium blue
+            else:
+                bar_color = '#3b82f6'  # Blue
+
+            html += f"""
+                        <div style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative;">
+                            <span style="position: absolute; top: -20px; font-size: 0.75em; color: #374151; font-weight: 600;">{bucket['percentage']:.1f}%</span>
+                            <div style="width: 100%; height: {bar_height}%; background: {bar_color}; border-radius: 4px 4px 0 0; position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; transition: all 0.2s; cursor: pointer;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'" title="{bucket['bucket']}: {format_number(bucket['count'])} ({bucket['percentage']:.1f}%)">
+                                <span style="font-size: 0.7em; color: #1f2937; font-weight: 600; writing-mode: vertical-rl; text-orientation: mixed; padding: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{bucket['bucket']}</span>
+                            </div>
+                        </div>
+"""
+
+        html += """
+                    </div>
+                    <div style="margin-top: 10px; font-size: 0.85em; color: #6b7280; text-align: center;">
+                        <span style="display: inline-block; margin-right: 15px;">📊 Buckets: """ + str(len(buckets)) + """</span>
+                        <span style="display: inline-block; margin-right: 15px;">📈 Max: """ + format_number(max_count,'',0) + """ rows</span>
+                    </div>
                 </div>
             </div>
 """

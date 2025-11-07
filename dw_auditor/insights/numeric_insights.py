@@ -2,7 +2,7 @@
 Numeric column insights - composite insight for Int and Float types
 """
 
-from typing import List
+from typing import List, Union, Dict, Any
 from pydantic import BaseModel
 import polars as pl
 from ..core.base_insight import BaseInsight, InsightResult
@@ -18,6 +18,7 @@ class NumericInsightsParams(BaseModel):
     std: bool = False
     quantiles: bool = False
     top_values: int = 0
+    histogram: Union[bool, int, Dict[str, Any]] = False
 
 
 @register_insight("numeric_insights")
@@ -28,6 +29,7 @@ class NumericInsights(BaseInsight):
     - Basic statistics (min, max, mean, std)
     - Quantiles/percentiles
     - Most frequent values
+    - Distribution histogram
     """
 
     display_name = "Numeric Column Insights"
@@ -41,7 +43,7 @@ class NumericInsights(BaseInsight):
         """Validate parameters using Pydantic"""
         self.config = NumericInsightsParams(**self.params)
 
-    async def generate(self) -> List[InsightResult]:
+    def generate(self) -> List[InsightResult]:
         """Generate numeric insights
 
         Returns:
@@ -113,5 +115,15 @@ class NumericInsights(BaseInsight):
                 limit=self.config.top_values
             )
             results.extend(top_values_results)
+
+        # Histogram (delegate to atomic insight)
+        if self.config.histogram:
+            histogram_results = run_insight_sync(
+                'histogram',
+                self.df,
+                self.col,
+                histogram=self.config.histogram
+            )
+            results.extend(histogram_results)
 
         return results

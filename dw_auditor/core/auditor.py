@@ -1023,7 +1023,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                     insights = generate_column_insights(df, col, col_insights_config)
                     insights_duration += (datetime.now() - insights_start).total_seconds()
                     if insights:
-                        results['column_insights'][col] = insights
+                        # Serialize InsightResult objects to dicts for JSON export
+                        results['column_insights'][col] = [insight.model_dump() for insight in insights]
 
         # Store check durations
         results['check_durations'] = check_durations

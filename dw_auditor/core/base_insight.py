@@ -78,7 +78,7 @@ class BaseInsight(ABC):
         pass
 
     @abstractmethod
-    async def generate(self) -> List[InsightResult]:
+    def generate(self) -> List[InsightResult]:
         """Execute the insight and return results
 
         Returns:

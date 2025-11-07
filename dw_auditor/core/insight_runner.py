@@ -98,9 +98,26 @@ def run_insight_sync(
             limit=10
         )
     """
-    return asyncio.run(
-        run_insight(insight_name, df, col, **params)
+    # Look up insight class in registry
+    insight_class = get_insight(insight_name)
+
+    if insight_class is None:
+        from .insight_registry import list_insights
+        available = ", ".join(sorted(list_insights()))
+        raise ValueError(
+            f"Unknown insight: '{insight_name}'. "
+            f"Available insights: {available}"
+        )
+
+    # Instantiate insight (this validates params via Pydantic)
+    insight_instance = insight_class(
+        df=df,
+        col=col,
+        **params
     )
+
+    # Execute insight (now synchronous)
+    return insight_instance.generate()
 
 
 async def run_multiple_insights(

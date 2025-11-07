@@ -46,7 +46,7 @@ class QuantilesInsight(BaseInsight):
         """Validate parameters using Pydantic"""
         self.config = QuantilesParams(**self.params)
 
-    async def generate(self) -> List[InsightResult]:
+    def generate(self) -> List[InsightResult]:
         """Generate quantiles insight
 
         Returns:

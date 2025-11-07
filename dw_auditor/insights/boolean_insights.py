@@ -29,7 +29,7 @@ class BooleanInsights(BaseInsight):
         """Validate parameters using Pydantic"""
         self.config = BooleanInsightsParams(**self.params)
 
-    async def generate(self) -> List[InsightResult]:
+    def generate(self) -> List[InsightResult]:
         """Generate boolean insights
 
         Returns:

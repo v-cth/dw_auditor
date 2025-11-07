@@ -31,7 +31,7 @@ class LengthStatsInsight(BaseInsight):
         """Validate parameters using Pydantic"""
         self.config = LengthStatsParams(**self.params)
 
-    async def generate(self) -> List[InsightResult]:
+    def generate(self) -> List[InsightResult]:
         """Generate length statistics insights
 
         Returns:

@@ -78,4 +78,6 @@ def generate_column_insights(df: pl.DataFrame, col: str, config: dict) -> List[I
     except Exception as e:
         # If insight fails, return empty list
         # Log error if needed but don't break the audit
+        import logging
+        logging.getLogger(__name__).error(f"Insight {insight_name} failed for column {col}: {e}")
         return []

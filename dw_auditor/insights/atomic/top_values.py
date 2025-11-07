@@ -29,7 +29,7 @@ class TopValuesInsight(BaseInsight):
         """Validate parameters using Pydantic"""
         self.config = TopValuesParams(**self.params)
 
-    async def generate(self) -> List[InsightResult]:
+    def generate(self) -> List[InsightResult]:
         """Generate top values insight
 
         Returns:
