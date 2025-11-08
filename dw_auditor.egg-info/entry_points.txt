@@ -1,2 +1,2 @@
 [console_scripts]
-dw-audit = audit:main
+dw_auditor = dw_auditor.__main__:main

@@ -373,9 +373,9 @@ def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",",
 
         html += """
                     </div>
-                    <div style="margin-top: 10px; font-size: 0.85em; color: #6b7280; text-align: center;">
-                        <span style="display: inline-block; margin-right: 15px;">📊 Buckets: """ + str(len(buckets)) + """</span>
-                        <span style="display: inline-block; margin-right: 15px;">📈 Max: """ + format_number(max_count,'',0) + """ rows</span>
+                    <div class="std-footer">
+                        <span><span class="text-bold">Buckets:</span> """ + str(len(buckets)) + """</span>
+                        <span><span class="text-bold">Max:</span> """ + format_number(max_count,'',0) + """ rows</span>
                     </div>
                 </div>
             </div>

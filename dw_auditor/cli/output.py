@@ -11,12 +11,12 @@ def print_mode_info(audit_mode: str) -> None:
         audit_mode: Audit mode ('discover', 'checks', 'insights', or 'full')
     """
     mode_messages = {
-        'discover': "🔍 Discovery mode: Collecting metadata only (skipping quality checks and insights)",
-        'checks': "✓ Check mode: Running quality checks only (skipping profiling/insights)",
-        'insights': "📊 Insight mode: Running profiling/insights only (skipping quality checks)",
-        'full': "🔍 Full audit mode: Running quality checks and profiling/insights"
+        'discover': "🔍 Discovery mode: Collecting metadata only",
+        'checks': "✓ Check mode: Running quality checks only",
+        'insights': "📊 Insight mode: Running profiling/insights only",
+        'full': "🔍 Running quality checks and profiling/insights"
     }
-    print(mode_messages.get(audit_mode, "Unknown audit mode"))
+    print(mode_messages.get(audit_mode, "🔍 Running audit"))
 
 
 def format_bytes(bytes_val: int) -> str:

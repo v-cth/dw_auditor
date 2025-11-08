@@ -97,14 +97,6 @@ class BaseInsight(ABC):
         """
         return self.df[self.col].drop_nulls()
 
-    def _get_non_null_df(self) -> pl.DataFrame:
-        """Get DataFrame filtered to non-null values in the insight column
-
-        Returns:
-            Filtered DataFrame with non-null values only
-        """
-        return self.df.filter(pl.col(self.col).is_not_null())
-
     def _calculate_value_counts(
         self,
         limit: Optional[int] = None
@@ -117,7 +109,7 @@ class BaseInsight(ABC):
         Returns:
             List of dicts with 'value', 'count', 'percentage' keys
         """
-        non_null_df = self._get_non_null_df()
+        non_null_df = self.df.filter(pl.col(self.col).is_not_null())
         total_non_null = len(non_null_df)
 
         if total_non_null == 0:

@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Simple CLI for running database audits
-Usage: python audit.py [config_file] [--discover]
+Usage: python audit.py [config_file] [options]
 """
 
 import sys
@@ -339,11 +339,18 @@ def main():
     parser = setup_argument_parser()
     args = parser.parse_args()
 
+    # Handle optional "run" subcommand
+    # If first arg is "run", just ignore it (config_file will be the next arg)
+    # If first arg is NOT "run" and exists, treat it as config_file
+    if args.subcommand and args.subcommand != 'run':
+        config_file = args.subcommand
+    else:
+        config_file = args.config_file
+
     # Validate config file exists
-    config_file = args.config_file
     if not Path(config_file).exists():
         print(f"❌ Config file not found: {config_file}")
-        print(f"Usage: python audit.py [config_file] [--discover]")
+        print(f"Usage: dw_auditor [run] [config_file] [options]")
         sys.exit(1)
 
     # Determine audit mode
