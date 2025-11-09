@@ -45,7 +45,8 @@ def apply_sampling(
     table: 'ibis.expr.types.Table',
     sample_size: int,
     method: str = 'random',
-    key_column: Optional[str] = None
+    key_column: Optional[str] = None,
+    approximate_row_count: Optional[int] = None
 ) -> 'ibis.expr.types.Table':
     """
     Apply sampling strategy to table
@@ -55,6 +56,8 @@ def apply_sampling(
         sample_size: Number of rows to sample
         method: Sampling method ('random', 'recent', 'top', 'systematic')
         key_column: Column to use for ordering/filtering (required for non-random methods)
+        approximate_row_count: Optional approximate row count for systematic sampling
+            (avoids expensive COUNT(*) query). If not provided, falls back to default stride.
 
     Returns:
         Ibis table expression with sampling applied
@@ -76,15 +79,12 @@ def apply_sampling(
         if not key_column:
             raise ValueError("'systematic' sampling method requires a key_column")
 
-        try:
-            count_result = table.count().to_polars()
-            row_count = int(count_result[0, 0]) if count_result is not None else None
-            if row_count and row_count > sample_size:
-                stride = max(1, row_count // sample_size)
-                return table.filter(table[key_column] % stride == 0).limit(sample_size)
-            else:
-                return table.limit(sample_size)
-        except Exception:
+        # Use provided approximate row count to calculate stride (avoids COUNT(*) query)
+        if approximate_row_count and approximate_row_count > sample_size:
+            stride = max(1, approximate_row_count // sample_size)
+            return table.filter(table[key_column] % stride == 0).limit(sample_size)
+        else:
+            # Fallback: use default stride of 10 if row count unknown
             stride = 10
             return table.filter(table[key_column] % stride == 0).limit(sample_size)
 

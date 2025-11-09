@@ -310,9 +310,19 @@ class SnowflakeAdapter(BaseAdapter):
                 table = table.select(columns)
 
             if sample_size:
-                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column)
+                # Get approximate row count for efficient systematic sampling
+                approx_row_count = None
+                if sampling_method == 'systematic':
+                    try:
+                        approx_row_count = self.get_row_count(table_name, schema, approximate=True)
+                    except Exception:
+                        pass  # Will use default stride if row count unavailable
+
+                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column, approx_row_count)
             elif limit:
                 table = table.limit(limit)
+            # Note: If neither sample_size nor limit provided, query will fetch entire table
+            # Callers should always specify one of these parameters for large tables
 
             result = table
 
