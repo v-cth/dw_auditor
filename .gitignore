@@ -18,7 +18,7 @@
 #   commonly ignored for libraries.
 # uv.lock  # Commit this for reproducible builds
 
-audit_config.yaml
+#audit_config.yaml
 audit_results/
 
 
