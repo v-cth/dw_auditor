@@ -335,7 +335,7 @@ class BaseAdapter(ABC):
             count_result = table.count().to_polars()
             return int(count_result[0, 0])
         except Exception as e:
-            print(f"⚠️  Could not get row count: {e}")
+            logging.getLogger(__name__).error(f"Could not get row count: {e}")
             return None
 
     def get_all_tables(self, schema: Optional[str] = None) -> List[str]:

@@ -11,7 +11,7 @@ from typing import Optional, List, Dict, Any
 
 from .base import BaseAdapter
 from .utils import qualify_query_tables, apply_sampling
-from .metadata_helpers import should_skip_query, split_columns_pk_dataframe
+from .metadata_helpers import should_skip_query, split_columns_pk_dataframe, build_table_filters
 
 logger = logging.getLogger(__name__)
 
@@ -77,19 +77,12 @@ class BigQueryAdapter(BaseAdapter):
 
         project_for_metadata = self.source_project_id or self.connection_params.get('project_id')
 
-        # Build WHERE clause for table filtering (always qualify with aliases)
-        if table_names:
-            table_list = ", ".join(f"'{t}'" for t in table_names)
-            table_filter_tables = f"AND t.table_name IN ({table_list})"
-            table_filter_only = f"WHERE table_name IN ({table_list})"
-            # For queries with JOINs where table_name is ambiguous, qualify with table alias
-            table_filter_qualified = f"AND tc.table_name IN ({table_list})"
-            table_filter_columns = f"WHERE c.table_name IN ({table_list})"
-        else:
-            table_filter_tables = ""
-            table_filter_only = ""
-            table_filter_qualified = ""
-            table_filter_columns = ""
+        # Build WHERE clause filters for table filtering
+        filters = build_table_filters(table_names)
+        table_filter_tables = filters['tables']
+        table_filter_only = filters['only']
+        table_filter_qualified = filters['qualified']
+        table_filter_columns = filters['columns']
 
         # Build signatures to avoid duplicate metadata queries for the same schema+table set
         tables_sig = None if not table_names else frozenset(table_names)
@@ -173,7 +166,7 @@ class BigQueryAdapter(BaseAdapter):
                     self._rowcount_df = pl.DataFrame()
                     self._last_tables_sig[schema] = tables_sig
         except Exception as e:
-            print(f"⚠️  Could not fetch tables/rowcount metadata: {e}")
+            logger.error(f"Could not fetch tables/rowcount metadata: {e}")
             if self._tables_df is None:
                 self._tables_df = pl.DataFrame()
             if self._rowcount_df is None:
@@ -273,7 +266,7 @@ class BigQueryAdapter(BaseAdapter):
 
                 self._last_columns_sig[schema] = tables_sig
         except Exception as e:
-            print(f"Could not fetch columns/primary key metadata: {e}")
+            logger.error(f"Could not fetch columns/primary key metadata: {e}")
             if self._columns_df is None:
                 self._columns_df = pl.DataFrame()
             if self._pk_df is None:
@@ -421,13 +414,13 @@ class BigQueryAdapter(BaseAdapter):
 
             job_config = bigquery.QueryJobConfig(dry_run=True, use_query_cache=False)
 
-            print(f"   🔍 Estimating query: {query[:200]}..." if len(query) > 200 else f"   🔍 Estimating query: {query}")
+            logger.debug(f"Estimating query: {query[:200]}..." if len(query) > 200 else f"Estimating query: {query}")
 
             query_job = bq_client.query(query, job_config=job_config)
             return query_job.total_bytes_processed
 
         except Exception as e:
-            print(f"⚠️  Could not estimate bytes: {e}")
+            logger.warning(f"Could not estimate bytes: {e}")
             return None
 
     def list_tables(self, schema: Optional[str] = None) -> List[str]:

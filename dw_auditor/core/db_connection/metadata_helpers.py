@@ -4,7 +4,7 @@ Shared helpers for metadata fetching and caching across database backends
 
 import logging
 import polars as pl
-from typing import Optional, List, Set, FrozenSet, Callable
+from typing import Optional, List, Set, FrozenSet, Callable, Dict
 
 logger = logging.getLogger(__name__)
 
@@ -149,3 +149,41 @@ def normalize_snowflake_columns(df: pl.DataFrame, column_mapping: dict) -> pl.Da
     # Only rename columns that exist in the DataFrame
     rename_map = {k: v for k, v in column_mapping.items() if k in df.columns}
     return df.rename(rename_map)
+
+
+def build_table_filters(
+    table_names: Optional[List[str]],
+    normalize_uppercase: bool = False
+) -> Dict[str, str]:
+    """
+    Build WHERE clause filters for table name filtering in metadata queries
+
+    Args:
+        table_names: Optional list of table names to filter (None = all tables)
+        normalize_uppercase: If True, convert table names to uppercase (for Snowflake)
+
+    Returns:
+        Dictionary with filter strings for different query contexts:
+        - 'tables': For TABLES queries (AND t.table_name IN (...))
+        - 'only': For queries without joins (WHERE table_name IN (...))
+        - 'qualified': For queries with joins (AND tc.table_name IN (...))
+        - 'columns': For COLUMNS queries (WHERE c.table_name IN (...))
+    """
+    if not table_names:
+        return {
+            'tables': '',
+            'only': '',
+            'qualified': '',
+            'columns': ''
+        }
+
+    # Normalize table names if needed (e.g., Snowflake uppercase)
+    names = [t.upper() for t in table_names] if normalize_uppercase else table_names
+    table_list = ", ".join(f"'{t}'" for t in names)
+
+    return {
+        'tables': f"AND t.table_name IN ({table_list})",
+        'only': f"WHERE table_name IN ({table_list})",
+        'qualified': f"AND tc.table_name IN ({table_list})",
+        'columns': f"WHERE c.table_name IN ({table_list})"
+    }

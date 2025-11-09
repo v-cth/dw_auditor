@@ -77,7 +77,8 @@ def apply_sampling(
             raise ValueError("'systematic' sampling method requires a key_column")
 
         try:
-            row_count = table.count().execute()
+            count_result = table.count().to_polars()
+            row_count = int(count_result[0, 0]) if count_result is not None else None
             if row_count and row_count > sample_size:
                 stride = max(1, row_count // sample_size)
                 return table.filter(table[key_column] % stride == 0).limit(sample_size)
