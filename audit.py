@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Simple CLI for running database audits
-Usage: python audit.py [config_file] [--discover]
+Usage: python audit.py [config_file] [options]
 """
 
 import sys
@@ -47,7 +47,7 @@ def setup_logging(log_file: Path, log_level: str = 'INFO') -> None:
 
     # Configure root logger
     root_logger = logging.getLogger()
-    root_logger.setLevel(logging.DEBUG)
+    root_logger.setLevel(logging.DEBUG)  # Allow DEBUG to file, handlers control console
     root_logger.addHandler(file_handler)
     root_logger.addHandler(console_handler)
 
@@ -55,6 +55,10 @@ def setup_logging(log_file: Path, log_level: str = 'INFO') -> None:
     for logger_name in ['dw_auditor.core.auditor', 'dw_auditor']:
         logger = logging.getLogger(logger_name)
         logger.setLevel(logging.DEBUG)
+
+    # Silence noisy third-party loggers
+    for noisy_logger in ['asyncio', 'urllib3', 'google', 'googleapiclient']:
+        logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
 
 def initialize_run_directory(config: AuditConfig, timestamp: str) -> Path:
@@ -166,12 +170,13 @@ def audit_tables(
             custom_query = config.table_queries.get(table, None)
             user_defined_primary_key = config.table_primary_keys.get(table, None)
             table_schema = config.get_table_schema(table)
+            table_connection_params = config.get_table_connection_params(table)
 
             # Run audit
             results = auditor.audit_from_database(
                 table_name=table,
                 backend=config.backend,
-                connection_params=config.connection_params,
+                connection_params=table_connection_params,
                 schema=table_schema,
                 mask_pii=config.mask_pii,
                 custom_pii_keywords=config.custom_pii_keywords,
@@ -335,11 +340,18 @@ def main():
     parser = setup_argument_parser()
     args = parser.parse_args()
 
+    # Handle optional "run" subcommand
+    # If first arg is "run", just ignore it (config_file will be the next arg)
+    # If first arg is NOT "run" and exists, treat it as config_file
+    if args.subcommand and args.subcommand != 'run':
+        config_file = args.subcommand
+    else:
+        config_file = args.config_file
+
     # Validate config file exists
-    config_file = args.config_file
     if not Path(config_file).exists():
         print(f"❌ Config file not found: {config_file}")
-        print(f"Usage: python audit.py [config_file] [--discover]")
+        print(f"Usage: dw_auditor [run] [config_file] [options]")
         sys.exit(1)
 
     # Determine audit mode

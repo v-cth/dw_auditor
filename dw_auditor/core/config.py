@@ -15,12 +15,17 @@ from pydantic import BaseModel, Field, field_validator, model_validator, ConfigD
 
 class TableConfig(BaseModel):
     """Configuration for a single table"""
-    model_config = ConfigDict(protected_namespaces=(), populate_by_name=True)
+    model_config = ConfigDict(protected_namespaces=(), populate_by_name=True, extra='allow')
 
     name: str = Field(..., min_length=1, description="Table name")
     primary_key: Optional[Union[str, List[str]]] = Field(None, description="Primary key column(s)")
     query: Optional[str] = Field(None, description="Custom SQL query")
     db_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Override schema/dataset for this table")
+
+    # Connection parameter overrides (backend-specific)
+    project_id: Optional[str] = Field(None, description="Override project for this table (BigQuery only)")
+    database: Optional[str] = Field(None, description="Override database for this table (Snowflake only)")
+    account: Optional[str] = Field(None, description="Override account for this table (Snowflake only)")
 
     @field_validator('primary_key')
     @classmethod
@@ -35,9 +40,6 @@ class ConnectionParams(BaseModel):
     """Database connection parameters - flexible to support different backends"""
     model_config = ConfigDict(extra='allow', protected_namespaces=(), populate_by_name=True)
 
-    # Common fields we want to validate
-    db_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Default schema/dataset")
-
 
 class DatabaseConfig(BaseModel):
     """Database connection configuration"""
@@ -47,13 +49,15 @@ class DatabaseConfig(BaseModel):
     @model_validator(mode='after')
     def validate_backend_params(self):
         """Validate backend-specific required parameters"""
-        params = self.connection_params.model_dump(by_alias=True)
+        params = self.connection_params.model_dump(exclude_none=True)
 
         if self.backend == 'bigquery':
+            # Validate required params
             if 'project_id' not in params:
                 raise ValueError("BigQuery backend requires 'project_id' in connection_params")
 
         elif self.backend == 'snowflake':
+            # Validate required params
             required = ['account', 'user', 'database']
             missing = [p for p in required if p not in params]
             if missing:
@@ -223,6 +227,7 @@ class AuditConfig:
         self.table_primary_keys = {}
         self.table_queries = {}
         self.table_schemas = {}
+        self.table_connection_params = {}
 
         for table_entry in self._model.tables:
             if isinstance(table_entry, str):
@@ -235,6 +240,15 @@ class AuditConfig:
                     self.table_queries[table_entry.name] = table_entry.query
                 if table_entry.db_schema:
                     self.table_schemas[table_entry.name] = table_entry.db_schema
+
+                # Store table-specific connection params (backend-specific)
+                table_conn_params = {}
+                for field in ['project_id', 'database', 'account']:
+                    value = getattr(table_entry, field, None)
+                    if value is not None:
+                        table_conn_params[field] = value
+                if table_conn_params:
+                    self.table_connection_params[table_entry.name] = table_conn_params
 
         # Table filtering
         if self._model.table_filters:
@@ -399,6 +413,31 @@ class AuditConfig:
         """
         # Return table-specific schema if defined, otherwise use global schema
         return self.table_schemas.get(table_name, self.schema)
+
+    def get_table_connection_params(self, table_name: str) -> Dict:
+        """
+        Get connection parameters for a specific table
+
+        Args:
+            table_name: Name of the table
+
+        Returns:
+            Dictionary with connection parameters (global merged with table-specific)
+        """
+        # Start with global connection params
+        conn_params = self.connection_params.copy()
+
+        # Override with table-specific connection params if any
+        if table_name in self.table_connection_params:
+            # Merge table-specific params (already in backend-specific format)
+            conn_params.update(self.table_connection_params[table_name])
+
+        # Also update schema if table has a specific schema
+        table_schema = self.get_table_schema(table_name)
+        if table_schema:
+            conn_params['schema'] = table_schema
+
+        return conn_params
 
     def should_include_table(self, table_name: str) -> bool:
         """

@@ -60,9 +60,15 @@ class DatabaseConnection:
         self.conn = self.adapter.connect()
         return self.conn
 
-    def get_table(self, table_name: str, schema: Optional[str] = None) -> ibis.expr.types.Table:
-        """Get table reference"""
-        return self.adapter.get_table(table_name, schema)
+    def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
+        """Get table reference
+
+        Args:
+            table_name: Name of the table
+            schema: Schema/dataset name
+            project_id: Optional project ID for cross-project queries (BigQuery only)
+        """
+        return self.adapter.get_table(table_name, schema, project_id)
 
     def execute_query(
         self,
@@ -73,9 +79,22 @@ class DatabaseConnection:
         sample_size: Optional[int] = None,
         sampling_method: str = 'random',
         sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None
+        columns: Optional[List[str]] = None,
+        project_id: Optional[str] = None
     ) -> pl.DataFrame:
-        """Execute query and return Polars DataFrame"""
+        """Execute query and return Polars DataFrame
+
+        Args:
+            table_name: Name of the table
+            schema: Schema/dataset name
+            limit: Maximum rows to return
+            custom_query: Custom SQL query
+            sample_size: Number of rows to sample
+            sampling_method: Sampling strategy
+            sampling_key_column: Column for non-random sampling
+            columns: Specific columns to select
+            project_id: Optional project ID for cross-project queries (BigQuery only)
+        """
         return self.adapter.execute_query(
             table_name=table_name,
             schema=schema,
@@ -84,24 +103,41 @@ class DatabaseConnection:
             sample_size=sample_size,
             sampling_method=sampling_method,
             sampling_key_column=sampling_key_column,
-            columns=columns
+            columns=columns,
+            project_id=project_id
         )
 
     def get_all_tables(self, schema: Optional[str] = None) -> List[str]:
         """Get list of all tables in the schema"""
         return self.adapter.get_all_tables(schema)
 
-    def get_table_metadata(self, table_name: str, schema: Optional[str] = None) -> Dict[str, Any]:
-        """Get table metadata"""
-        return self.adapter.get_table_metadata(table_name, schema)
+    def get_table_metadata(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get table metadata
+
+        Args:
+            table_name: Name of the table
+            schema: Schema/dataset name
+            project_id: Optional project ID for cross-project queries (BigQuery only)
+        """
+        return self.adapter.get_table_metadata(table_name, schema, project_id)
 
     def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None) -> List[str]:
         """Get primary key column names"""
         return self.adapter.get_primary_key_columns(table_name, schema)
 
-    def get_table_schema(self, table_name: str, schema: Optional[str] = None) -> Dict[str, str]:
-        """Get table column names and their data types"""
-        return self.adapter.get_table_schema(table_name, schema)
+    def get_table_schema(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+        """
+        Get table schema with column metadata (data types and descriptions)
+
+        Args:
+            table_name: Name of the table
+            schema: Schema/dataset name
+            project_id: Optional project ID for cross-project queries (BigQuery only)
+
+        Returns:
+            Dict mapping column_name to {'data_type': str, 'description': Optional[str]}
+        """
+        return self.adapter.get_table_schema(table_name, schema, project_id)
 
     def estimate_bytes_scanned(
         self,

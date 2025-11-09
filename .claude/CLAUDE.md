@@ -1,6 +1,7 @@
 Prefer a modular, extensible architecture that avoids unnecessary coupling between components.
 Communicate clearly and concisely, prioritizing relevant information and avoiding verbosity.
 Adhere to industry best practices, including clean code principles, consistent naming conventions, and maintainable design patterns.
+I don't need backward compatibility. If you thing you have to do it, first ask me.
 
 # Data Warehouse Table Auditor
 
@@ -22,9 +23,9 @@ source audit_env/bin/activate && python audit.py --discover          # Metadata 
 
 **File Organization**:
 - `audit.py`: Main CLI entry point
-- `dw_auditor/core/`: Fundamental classes (auditor, config, base_check, registry, runner)
+- `dw_auditor/core/`: Fundamental classes (auditor, config, base_check, base_insight, registries, runners)
 - `dw_auditor/checks/`: 11 data quality check classes (auto-registered)
-- `dw_auditor/insights/`: Profiling functions (numeric, datetime, string)
+- `dw_auditor/insights/`: Insight classes (atomic + type-specific composites)
 - `dw_auditor/exporters/html/`: 5-file modular HTML generator
 
 **Core Principles**:
@@ -67,6 +68,51 @@ class MyCheck(BaseCheck):
 
 Then import in `checks/__init__.py` and use: `run_check_sync('my_check', df, col, pk_cols, ...)`
 
+## Insights Framework (Class-Based)
+
+**Architecture**: Hybrid approach with atomic insights + type-specific composites (similar to Check Framework)
+
+**Core Components**:
+- `core/base_insight.py`: Base class with unified interface (`generate()`, `_validate_params()`)
+- `core/insight_registry.py`: `@register_insight(name)` decorator for auto-registration
+- `core/insight_runner.py`: `run_insight_sync()` execution API
+
+**Atomic Insights** (Reusable across types):
+- `top_values`: Most frequent values (universal - works on all types)
+- `quantiles`: Statistical percentiles (numeric only)
+- `length_stats`: Min/max/avg string length (string only)
+
+**Type-Specific Composites** (4 total):
+- **Numeric** (`numeric_insights`): min, max, mean, std, quantiles, top_values
+- **String** (`string_insights`): top_values, length_stats
+- **Datetime** (`datetime_insights`): min_date, max_date, date_range_days, most_common_dates/hours/days, timezone
+- **Boolean** (`boolean_insights`): boolean_distribution (True/False/Null)
+
+**Adding an Insight**:
+```python
+from dw_auditor.core.base_insight import BaseInsight, InsightResult
+from dw_auditor.core.insight_registry import register_insight
+
+@register_insight("my_insight")
+class MyInsight(BaseInsight):
+    display_name = "My Insight"
+    supported_dtypes = [pl.Int64, pl.Float64]  # Empty = universal
+
+    def _validate_params(self):
+        self.config = MyInsightParams(**self.params)  # Pydantic validation
+
+    async def generate(self) -> List[InsightResult]:
+        # Insight logic
+        return [InsightResult(type='my_metric', value=123)]
+```
+
+Then import in `insights/__init__.py` or `column_insights.py` and use: `run_insight_sync('my_insight', df, col, **params)`
+
+**Key Differences from Checks**:
+- Returns `List[InsightResult]` (measurements) vs `List[CheckResult]` (violations)
+- No primary key context needed (insights are aggregates, not row-level)
+- HTML exporter has helper function `_insights_to_dict()` to convert List[InsightResult] to Dict for rendering
+
 ## Primary Key Detection
 
 **Logic** (`auditor.py:660`): Auto-detects columns where `distinct_count == analyzed_rows` AND `null_count == 0`
@@ -107,6 +153,28 @@ Then import in `checks/__init__.py` and use: `run_check_sync('my_check', df, col
 
 ## Recent Changes (October 2025-November 2025)
 
+**Nov 6**: Class-based insights framework (hybrid architecture)
+- Refactored function-based insights to class-based system matching checks framework
+- Created `BaseInsight`, `InsightResult`, registry, and runner infrastructure
+- Atomic insights: `top_values` (universal), `quantiles` (numeric), `length_stats` (string)
+- Type-specific composites: `NumericInsights`, `StringInsights`, `DatetimeInsights`, `BooleanInsights`
+- Pydantic validation for all insight parameters
+- Returns `List[InsightResult]` throughout entire pipeline (clean architecture, no backward compatibility)
+- HTML exporter converts List[InsightResult] to Dict for rendering
+
+**Nov 6**: Enhanced date_outliers check
+- Configurable problematic years list (default: [1900, 1970, 2099, 2999, 9999])
+- Added `min_suspicious_count` threshold to filter noise
+- Context-aware suggestions (1900 → "missing birthdates", 1970 → "Unix epoch", 9999 → "never expires")
+- Smart duplicate prevention (don't report problematic years already caught as too old/future)
+- Better error messages showing exact years and distances from thresholds
+
+**Nov 6**: Merged get_table_schema and get_column_descriptions
+- Single query now fetches both data types and descriptions
+- `get_table_schema()` returns `{col: {'data_type': str, 'description': str}}`
+- Removed backward compatibility, cleaner architecture
+- Column descriptions now display in HTML and JSON exports
+
 **Nov 4**: Simplified threshold strategy
 - Removed percentage-based reporting thresholds (80%, 90%, 95%)
 - All checks now report issues regardless of percentage affected
@@ -124,4 +192,4 @@ Then import in `checks/__init__.py` and use: `run_check_sync('my_check', df, col
 
 ---
 
-**Last Updated**: November 2025
+**Last Updated**: November 6, 2025

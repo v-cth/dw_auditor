@@ -17,13 +17,22 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  python audit.py                         # Full audit (checks + insights)
-  python audit.py my_config.yaml          # Use custom config
-  python audit.py --check                 # Check mode (quality checks only)
-  python audit.py --insight               # Insight mode (profiling only)
-  python audit.py --discover              # Discovery mode (metadata only)
-  python audit.py --log-level DEBUG       # Enable debug logging (shows SQL queries)
+  dw_auditor                              # Run audit (default: checks + insights)
+  dw_auditor run                          # Same as above
+  dw_auditor my_config.yaml               # Use custom config
+  dw_auditor run my_config.yaml           # Same as above
+  dw_auditor --check                      # Quality checks only
+  dw_auditor --insight                    # Profiling/insights only
+  dw_auditor --discover                   # Metadata discovery only
+  dw_auditor --log-level DEBUG            # Enable debug logging (shows SQL queries)
         """
+    )
+
+    # Optional "run" subcommand (for convenience)
+    parser.add_argument(
+        'subcommand',
+        nargs='?',
+        help=argparse.SUPPRESS  # Hide from help
     )
 
     parser.add_argument(
@@ -51,17 +60,17 @@ Examples:
     mode_group.add_argument(
         '--check', '-c',
         action='store_true',
-        help='Check mode: run quality checks only (skip profiling/insights)'
+        help='Run quality checks only (skip insights)'
     )
     mode_group.add_argument(
         '--insight', '-i',
         action='store_true',
-        help='Insight mode: run profiling/insights only (skip quality checks)'
+        help='Run insights/profiling only (skip checks)'
     )
     mode_group.add_argument(
         '--discover',
         action='store_true',
-        help='Discovery mode: collect metadata only (skip checks and insights)'
+        help='Collect metadata only (skip checks and insights)'
     )
 
     return parser

@@ -78,20 +78,66 @@ column_checks:
 |-------|------|--------------|----------------|
 | **`timestamp_patterns`** | `bool` | Detects invalid or inconsistent timestamp formats. | `true` |
 | **`future_dates`** | `bool` | Flags timestamps that occur in the future. | `true` |
+| **`date_outliers`** | `dict` | Detects dates outside reasonable year ranges and suspicious placeholder years. | See below |
 | **`uniqueness`** | `bool` | Ensures all datetime values are unique. | `false` |
 | **`after`** | `string (YYYY-MM-DD)` | Ensures all dates are strictly after a given date. | `after: "2020-01-01"` |
 | **`after_or_equal`** | `string (YYYY-MM-DD)` | Ensures all dates are on or after a given date. | `after_or_equal: "2020-01-01"` |
 | **`before`** | `string (YYYY-MM-DD)` | Ensures all dates are strictly before a given date. | `before: "2026-01-01"` |
 | **`before_or_equal`** | `string (YYYY-MM-DD)` | Ensures all dates are on or before a given date. | `before_or_equal: "2025-12-31"` |
 
+### Date Outliers Configuration
+
+The `date_outliers` check identifies dates that are likely data errors or placeholders:
+
+```yaml
+date_outliers:
+  min_year: 1950                          # Dates before this are flagged as too old
+  max_year: 2100                          # Dates after this are flagged as too future
+  problematic_years: [1900, 1970, 2099, 2999, 9999]  # Known placeholder years
+  min_suspicious_count: 1                 # Minimum occurrences to report suspicious years
+```
+
+**What it detects:**
+- Dates before `min_year` (likely data errors or legacy placeholders)
+- Dates after `max_year` (likely "never expires" placeholders or errors)
+- Specific problematic years:
+  - `1900` → Common default for missing birthdates
+  - `1970` → Unix epoch start (uninitialized timestamps)
+  - `2099`, `2999`, `9999` → Common "no expiration" placeholders
+
+**Example configurations:**
+```yaml
+# Basic (uses defaults)
+created_date:
+  date_outliers: true
+
+# Custom range
+birth_date:
+  date_outliers:
+    min_year: 1900
+    max_year: 2010
+
+# Custom placeholders with noise filter
+expiry_date:
+  date_outliers:
+    min_year: 2020
+    max_year: 2050
+    problematic_years: [9999]
+    min_suspicious_count: 10  # Only report if 10+ occurrences
+```
+
 ### Notes
+- `date_outliers` provides sanity checking with defaults, while `after`/`before` provide precise business rules
 - You can mix multiple boundaries:
   ```yaml
   registration_date:
     after: "2020-01-01"
     before: "2025-12-31"
+    date_outliers:
+      min_year: 2000
+      max_year: 2030
   ```
-- Date boundaries can include or exclude endpoints as specified.
+- Date boundaries can include or exclude endpoints as specified
 
 ---
 

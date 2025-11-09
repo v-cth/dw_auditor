@@ -199,9 +199,12 @@ class SnowflakeAdapter(BaseAdapter):
 
         self._cached_schema = schema
 
-    def get_table_metadata(self, table_name: str, schema: Optional[str] = None) -> Dict[str, Any]:
-        """Get table metadata with Snowflake-specific fields"""
-        metadata = super().get_table_metadata(table_name, schema)
+    def get_table_metadata(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get table metadata with Snowflake-specific fields
+
+        Note: project_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
+        """
+        metadata = super().get_table_metadata(table_name, schema, project_id)
 
         # Add clustering_key if present
         effective_schema = schema or self.connection_params.get('schema')
@@ -214,8 +217,11 @@ class SnowflakeAdapter(BaseAdapter):
 
         return metadata
 
-    def get_table(self, table_name: str, schema: Optional[str] = None) -> ibis.expr.types.Table:
-        """Get Snowflake table reference"""
+    def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
+        """Get Snowflake table reference
+
+        Note: project_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
+        """
         if self.conn is None:
             self.connect()
 
@@ -233,9 +239,13 @@ class SnowflakeAdapter(BaseAdapter):
         sample_size: Optional[int] = None,
         sampling_method: str = 'random',
         sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None
+        columns: Optional[List[str]] = None,
+        project_id: Optional[str] = None
     ) -> pl.DataFrame:
-        """Execute Snowflake query"""
+        """Execute Snowflake query
+
+        Note: project_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
+        """
         if self.conn is None:
             self.connect()
 
@@ -243,7 +253,7 @@ class SnowflakeAdapter(BaseAdapter):
             logger.debug(f"[query] Snowflake custom query:\n{custom_query}")
             result = self.conn.sql(custom_query)
         else:
-            table = self.get_table(table_name, schema)
+            table = self.get_table(table_name, schema, project_id)
 
             if columns:
                 table = table.select(columns)

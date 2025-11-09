@@ -121,7 +121,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         schema: Optional[str],
         user_primary_key: Optional[List[str]],
         custom_query: Optional[str],
-        backend: str
+        backend: str,
+        project_id: Optional[str] = None
     ) -> Tuple[Dict, Optional[int], List[str]]:
         """
         Get table metadata including row count and primary key columns
@@ -133,6 +134,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             user_primary_key: User-defined primary key columns
             custom_query: Custom query if any
             backend: Database backend
+            project_id: Optional project ID for cross-project queries (BigQuery only)
 
         Returns:
             Tuple of (metadata dict, row count, primary key columns)
@@ -143,7 +145,7 @@ class SecureTableAuditor(AuditorExporterMixin):
 
         # Get table metadata (including UID and row count)
         try:
-            table_metadata = db_conn.get_table_metadata(table_name, schema)
+            table_metadata = db_conn.get_table_metadata(table_name, schema, project_id)
             if table_metadata:
                 if 'table_uid' in table_metadata:
                     logger.info(f"Table UID: {table_metadata['table_uid']}")
@@ -216,7 +218,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         columns_to_load: Optional[List[str]],
         should_sample: bool,
         sampling_method: str,
-        sampling_key_column: Optional[str]
+        sampling_key_column: Optional[str],
+        project_id: Optional[str] = None
     ) -> pl.DataFrame:
         """
         Load data from database
@@ -230,6 +233,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             should_sample: Whether to sample
             sampling_method: Sampling method
             sampling_key_column: Key column for sampling
+            project_id: Optional project ID for cross-project queries (BigQuery only)
 
         Returns:
             Polars DataFrame with loaded data
@@ -247,7 +251,8 @@ class SecureTableAuditor(AuditorExporterMixin):
             sample_size=self.sample_size if should_sample else None,
             sampling_method=sampling_method,
             sampling_key_column=sampling_key_column,
-            columns=columns_to_load if columns_to_load else None
+            columns=columns_to_load if columns_to_load else None,
+            project_id=project_id
         )
 
         logger.info(f"Loaded {len(df):,} rows into memory")
@@ -424,7 +429,7 @@ class SecureTableAuditor(AuditorExporterMixin):
 
     @staticmethod
     def determine_columns_to_load(
-        table_schema: Dict[str, str],
+        table_schema: Dict[str, Dict[str, Any]],
         table_name: str,
         column_check_config: Optional['AuditConfig'] = None,
         primary_key_columns: Optional[List[str]] = None,
@@ -437,7 +442,7 @@ class SecureTableAuditor(AuditorExporterMixin):
         Determine which columns to load based on checks, insights, filters, and mode
 
         Args:
-            table_schema: Dictionary mapping column names to data types
+            table_schema: Dictionary mapping column names to {'data_type': str, 'description': Optional[str]}
             table_name: Name of the table being audited
             column_check_config: Optional configuration for column checks and insights
             store_dataframe: If True, load all columns (for relationship detection)
@@ -459,8 +464,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         # If storing dataframe for relationship detection, load all non-complex columns
         if store_dataframe:
             result = []
-            for col_name, data_type in table_schema.items():
-                data_type_upper = data_type.upper()
+            for col_name, col_info in table_schema.items():
+                data_type_upper = col_info['data_type'].upper()
                 if not any(unsupported_type in data_type_upper for unsupported_type in unsupported_types):
                     result.append(col_name)
             return result
@@ -468,8 +473,8 @@ class SecureTableAuditor(AuditorExporterMixin):
         # In discovery mode, load all columns except complex types
         if audit_mode == 'discover':
             result = []
-            for col_name, data_type in table_schema.items():
-                data_type_upper = data_type.upper()
+            for col_name, col_info in table_schema.items():
+                data_type_upper = col_info['data_type'].upper()
                 if not any(unsupported_type in data_type_upper for unsupported_type in unsupported_types):
                     result.append(col_name)
             return result
@@ -481,7 +486,8 @@ class SecureTableAuditor(AuditorExporterMixin):
             columns_to_load.update(primary_key_columns)
 
         # Process each column in the schema
-        for column_name, data_type in table_schema.items():
+        for column_name, col_info in table_schema.items():
+            data_type = col_info['data_type']
             # Skip if in exclude list
             if exclude_columns and column_name in exclude_columns:
                 continue
@@ -652,10 +658,13 @@ class SecureTableAuditor(AuditorExporterMixin):
                 should_close_conn = True
 
         try:
+            # Extract project_id for cross-project queries (BigQuery only)
+            project_id = connection_params.get('project_id') if backend == 'bigquery' else None
+
             # Get table metadata
             with timing_phase('metadata', phase_timings):
                 table_metadata, row_count, primary_key_columns = self._get_table_metadata(
-                    db_conn, table_name, schema, user_primary_key, custom_query, backend
+                    db_conn, table_name, schema, user_primary_key, custom_query, backend, project_id
                 )
 
             # Get table schema and determine which columns to load (optimization)
@@ -664,7 +673,7 @@ class SecureTableAuditor(AuditorExporterMixin):
                 table_schema = None
                 try:
                     # Get table schema (column names and types)
-                    table_schema = db_conn.get_table_schema(table_name, schema)
+                    table_schema = db_conn.get_table_schema(table_name, schema, project_id)
 
                     if table_schema:
                         # Get filter configuration
@@ -708,7 +717,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             with timing_phase('data_loading', phase_timings):
                 df = self._load_data(
                     db_conn, table_name, schema, custom_query, columns_to_load,
-                    should_sample, sampling_method, sampling_key_column
+                    should_sample, sampling_method, sampling_key_column, project_id
                 )
 
             # For custom queries, the row count is the result set size
@@ -914,14 +923,13 @@ class SecureTableAuditor(AuditorExporterMixin):
         check_durations = {}
         insights_duration = 0.0
 
-        # Fetch column descriptions if available
+        # Extract column descriptions from table_schema (already fetched above)
         column_descriptions = {}
-        if db_conn:
-            try:
-                column_descriptions = db_conn.get_column_descriptions(table_name, schema)
-            except Exception:
-                # Silently ignore if descriptions not available
-                pass
+        if table_schema:
+            column_descriptions = {col: meta['description'] for col, meta in table_schema.items()}
+            desc_count = sum(1 for v in column_descriptions.values() if v is not None)
+            if desc_count > 0:
+                logger.info(f"Retrieved descriptions for {desc_count}/{len(column_descriptions)} columns")
 
         # Iterate over all columns in schema (if provided), otherwise just loaded columns
         all_columns = list(table_schema.keys()) if table_schema else df.columns
@@ -933,7 +941,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             if col not in df.columns:
                 # Column exists in schema but wasn't loaded (optimization)
                 results['column_summary'][col] = {
-                    'dtype': table_schema[col].lower() if table_schema else 'unknown',
+                    'dtype': table_schema[col]['data_type'].lower() if table_schema else 'unknown',
                     'null_count': 'N/A',
                     'null_pct': 'N/A',
                     'distinct_count': 'N/A',
@@ -1002,6 +1010,11 @@ class SecureTableAuditor(AuditorExporterMixin):
 
             results['column_summary'][col] = column_summary
 
+            # Debug log for first column with description
+            if column_descriptions.get(col) and not hasattr(self, '_logged_description'):
+                logger.debug(f"Sample: Column '{col}' has description: '{column_descriptions.get(col)[:50]}...'")
+                self._logged_description = True
+
             # Check if this column could be a primary key (unique + no nulls)
             if col_results['distinct_count'] == analyzed_rows and col_results['null_count'] == 0:
                 potential_keys.append(col)
@@ -1018,7 +1031,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                     insights = generate_column_insights(df, col, col_insights_config)
                     insights_duration += (datetime.now() - insights_start).total_seconds()
                     if insights:
-                        results['column_insights'][col] = insights
+                        # Serialize InsightResult objects to dicts for JSON export
+                        results['column_insights'][col] = [insight.model_dump() for insight in insights]
 
         # Store check durations
         results['check_durations'] = check_durations

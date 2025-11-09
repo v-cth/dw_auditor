@@ -30,15 +30,30 @@ def prefetch_metadata(
 
     print(f"\nPre-fetching metadata for {len(tables_to_audit)} table(s)...")
 
-    # Group tables by schema to handle multi-schema audits
-    tables_by_schema = defaultdict(list)
+    # Group tables by (project_id, schema) to handle multi-project and multi-schema audits
+    tables_by_project_schema = defaultdict(list)
     for table in tables_to_audit:
         schema = config.get_table_schema(table)
-        tables_by_schema[schema].append(table)
+        # Get table-specific connection params to extract project_id
+        table_conn_params = config.get_table_connection_params(table)
+        project_id = table_conn_params.get('project_id') if config.backend == 'bigquery' else None
+        # Use (project_id, schema) as key
+        key = (project_id, schema)
+        tables_by_project_schema[key].append(table)
 
-    # Prefetch filtered metadata per schema (only tables to audit)
-    for schema, tables in tables_by_schema.items():
-        db_conn.prefetch_metadata(schema, tables)
+    # Prefetch filtered metadata per (project_id, schema) group
+    for (project_id, schema), tables in tables_by_project_schema.items():
+        # Temporarily set source_project_id for cross-project metadata fetching
+        original_source_project = getattr(db_conn.adapter, 'source_project_id', None)
+        if project_id and hasattr(db_conn.adapter, 'source_project_id'):
+            db_conn.adapter.source_project_id = project_id
+
+        try:
+            db_conn.prefetch_metadata(schema, tables)
+        finally:
+            # Restore original source_project_id
+            if hasattr(db_conn.adapter, 'source_project_id'):
+                db_conn.adapter.source_project_id = original_source_project
 
     print(f"Metadata cached for all tables")
 
@@ -72,6 +87,8 @@ def estimate_bigquery_costs(
         # Get table-specific configuration
         sampling_config = config.get_table_sampling_config(table)
         custom_query = config.table_queries.get(table, None)
+        table_conn_params = config.get_table_connection_params(table)
+        project_id = table_conn_params.get('project_id') if config.backend == 'bigquery' else None
 
         # For estimation, avoid metadata lookups to prevent duplicate queries
         is_cross_project = hasattr(db_conn, 'source_project_id') and db_conn.source_project_id
@@ -86,16 +103,26 @@ def estimate_bigquery_costs(
             should_sample = False
             sample_size = None
 
-        # Estimate bytes for this table
-        bytes_estimate = db_conn.estimate_bytes_scanned(
-            table_name=table,
-            schema=config.get_table_schema(table),
-            custom_query=custom_query,
-            sample_size=sample_size,
-            sampling_method=sampling_config['method'],
-            sampling_key_column=sampling_config['key_column'],
-            columns=None
-        )
+        # Temporarily set source_project_id for cross-project byte estimation
+        original_source_project = getattr(db_conn.adapter, 'source_project_id', None)
+        if project_id and hasattr(db_conn.adapter, 'source_project_id'):
+            db_conn.adapter.source_project_id = project_id
+
+        try:
+            # Estimate bytes for this table
+            bytes_estimate = db_conn.estimate_bytes_scanned(
+                table_name=table,
+                schema=config.get_table_schema(table),
+                custom_query=custom_query,
+                sample_size=sample_size,
+                sampling_method=sampling_config['method'],
+                sampling_key_column=sampling_config['key_column'],
+                columns=None
+            )
+        finally:
+            # Restore original source_project_id
+            if hasattr(db_conn.adapter, 'source_project_id'):
+                db_conn.adapter.source_project_id = original_source_project
 
         if bytes_estimate is not None:
             total_bytes += bytes_estimate

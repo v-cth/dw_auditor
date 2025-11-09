@@ -1,51 +1,81 @@
 """
-Boolean column insights generation
+Boolean column insights - composite insight for boolean types
 """
 
+from typing import List
+from pydantic import BaseModel
 import polars as pl
-from typing import Dict
+from ..core.base_insight import BaseInsight, InsightResult
+from ..core.insight_registry import register_insight
 
 
-def generate_boolean_insights(df: pl.DataFrame, col: str, config: Dict) -> Dict:
+class BooleanInsightsParams(BaseModel):
+    """Parameters for boolean insights"""
+    top_values: int = 0
+
+
+@register_insight("boolean_insights")
+class BooleanInsights(BaseInsight):
+    """Composite insight for boolean columns
+
+    Generates distribution of boolean values including:
+    - True/False/Null counts and percentages
     """
-    Generate insights for boolean columns
 
-    Args:
-        df: Polars DataFrame
-        col: Column name
-        config: Insights configuration for this column
+    display_name = "Boolean Column Insights"
+    supported_dtypes = [pl.Boolean]
 
-    Returns:
-        Dictionary with boolean insights
-    """
-    insights = {}
+    def _validate_params(self) -> None:
+        """Validate parameters using Pydantic"""
+        self.config = BooleanInsightsParams(**self.params)
 
-    # Top N most frequent values (typically 2-3 for boolean: true, false, null)
-    if config.get('top_values', 0) > 0:
-        top_n = config['top_values']
-        total_rows = len(df)
+    def generate(self) -> List[InsightResult]:
+        """Generate boolean insights
 
-        # Calculate value counts including nulls, with percentages using Polars expressions
+        Returns:
+            List containing a single InsightResult with boolean distribution
+        """
+        if self.config.top_values <= 0:
+            return []
+
+        total_rows = len(self.df)
+
+        if total_rows == 0:
+            return []
+
+        # Calculate value counts including nulls (important for boolean analysis)
         value_counts = (
-            df.select(pl.col(col))
-            .group_by(col)
+            self.df.select(pl.col(self.col))
+            .group_by(self.col)
             .agg(pl.count().alias('count'))
             .with_columns(
-                (pl.col('count') / total_rows * 100).alias('percentage') if total_rows > 0
-                else pl.lit(0.0).alias('percentage')
+                (pl.col('count') / total_rows * 100).alias('percentage')
             )
             .sort('count', descending=True)
-            .head(top_n)
+            .head(self.config.top_values)
             .to_dicts()
         )
 
-        insights['boolean_distribution'] = [
+        distribution = [
             {
-                'value': item[col],
+                'value': item[self.col],
                 'count': item['count'],
                 'percentage': item['percentage']
             }
             for item in value_counts
         ]
 
-    return insights
+        if not distribution:
+            return []
+
+        return [
+            InsightResult(
+                type='boolean_distribution',
+                value=distribution,
+                display_name='Boolean Distribution',
+                metadata={
+                    'includes_nulls': True,
+                    'total_rows': total_rows
+                }
+            )
+        ]

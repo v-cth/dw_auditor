@@ -2,6 +2,7 @@
 HTML page structure components (header, summary, metadata)
 """
 
+from html import escape as html_escape
 from typing import Dict
 from .assets import _generate_css_styles, _generate_javascript
 from .helpers import meta_item, section_header, subsection_header, status_badge, info_box, table_row
@@ -330,9 +331,9 @@ def _generate_column_summary_table(results: Dict) -> str:
         bold_class = ' class="td-bold"' if is_primary_key else ''
         error_class = ' class="td-error"' if null_pct_numeric > 10 else ''
 
-        # Get description
+        # Get description and escape HTML special characters
         description = col_data.get('description', None)
-        description_display = description if description else ''
+        description_display = html_escape(description) if description else ''
 
         html += f"""                <tr>
                     <td{bold_class}>{col_name_display}</td>

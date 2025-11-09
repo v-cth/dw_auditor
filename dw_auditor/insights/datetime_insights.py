@@ -1,158 +1,226 @@
 """
-DateTime column insights generation
+DateTime column insights - composite insight for date and datetime types
 """
 
+from typing import List
+from pydantic import BaseModel
 import polars as pl
-from typing import Dict
-from datetime import datetime, timedelta
+from ..core.base_insight import BaseInsight, InsightResult
+from ..core.insight_registry import register_insight
 
 
-def generate_datetime_insights(df: pl.DataFrame, col: str, config: Dict) -> Dict:
+class DatetimeInsightsParams(BaseModel):
+    """Parameters for datetime insights"""
+    min_date: bool = False
+    max_date: bool = False
+    date_range_days: bool = False
+    most_common_dates: int = 0
+    most_common_hours: int = 0
+    most_common_days: int = 0
+    most_common_timezones: int = 0
+
+
+@register_insight("datetime_insights")
+class DatetimeInsights(BaseInsight):
+    """Composite insight for datetime and date columns
+
+    Generates insights for datetime columns including:
+    - Date range (min, max, span in days)
+    - Most common dates
+    - Most common hours (datetime only, not date)
+    - Most common days of week
+    - Timezone information
     """
-    Generate insights for datetime columns
 
-    Args:
-        df: Polars DataFrame
-        col: Column name
-        config: Insights configuration for this column
+    display_name = "Datetime Column Insights"
+    supported_dtypes = [pl.Date, pl.Datetime, pl.Time, pl.Duration]
 
-    Returns:
-        Dictionary with datetime insights
-    """
-    insights = {}
+    def _validate_params(self) -> None:
+        """Validate parameters using Pydantic"""
+        self.config = DatetimeInsightsParams(**self.params)
 
-    # Get non-null values
-    non_null_series = df[col].drop_nulls()
-    if len(non_null_series) == 0:
-        return insights
+    def generate(self) -> List[InsightResult]:
+        """Generate datetime insights
 
-    # Check if this is a date-only column (vs datetime/timestamp)
-    dtype = df[col].dtype
-    is_date_only = dtype == pl.Date
+        Returns:
+            List of InsightResult objects for all requested metrics
+        """
+        results = []
+        non_null_series = self._get_non_null_series()
 
-    # Min and Max dates
-    if config.get('min_date', False):
-        min_date = non_null_series.min()
-        insights['min_date'] = str(min_date)
+        if len(non_null_series) == 0:
+            return results
 
-    if config.get('max_date', False):
-        max_date = non_null_series.max()
-        insights['max_date'] = str(max_date)
+        # Check if this is a date-only column (vs datetime/timestamp)
+        dtype = self.df[self.col].dtype
+        is_date_only = dtype == pl.Date
 
-    # Date range in days
-    if config.get('date_range_days', False):
-        min_date = non_null_series.min()
-        max_date = non_null_series.max()
-        if min_date is not None and max_date is not None:
-            # Calculate difference
-            date_range = (max_date - min_date)
-            insights['date_range_days'] = int(date_range.total_seconds() / 86400) if hasattr(date_range, 'total_seconds') else 0
-
-    # Most common dates
-    if config.get('most_common_dates', 0) > 0:
-        top_n = config['most_common_dates']
-        total_non_null = len(non_null_series)
-
-        # Convert to date only (no time) for grouping and calculate percentages
-        value_counts = (
-            df.select(pl.col(col))
-            .filter(pl.col(col).is_not_null())
-            .with_columns(pl.col(col).dt.date().alias('date_only'))
-            .group_by('date_only')
-            .agg(pl.count().alias('count'))
-            .with_columns(
-                (pl.col('count') / total_non_null * 100).alias('percentage') if total_non_null > 0
-                else pl.lit(0.0).alias('percentage')
+        # Min date
+        if self.config.min_date:
+            min_date = non_null_series.min()
+            results.append(
+                InsightResult(
+                    type='min_date',
+                    value=str(min_date),
+                    display_name='Earliest Date'
+                )
             )
-            .sort('count', descending=True)
-            .head(top_n)
-            .to_dicts()
-        )
 
-        insights['most_common_dates'] = [
-            {
-                'date': str(item['date_only']),
-                'count': item['count'],
-                'percentage': item['percentage']
-            }
-            for item in value_counts
-        ]
-
-    # Most common hours (only for datetime/timestamp, not date)
-    if config.get('most_common_hours', 0) > 0 and not is_date_only:
-        top_n = config['most_common_hours']
-        total_non_null = len(non_null_series)
-
-        hour_counts = (
-            df.select(pl.col(col))
-            .filter(pl.col(col).is_not_null())
-            .with_columns(pl.col(col).dt.hour().alias('hour'))
-            .group_by('hour')
-            .agg(pl.count().alias('count'))
-            .with_columns(
-                (pl.col('count') / total_non_null * 100).alias('percentage') if total_non_null > 0
-                else pl.lit(0.0).alias('percentage')
+        # Max date
+        if self.config.max_date:
+            max_date = non_null_series.max()
+            results.append(
+                InsightResult(
+                    type='max_date',
+                    value=str(max_date),
+                    display_name='Latest Date'
+                )
             )
-            .sort('count', descending=True)
-            .head(top_n)
-            .to_dicts()
-        )
 
-        insights['most_common_hours'] = [
-            {
-                'hour': item['hour'],
-                'count': item['count'],
-                'percentage': item['percentage']
-            }
-            for item in hour_counts
-        ]
+        # Date range in days
+        if self.config.date_range_days:
+            min_date = non_null_series.min()
+            max_date = non_null_series.max()
+            if min_date is not None and max_date is not None:
+                date_range = max_date - min_date
+                days = int(date_range.total_seconds() / 86400) if hasattr(date_range, 'total_seconds') else 0
+                results.append(
+                    InsightResult(
+                        type='date_range_days',
+                        value=days,
+                        display_name='Date Range',
+                        unit='days'
+                    )
+                )
 
-    # Most common days of week
-    if config.get('most_common_days', 0) > 0:
-        top_n = config['most_common_days']
-        total_non_null = len(non_null_series)
+        # Most common dates
+        if self.config.most_common_dates > 0:
+            total_non_null = len(non_null_series)
 
-        # Polars weekday: Monday=1, Sunday=7
-        day_names = {1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday',
-                     5: 'Friday', 6: 'Saturday', 7: 'Sunday'}
-
-        day_counts = (
-            df.select(pl.col(col))
-            .filter(pl.col(col).is_not_null())
-            .with_columns(pl.col(col).dt.weekday().alias('weekday'))
-            .group_by('weekday')
-            .agg(pl.count().alias('count'))
-            .with_columns(
-                (pl.col('count') / total_non_null * 100).alias('percentage') if total_non_null > 0
-                else pl.lit(0.0).alias('percentage')
+            value_counts = (
+                self.df.select(pl.col(self.col))
+                .filter(pl.col(self.col).is_not_null())
+                .with_columns(pl.col(self.col).dt.date().alias('date_only'))
+                .group_by('date_only')
+                .agg(pl.count().alias('count'))
+                .with_columns(
+                    (pl.col('count') / total_non_null * 100).alias('percentage')
+                )
+                .sort('count', descending=True)
+                .head(self.config.most_common_dates)
+                .to_dicts()
             )
-            .sort('count', descending=True)
-            .head(top_n)
-            .to_dicts()
-        )
 
-        insights['most_common_days'] = [
-            {
-                'day': day_names.get(item['weekday'], f"Day {item['weekday']}"),
-                'weekday': item['weekday'],
-                'count': item['count'],
-                'percentage': item['percentage']
+            common_dates = [
+                {
+                    'date': str(item['date_only']),
+                    'count': item['count'],
+                    'percentage': item['percentage']
+                }
+                for item in value_counts
+            ]
+
+            if common_dates:
+                results.append(
+                    InsightResult(
+                        type='most_common_dates',
+                        value=common_dates,
+                        display_name=f'Top {self.config.most_common_dates} Dates'
+                    )
+                )
+
+        # Most common hours (only for datetime/timestamp, not date)
+        if self.config.most_common_hours > 0 and not is_date_only:
+            total_non_null = len(non_null_series)
+
+            hour_counts = (
+                self.df.select(pl.col(self.col))
+                .filter(pl.col(self.col).is_not_null())
+                .with_columns(pl.col(self.col).dt.hour().alias('hour'))
+                .group_by('hour')
+                .agg(pl.count().alias('count'))
+                .with_columns(
+                    (pl.col('count') / total_non_null * 100).alias('percentage')
+                )
+                .sort('count', descending=True)
+                .head(self.config.most_common_hours)
+                .to_dicts()
+            )
+
+            common_hours = [
+                {
+                    'hour': item['hour'],
+                    'count': item['count'],
+                    'percentage': item['percentage']
+                }
+                for item in hour_counts
+            ]
+
+            if common_hours:
+                results.append(
+                    InsightResult(
+                        type='most_common_hours',
+                        value=common_hours,
+                        display_name=f'Top {self.config.most_common_hours} Hours'
+                    )
+                )
+
+        # Most common days of week
+        if self.config.most_common_days > 0:
+            total_non_null = len(non_null_series)
+
+            # Polars weekday: Monday=1, Sunday=7
+            day_names = {
+                1: 'Monday', 2: 'Tuesday', 3: 'Wednesday', 4: 'Thursday',
+                5: 'Friday', 6: 'Saturday', 7: 'Sunday'
             }
-            for item in day_counts
-        ]
 
-    # Most common timezones (if timezone-aware)
-    if config.get('most_common_timezones', 0) > 0:
-        top_n = config['most_common_timezones']
+            day_counts = (
+                self.df.select(pl.col(self.col))
+                .filter(pl.col(self.col).is_not_null())
+                .with_columns(pl.col(self.col).dt.weekday().alias('weekday'))
+                .group_by('weekday')
+                .agg(pl.count().alias('count'))
+                .with_columns(
+                    (pl.col('count') / total_non_null * 100).alias('percentage')
+                )
+                .sort('count', descending=True)
+                .head(self.config.most_common_days)
+                .to_dicts()
+            )
 
-        # Check if column has timezone info
-        dtype = df[col].dtype
-        if hasattr(dtype, 'time_zone') and dtype.time_zone is not None:
-            # For timezone-aware columns, extract timezone
-            # Note: Polars stores a single timezone per column, so all values have the same timezone
-            insights['timezone'] = str(dtype.time_zone)
-        else:
-            # For columns without timezone, we can't extract timezone info
-            insights['timezone'] = 'None (timezone-naive)'
+            common_days = [
+                {
+                    'day': day_names.get(item['weekday'], f"Day {item['weekday']}"),
+                    'weekday': item['weekday'],
+                    'count': item['count'],
+                    'percentage': item['percentage']
+                }
+                for item in day_counts
+            ]
 
-    return insights
+            if common_days:
+                results.append(
+                    InsightResult(
+                        type='most_common_days',
+                        value=common_days,
+                        display_name=f'Top {self.config.most_common_days} Days of Week'
+                    )
+                )
+
+        # Timezone information
+        if self.config.most_common_timezones > 0:
+            if hasattr(dtype, 'time_zone') and dtype.time_zone is not None:
+                timezone_info = str(dtype.time_zone)
+            else:
+                timezone_info = 'None (timezone-naive)'
+
+            results.append(
+                InsightResult(
+                    type='timezone',
+                    value=timezone_info,
+                    display_name='Timezone'
+                )
+            )
+
+        return results

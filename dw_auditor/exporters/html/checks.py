@@ -127,7 +127,7 @@ def _generate_issues_section(results: Dict, has_issues: bool) -> str:
 """
 
                 if 'count' in issue:
-                    pattern_info = f" (pattern: '{issue['pattern']}')" if 'pattern' in issue else ""
+                    pattern_info = f" (pattern: '{issue['pattern']}')" if 'pattern' in issue and issue['pattern'] is not None else ""
                     pct = issue.get('pct')
                     pct_str = f"{pct:.1f}%" if pct is not None else "N/A"
                     html += f"""

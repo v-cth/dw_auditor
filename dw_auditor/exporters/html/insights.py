@@ -2,21 +2,63 @@
 Column insights rendering (string/numeric/datetime insights for the Insights tab)
 """
 
-from typing import Dict
+from typing import Dict, List, Any
 
 
-def _render_string_insights(insights: Dict) -> str:
+def _insights_to_dict(insights: List[Dict]) -> Dict:
+    """Convert List[dict] to Dict for easy lookup
+
+    Args:
+        insights: List of insight dictionaries (serialized from InsightResult objects)
+
+    Returns:
+        Dictionary with insight types as keys and values
+    """
+    result = {}
+
+    for insight in insights:
+        insight_type = insight['type']
+        value = insight['value']
+
+        # Handle different insight types
+        if insight_type in ['top_values', 'boolean_distribution', 'most_common_dates', 'most_common_hours', 'most_common_days', 'histogram']:
+            # Lists of dicts
+            result[insight_type] = value
+
+        elif insight_type == 'quantiles':
+            # Dict like {'p25': 1.0, 'p50': 2.0, 'p75': 3.0}
+            result['quantiles'] = value
+
+        elif insight_type in ['min_length', 'max_length', 'avg_length']:
+            # Length stats - group under length_stats key
+            if 'length_stats' not in result:
+                result['length_stats'] = {}
+            stat_name = insight_type.replace('_length', '')
+            result['length_stats'][stat_name] = value
+
+        else:
+            # Simple scalar values (min, max, mean, std, median, min_date, max_date, date_range_days, timezone, etc.)
+            result[insight_type] = value
+
+    return result
+
+
+
+
+
+def _render_string_insights(insights: List[Any]) -> str:
     """Render string column insights"""
+    insights_dict = _insights_to_dict(insights)
     html = ""
 
     # Top values with visual bar chart
-    if 'top_values' in insights and insights['top_values']:
+    if 'top_values' in insights_dict and insights_dict['top_values']:
         html += """
             <div class="insight-section">
                 <h4 class="insight-header">Top Values:</h4>
                 <div class="insight-content">
 """
-        for item in insights['top_values']:
+        for item in insights_dict['top_values']:
             value_str = str(item['value'])
             full_value = value_str
 
@@ -47,8 +89,8 @@ def _render_string_insights(insights: Dict) -> str:
 """
 
     # Length statistics
-    if 'length_stats' in insights:
-        stats = insights['length_stats']
+    if 'length_stats' in insights_dict:
+        stats = insights_dict['length_stats']
         html += """
             <div class="mb-10">
                 <span class="text-muted text-sm" style="margin-right: 8px;">Length:</span>
@@ -62,14 +104,15 @@ def _render_string_insights(insights: Dict) -> str:
     return html
 
 
-def _render_numeric_insights(insights: Dict, thousand_separator: str = ",", decimal_places: int = 1) -> str:
+def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",", decimal_places: int = 1) -> str:
     """Render numeric column insights with visual distribution
 
     Args:
-        insights: Dictionary containing numeric insights
+        insights: List of InsightResult objects
         thousand_separator: Character to use as thousand separator (default: ",")
         decimal_places: Number of decimal places to display (default: 1)
     """
+    insights_dict = _insights_to_dict(insights)
     html = ""
 
     def format_number(value: float, separator: str = thousand_separator, decimals: int = decimal_places) -> str:
@@ -96,16 +139,16 @@ def _render_numeric_insights(insights: Dict, thousand_separator: str = ",", deci
 
         return f"-{result}" if is_negative else result
 
-    if 'min' in insights and 'max' in insights:
-        min_val = insights['min']
-        max_val = insights['max']
+    if 'min' in insights_dict and 'max' in insights_dict:
+        min_val = insights_dict['min']
+        max_val = insights_dict['max']
         value_range = max_val - min_val if max_val != min_val else 1
 
         # Get quantile values or use median/mean
-        q1 = insights.get('quantiles', {}).get('p25', insights.get('quantiles', {}).get('Q1', None))
-        median = insights.get('median', insights.get('quantiles', {}).get('p50', insights.get('quantiles', {}).get('Q2', None)))
-        q3 = insights.get('quantiles', {}).get('p75', insights.get('quantiles', {}).get('Q3', None))
-        mean = insights.get('mean')
+        q1 = insights_dict.get('quantiles', {}).get('p25', insights_dict.get('quantiles', {}).get('Q1', None))
+        median = insights_dict.get('median', insights_dict.get('quantiles', {}).get('p50', insights_dict.get('quantiles', {}).get('Q2', None)))
+        q3 = insights_dict.get('quantiles', {}).get('p75', insights_dict.get('quantiles', {}).get('Q3', None))
+        mean = insights_dict.get('mean')
 
         html += """
             <div class="insight-section">
@@ -281,10 +324,10 @@ def _render_numeric_insights(insights: Dict, thousand_separator: str = ",", deci
 """
 
         # Additional stats row (std dev)
-        if 'std' in insights:
+        if 'std' in insights_dict:
             html += f"""
                     <div class="std-footer">
-                        <span><span class="text-bold">σ (Std Dev):</span> {insights['std']:.2f}</span>
+                        <span><span class="text-bold">σ (Std Dev):</span> {insights_dict['std']:.2f}</span>
                     </div>
 """
 
@@ -293,46 +336,91 @@ def _render_numeric_insights(insights: Dict, thousand_separator: str = ",", deci
             </div>
 """
 
+    # Histogram visualization
+    if 'histogram' in insights_dict and insights_dict['histogram']:
+        buckets = insights_dict['histogram']
+        max_count = max(bucket['count'] for bucket in buckets) if buckets else 1
+
+        html += """
+            <div class="insight-section" style="margin-top: 20px;">
+                <h4 class="insight-header">Distribution Histogram:</h4>
+                <div class="insight-content" style="padding: 15px;">
+                    <div style="display: flex; align-items: flex-end; justify-content: space-between; height: 200px; gap: 2px; padding: 15px;">
+"""
+
+        for bucket in buckets:
+            bar_height = (bucket['count'] / max_count * 100) if max_count > 0 else 0
+
+            # Color gradient based on cumulative percentage
+            cumulative_pct = bucket.get('cumulative_pct', 0)
+            if cumulative_pct <= 25:
+                bar_color = '#dbeafe'  # Very light blue
+            elif cumulative_pct <= 50:
+                bar_color = '#93c5fd'  # Light blue
+            elif cumulative_pct <= 75:
+                bar_color = '#60a5fa'  # Medium blue
+            else:
+                bar_color = '#3b82f6'  # Blue
+
+            html += f"""
+                        <div style="flex: 1; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; position: relative;">
+                            <span style="position: absolute; top: -20px; font-size: 0.75em; color: #374151; font-weight: 600;">{bucket['percentage']:.1f}%</span>
+                            <div style="width: 100%; height: {bar_height}%; background: {bar_color}; border-radius: 4px 4px 0 0; position: relative; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; transition: all 0.2s; cursor: pointer;" onmouseover="this.style.opacity='0.7'" onmouseout="this.style.opacity='1'" title="{bucket['bucket']}: {format_number(bucket['count'])} ({bucket['percentage']:.1f}%)">
+                                <span style="font-size: 0.7em; color: #1f2937; font-weight: 600; writing-mode: vertical-rl; text-orientation: mixed; padding: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{bucket['bucket']}</span>
+                            </div>
+                        </div>
+"""
+
+        html += """
+                    </div>
+                    <div class="std-footer">
+                        <span><span class="text-bold">Buckets:</span> """ + str(len(buckets)) + """</span>
+                        <span><span class="text-bold">Max:</span> """ + format_number(max_count,'',0) + """ rows</span>
+                    </div>
+                </div>
+            </div>
+"""
+
     # Fallback for incomplete data
-    elif 'min' in insights or 'max' in insights or 'mean' in insights:
+    elif 'min' in insights_dict or 'max' in insights_dict or 'mean' in insights_dict:
         html += """
             <div class="insight-section">
                 <h4 class="insight-header">Numeric Statistics:</h4>
                 <div class="numeric-stats-container">
 """
-        if 'min' in insights:
+        if 'min' in insights_dict:
             html += f"""
                     <div class="numeric-stat-item">
                         <span class="numeric-stat-label">Min:</span>
-                        <span class="numeric-stat-value">{insights['min']:.2f}</span>
+                        <span class="numeric-stat-value">{insights_dict['min']:.2f}</span>
                     </div>
 """
-        if 'max' in insights:
+        if 'max' in insights_dict:
             html += f"""
                     <div class="numeric-stat-item">
                         <span class="numeric-stat-label">Max:</span>
-                        <span class="numeric-stat-value">{insights['max']:.2f}</span>
+                        <span class="numeric-stat-value">{insights_dict['max']:.2f}</span>
                     </div>
 """
-        if 'mean' in insights:
+        if 'mean' in insights_dict:
             html += f"""
                     <div class="numeric-stat-item">
                         <span class="numeric-stat-label">Mean:</span>
-                        <span class="numeric-stat-value">{insights['mean']:.2f}</span>
+                        <span class="numeric-stat-value">{insights_dict['mean']:.2f}</span>
                     </div>
 """
-        if 'median' in insights:
+        if 'median' in insights_dict:
             html += f"""
                     <div class="numeric-stat-item">
                         <span class="numeric-stat-label">Median:</span>
-                        <span class="numeric-stat-value">{insights['median']:.2f}</span>
+                        <span class="numeric-stat-value">{insights_dict['median']:.2f}</span>
                     </div>
 """
-        if 'std' in insights:
+        if 'std' in insights_dict:
             html += f"""
                     <div class="numeric-stat-item">
                         <span class="numeric-stat-label">Std Dev:</span>
-                        <span class="numeric-stat-value">{insights['std']:.2f}</span>
+                        <span class="numeric-stat-value">{insights_dict['std']:.2f}</span>
                     </div>
 """
         html += """
@@ -343,15 +431,16 @@ def _render_numeric_insights(insights: Dict, thousand_separator: str = ",", deci
     return html
 
 
-def _render_datetime_insights(insights: Dict) -> str:
+def _render_datetime_insights(insights: List[Any]) -> str:
     """Render datetime column insights"""
+    insights_dict = _insights_to_dict(insights)
     html = ""
 
     # Date range - visual timeline
-    if 'min_date' in insights and 'max_date' in insights:
-        min_date_str = str(insights['min_date'])
-        max_date_str = str(insights['max_date'])
-        days = insights.get('date_range_days', 0)
+    if 'min_date' in insights_dict and 'max_date' in insights_dict:
+        min_date_str = str(insights_dict['min_date'])
+        max_date_str = str(insights_dict['max_date'])
+        days = insights_dict.get('date_range_days', 0)
 
         # Format days nicely
         if days > 365:
@@ -385,25 +474,25 @@ def _render_datetime_insights(insights: Dict) -> str:
                 </div>
             </div>
 """
-    elif 'min_date' in insights or 'max_date' in insights:
+    elif 'min_date' in insights_dict or 'max_date' in insights_dict:
         # Fallback for incomplete date range
         html += """
             <div style="margin-bottom: 15px;">
                 <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Date Range:</h4>
                 <div style="background: white; padding: 10px 12px; border-radius: 6px; border: 1px solid #e5e7eb; font-size: 0.9em;">
 """
-        if 'min_date' in insights:
-            html += f"""<strong>From:</strong> {insights['min_date']}<br>"""
-        if 'max_date' in insights:
-            html += f"""<strong>To:</strong> {insights['max_date']}"""
+        if 'min_date' in insights_dict:
+            html += f"""<strong>From:</strong> {insights_dict['min_date']}<br>"""
+        if 'max_date' in insights_dict:
+            html += f"""<strong>To:</strong> {insights_dict['max_date']}"""
         html += """
                 </div>
             </div>
 """
 
     # Timezone - compact inline display
-    if 'timezone' in insights:
-        tz_value = insights['timezone']
+    if 'timezone' in insights_dict:
+        tz_value = insights_dict['timezone']
         if tz_value == "None (timezone-naive)":
             tz_display = "Timezone-naive"
         else:
@@ -419,13 +508,13 @@ def _render_datetime_insights(insights: Dict) -> str:
 """
 
     # Most common dates
-    if 'most_common_dates' in insights and insights['most_common_dates']:
+    if 'most_common_dates' in insights_dict and insights_dict['most_common_dates']:
         html += """
             <div style="margin-bottom: 15px;">
                 <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Dates:</h4>
                 <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
 """
-        for item in insights['most_common_dates']:
+        for item in insights_dict['most_common_dates']:
             bar_width = item['percentage']
 
             if item['percentage'] > 50:
@@ -450,13 +539,13 @@ def _render_datetime_insights(insights: Dict) -> str:
 """
 
     # Most common days of week
-    if 'most_common_days' in insights and insights['most_common_days']:
+    if 'most_common_days' in insights_dict and insights_dict['most_common_days']:
         html += """
             <div style="margin-bottom: 15px;">
                 <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Days of Week:</h4>
                 <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
 """
-        for item in insights['most_common_days']:
+        for item in insights_dict['most_common_days']:
             bar_width = item['percentage']
 
             if item['percentage'] > 50:
@@ -481,13 +570,13 @@ def _render_datetime_insights(insights: Dict) -> str:
 """
 
     # Most common hours
-    if 'most_common_hours' in insights and insights['most_common_hours']:
+    if 'most_common_hours' in insights_dict and insights_dict['most_common_hours']:
         html += """
             <div style="margin-bottom: 15px;">
                 <h4 style="margin: 10px 0 8px 0; color: #6b7280; font-size: 0.95em;">Most Common Hours:</h4>
                 <div style="background: white; padding: 10px; border-radius: 6px; border: 1px solid #e5e7eb;">
 """
-        for item in insights['most_common_hours']:
+        for item in insights_dict['most_common_hours']:
             bar_width = item['percentage']
 
             if item['percentage'] > 50:
@@ -514,18 +603,19 @@ def _render_datetime_insights(insights: Dict) -> str:
     return html
 
 
-def _render_boolean_insights(insights: Dict) -> str:
+def _render_boolean_insights(insights: List[Any]) -> str:
     """Render boolean column insights"""
+    insights_dict = _insights_to_dict(insights)
     html = ""
 
     # Boolean value distribution with visual bar chart (true/false/null)
-    if 'boolean_distribution' in insights and insights['boolean_distribution']:
+    if 'boolean_distribution' in insights_dict and insights_dict['boolean_distribution']:
         html += """
             <div class="insight-section">
                 <h4 class="insight-header">Value Distribution:</h4>
                 <div class="insight-content">
 """
-        for item in insights['boolean_distribution']:
+        for item in insights_dict['boolean_distribution']:
             # Format value display
             value = item['value']
             if value is None:

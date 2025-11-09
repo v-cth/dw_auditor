@@ -1,69 +1,71 @@
 """
-String column insights generation
+String column insights - composite insight for string types
 """
 
+from typing import List
+from pydantic import BaseModel
 import polars as pl
-from typing import Dict, Optional
+from ..core.base_insight import BaseInsight, InsightResult
+from ..core.insight_registry import register_insight
+from ..core.insight_runner import run_insight_sync
 
 
-def generate_string_insights(df: pl.DataFrame, col: str, config: Dict) -> Dict:
+class StringInsightsParams(BaseModel):
+    """Parameters for string insights"""
+    top_values: int = 0
+    min_length: bool = False
+    max_length: bool = False
+    avg_length: bool = False
+
+
+@register_insight("string_insights")
+class StringInsights(BaseInsight):
+    """Composite insight for string columns
+
+    Generates insights for string columns including:
+    - Most frequent values
+    - Length statistics (min, max, average)
     """
-    Generate insights for string columns
 
-    Args:
-        df: Polars DataFrame
-        col: Column name
-        config: Insights configuration for this column
+    display_name = "String Column Insights"
+    supported_dtypes = [pl.Utf8, pl.String]
 
-    Returns:
-        Dictionary with string insights
-    """
-    insights = {}
+    def _validate_params(self) -> None:
+        """Validate parameters using Pydantic"""
+        self.config = StringInsightsParams(**self.params)
 
-    # Get non-null values
-    non_null_series = df[col].drop_nulls()
-    if len(non_null_series) == 0:
-        return insights
+    def generate(self) -> List[InsightResult]:
+        """Generate string insights
 
-    # Top N most frequent values
-    if config.get('top_values', 0) > 0:
-        top_n = config['top_values']
-        total_non_null = len(non_null_series)
+        Returns:
+            List of InsightResult objects for all requested metrics
+        """
+        results = []
+        non_null_series = self._get_non_null_series()
 
-        # Calculate value counts and percentages using Polars expressions
-        value_counts = (
-            df.select(pl.col(col))
-            .filter(pl.col(col).is_not_null())
-            .group_by(col)
-            .agg(pl.count().alias('count'))
-            .with_columns(
-                (pl.col('count') / total_non_null * 100).alias('percentage') if total_non_null > 0
-                else pl.lit(0.0).alias('percentage')
+        if len(non_null_series) == 0:
+            return results
+
+        # Top values (delegate to atomic insight)
+        if self.config.top_values > 0:
+            top_values_results = run_insight_sync(
+                'top_values',
+                self.df,
+                self.col,
+                limit=self.config.top_values
             )
-            .sort('count', descending=True)
-            .head(top_n)
-            .to_dicts()
-        )
+            results.extend(top_values_results)
 
-        insights['top_values'] = [
-            {
-                'value': item[col],
-                'count': item['count'],
-                'percentage': item['percentage']
-            }
-            for item in value_counts
-        ]
+        # Length statistics (delegate to atomic insight)
+        if self.config.min_length or self.config.max_length or self.config.avg_length:
+            length_stats_results = run_insight_sync(
+                'length_stats',
+                self.df,
+                self.col,
+                min_length=self.config.min_length,
+                max_length=self.config.max_length,
+                avg_length=self.config.avg_length
+            )
+            results.extend(length_stats_results)
 
-    # String length statistics
-    if config.get('min_length', False) or config.get('max_length', False) or config.get('avg_length', False):
-        lengths = non_null_series.str.len_chars()
-
-        insights['length_stats'] = {}
-        if config.get('min_length', False):
-            insights['length_stats']['min'] = int(lengths.min())
-        if config.get('max_length', False):
-            insights['length_stats']['max'] = int(lengths.max())
-        if config.get('avg_length', False):
-            insights['length_stats']['avg'] = round(float(lengths.mean()), 2)
-
-    return insights
+        return results

@@ -1,77 +1,129 @@
 """
-Numeric column insights generation
+Numeric column insights - composite insight for Int and Float types
 """
 
+from typing import List, Union, Dict, Any
+from pydantic import BaseModel
 import polars as pl
-from typing import Dict, List
+from ..core.base_insight import BaseInsight, InsightResult
+from ..core.insight_registry import register_insight
+from ..core.insight_runner import run_insight_sync
 
 
-def generate_numeric_insights(df: pl.DataFrame, col: str, config: Dict) -> Dict:
+class NumericInsightsParams(BaseModel):
+    """Parameters for numeric insights"""
+    min: bool = False
+    max: bool = False
+    mean: bool = False
+    std: bool = False
+    quantiles: bool = False
+    top_values: int = 0
+    histogram: Union[bool, int, Dict[str, Any]] = False
+
+
+@register_insight("numeric_insights")
+class NumericInsights(BaseInsight):
+    """Composite insight for numeric columns
+
+    Generates statistical insights for Int and Float columns including:
+    - Basic statistics (min, max, mean, std)
+    - Quantiles/percentiles
+    - Most frequent values
+    - Distribution histogram
     """
-    Generate insights for numeric columns (Int, Float)
 
-    Args:
-        df: Polars DataFrame
-        col: Column name
-        config: Insights configuration for this column
+    display_name = "Numeric Column Insights"
+    supported_dtypes = [
+        pl.Int8, pl.Int16, pl.Int32, pl.Int64,
+        pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
+        pl.Float32, pl.Float64
+    ]
 
-    Returns:
-        Dictionary with numeric insights
-    """
-    insights = {}
+    def _validate_params(self) -> None:
+        """Validate parameters using Pydantic"""
+        self.config = NumericInsightsParams(**self.params)
 
-    # Get non-null values
-    non_null_series = df[col].drop_nulls()
-    if len(non_null_series) == 0:
-        return insights
+    def generate(self) -> List[InsightResult]:
+        """Generate numeric insights
 
-    # Basic statistics
-    if config.get('min', False):
-        insights['min'] = float(non_null_series.min())
-    if config.get('max', False):
-        insights['max'] = float(non_null_series.max())
-    if config.get('mean', False):
-        insights['mean'] = round(float(non_null_series.mean()), 4)
-    if config.get('median', False):
-        insights['median'] = float(non_null_series.median())
-    if config.get('std', False):
-        insights['std'] = round(float(non_null_series.std()), 4)
+        Returns:
+            List of InsightResult objects for all requested metrics
+        """
+        results = []
+        non_null_series = self._get_non_null_series()
 
-    # Quantiles/Percentiles
-    quantiles = config.get('quantiles', [])
-    if quantiles:
-        quantile_values = {}
-        for q in quantiles:
-            quantile_values[f'p{int(q*100)}'] = float(non_null_series.quantile(q))
-        insights['quantiles'] = quantile_values
+        if len(non_null_series) == 0:
+            return results
 
-    # Top N most frequent values
-    if config.get('top_values', 0) > 0:
-        top_n = config['top_values']
-        total_non_null = len(non_null_series)
-
-        # Calculate value counts and percentages using Polars expressions
-        value_counts = (
-            df.select(pl.col(col))
-            .filter(pl.col(col).is_not_null())
-            .group_by(col)
-            .agg(pl.count().alias('count'))
-            .with_columns(
-                (pl.col('count') / total_non_null * 100).alias('percentage') if total_non_null > 0
-                else pl.lit(0.0).alias('percentage')
+        # Basic statistics (computed directly)
+        if self.config.min:
+            min_value = self._format_numeric(float(non_null_series.min()))
+            results.append(
+                InsightResult(
+                    type='min',
+                    value=min_value,
+                    display_name='Minimum'
+                )
             )
-            .sort('count', descending=True)
-            .head(top_n)
-            .to_dicts()
-        )
 
-        insights['top_values'] = [
-            {
-                'value': float(item[col]) if item[col] is not None else None,
-                'count': item['count'],
-                'percentage': item['percentage']
-            }
-            for item in value_counts
-        ]
+        if self.config.max:
+            max_value = self._format_numeric(float(non_null_series.max()))
+            results.append(
+                InsightResult(
+                    type='max',
+                    value=max_value,
+                    display_name='Maximum'
+                )
+            )
 
-    return insights
+        if self.config.mean:
+            mean_value = self._format_numeric(float(non_null_series.mean()))
+            results.append(
+                InsightResult(
+                    type='mean',
+                    value=mean_value,
+                    display_name='Mean'
+                )
+            )
+
+        if self.config.std:
+            std_value = self._format_numeric(float(non_null_series.std()))
+            results.append(
+                InsightResult(
+                    type='std',
+                    value=std_value,
+                    display_name='Standard Deviation'
+                )
+            )
+
+        # Quantiles (delegate to atomic insight)
+        if self.config.quantiles:
+            quantile_results = run_insight_sync(
+                'quantiles',
+                self.df,
+                self.col,
+                quantiles=self.config.quantiles
+            )
+            results.extend(quantile_results)
+
+        # Top values (delegate to atomic insight)
+        if self.config.top_values > 0:
+            top_values_results = run_insight_sync(
+                'top_values',
+                self.df,
+                self.col,
+                limit=self.config.top_values
+            )
+            results.extend(top_values_results)
+
+        # Histogram (delegate to atomic insight)
+        if self.config.histogram:
+            histogram_results = run_insight_sync(
+                'histogram',
+                self.df,
+                self.col,
+                histogram=self.config.histogram
+            )
+            results.extend(histogram_results)
+
+        return results

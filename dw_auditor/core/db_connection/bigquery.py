@@ -281,23 +281,32 @@ class BigQueryAdapter(BaseAdapter):
 
         self._cached_schema = schema
 
-    def get_table(self, table_name: str, schema: Optional[str] = None) -> ibis.expr.types.Table:
-        """Get BigQuery table reference"""
+    def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
+        """Get BigQuery table reference
+
+        Args:
+            table_name: Name of the table
+            schema: Dataset name (schema/dataset)
+            project_id: Optional project ID for cross-project queries
+        """
         if self.conn is None:
             self.connect()
 
+        # Determine the project to use (priority: parameter > source_project_id > connection project)
+        target_project = project_id or self.source_project_id
+        dataset = schema or self.connection_params.get('schema')
+
         # Cross-project query support
-        if self.source_project_id:
-            dataset = schema or self.connection_params.get('schema')
+        if target_project and target_project != self.connection_params.get('project_id'):
             if not dataset:
                 raise ValueError("schema is required for BigQuery cross-project queries")
 
-            full_table_name = f"`{self.source_project_id}.{dataset}.{table_name}`"
+            full_table_name = f"`{target_project}.{dataset}.{table_name}`"
             return self.conn.sql(f"SELECT * FROM {full_table_name}")
 
-        # Normal flow
-        if schema:
-            full_name = f"{schema}.{table_name}"
+        # Normal flow (same project)
+        if dataset:
+            full_name = f"{dataset}.{table_name}"
             return self.conn.table(full_name)
         else:
             return self.conn.table(table_name)
@@ -311,7 +320,8 @@ class BigQueryAdapter(BaseAdapter):
         sample_size: Optional[int] = None,
         sampling_method: str = 'random',
         sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None
+        columns: Optional[List[str]] = None,
+        project_id: Optional[str] = None
     ) -> pl.DataFrame:
         """Execute BigQuery query"""
         if self.conn is None:
@@ -319,10 +329,11 @@ class BigQueryAdapter(BaseAdapter):
 
         if custom_query:
             dataset = schema or self.connection_params.get('schema')
+            target_project = project_id or self.source_project_id
 
-            if self.source_project_id and dataset:
+            if target_project and dataset:
                 custom_query = qualify_query_tables(
-                    custom_query, table_name, dataset, self.source_project_id
+                    custom_query, table_name, dataset, target_project
                 )
             elif dataset:
                 custom_query = qualify_query_tables(
@@ -332,7 +343,7 @@ class BigQueryAdapter(BaseAdapter):
             logger.debug(f"[query] BigQuery custom query:\n{custom_query}")
             result = self.conn.sql(custom_query)
         else:
-            table = self.get_table(table_name, schema)
+            table = self.get_table(table_name, schema, project_id)
 
             if columns:
                 table = table.select(columns)

@@ -117,7 +117,7 @@ class BaseAdapter(ABC):
         self._fetched_tables = set(union_tables)
 
     @abstractmethod
-    def get_table(self, table_name: str, schema: Optional[str] = None) -> ibis.expr.types.Table:
+    def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
         """Get Ibis table reference"""
         pass
 
@@ -131,18 +131,39 @@ class BaseAdapter(ABC):
         sample_size: Optional[int] = None,
         sampling_method: str = 'random',
         sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None
+        columns: Optional[List[str]] = None,
+        project_id: Optional[str] = None
     ) -> pl.DataFrame:
         """Execute query and return Polars DataFrame"""
         pass
 
-    def get_table_metadata(self, table_name: str, schema: Optional[str] = None) -> Dict[str, Any]:
-        """Get table metadata by filtering cached DataFrames"""
+    def get_table_metadata(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Any]:
+        """Get table metadata by filtering cached DataFrames
+
+        Args:
+            table_name: Name of the table
+            schema: Schema/dataset name
+            project_id: Optional project ID for cross-project queries (BigQuery only)
+        """
         effective_schema = schema or self.connection_params.get('schema')
         if not effective_schema:
             return {}
 
-        self._ensure_metadata(effective_schema, [table_name])
+        # For cross-project queries, temporarily update the source_project_id
+        original_source_project = getattr(self, 'source_project_id', None)
+        original_cached_schema = getattr(self, '_cached_schema', None)
+        if project_id and hasattr(self, 'source_project_id'):
+            self.source_project_id = project_id
+            # Clear cache to force refetch with new project_id
+            self._cached_schema = None
+
+        try:
+            self._ensure_metadata(effective_schema, [table_name])
+        finally:
+            # Restore original source_project_id and cache state
+            if hasattr(self, 'source_project_id'):
+                self.source_project_id = original_source_project
+                self._cached_schema = original_cached_schema
 
         # Filter tables_df by both schema and table_name
         table_info = self._tables_df.filter(
@@ -218,43 +239,62 @@ class BaseAdapter(ABC):
 
         return metadata
 
-    def get_table_schema(self, table_name: str, schema: Optional[str] = None) -> Dict[str, str]:
-        """Get column names and data types by filtering cached columns_df"""
+    def get_table_schema(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+        """
+        Get column metadata (data types and descriptions) by filtering cached columns_df
+
+        Args:
+            table_name: Name of the table
+            schema: Schema/dataset name
+            project_id: Optional project ID for cross-project queries (BigQuery only)
+
+        Returns:
+            Dict mapping column_name to {'data_type': str, 'description': Optional[str]}
+        """
+        import logging
+        logger = logging.getLogger(__name__)
+
         effective_schema = schema or self.connection_params.get('schema')
         if not effective_schema:
+            logger.debug(f"No effective schema for table {table_name}")
             return {}
 
-        self._ensure_metadata(effective_schema, [table_name])
+        # For cross-project queries, temporarily update the source_project_id
+        original_source_project = getattr(self, 'source_project_id', None)
+        original_cached_schema = getattr(self, '_cached_schema', None)
+        if project_id and hasattr(self, 'source_project_id'):
+            self.source_project_id = project_id
+            # Clear cache to force refetch with new project_id
+            self._cached_schema = None
+
+        try:
+            self._ensure_metadata(effective_schema, [table_name])
+        finally:
+            # Restore original source_project_id and cache state
+            if hasattr(self, 'source_project_id'):
+                self.source_project_id = original_source_project
+                self._cached_schema = original_cached_schema
 
         table_cols = self._columns_df.filter(
             (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
         )
 
-        return {
-            str(row['column_name']): str(row['data_type'])
-            for row in table_cols.iter_rows(named=True)
-        }
+        # Check if description column exists
+        has_descriptions = 'description' in self._columns_df.columns
+        if not has_descriptions:
+            logger.debug(f"'description' column not found in columns_df for {table_name}")
 
-    def get_column_descriptions(self, table_name: str, schema: Optional[str] = None) -> Dict[str, Optional[str]]:
-        """Get column descriptions by filtering cached columns_df"""
-        effective_schema = schema or self.connection_params.get('schema')
-        if not effective_schema:
-            return {}
+        logger.debug(f"Found {len(table_cols)} columns for {effective_schema}.{table_name}")
 
-        self._ensure_metadata(effective_schema, [table_name])
+        result = {}
+        for row in table_cols.iter_rows(named=True):
+            col_name = str(row['column_name'])
+            result[col_name] = {
+                'data_type': str(row['data_type']),
+                'description': str(row['description']) if has_descriptions and row['description'] is not None else None
+            }
 
-        # Check if description column exists in columns_df
-        if 'description' not in self._columns_df.columns:
-            return {}
-
-        table_cols = self._columns_df.filter(
-            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
-        )
-
-        return {
-            str(row['column_name']): str(row['description']) if row['description'] is not None else None
-            for row in table_cols.iter_rows(named=True)
-        }
+        return result
 
     def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None) -> List[str]:
         """Get primary key columns by filtering cached pk_df"""
