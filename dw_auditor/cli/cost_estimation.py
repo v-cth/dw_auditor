@@ -43,17 +43,7 @@ def prefetch_metadata(
 
     # Prefetch filtered metadata per (project_id, schema) group
     for (project_id, schema), tables in tables_by_project_schema.items():
-        # Temporarily set source_project_id for cross-project metadata fetching
-        original_source_project = getattr(db_conn.adapter, 'source_project_id', None)
-        if project_id and hasattr(db_conn.adapter, 'source_project_id'):
-            db_conn.adapter.source_project_id = project_id
-
-        try:
-            db_conn.prefetch_metadata(schema, tables)
-        finally:
-            # Restore original source_project_id
-            if hasattr(db_conn.adapter, 'source_project_id'):
-                db_conn.adapter.source_project_id = original_source_project
+        db_conn.prefetch_metadata(schema, tables, project_id)
 
     print(f"Metadata cached for all tables")
 

@@ -55,27 +55,36 @@ class BigQueryAdapter(BaseAdapter):
         logger.info("Connected to BIGQUERY")
         return self.conn
 
-    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None):
+    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
         """Fetch metadata for schema in fewer queries (filtered by table_names if provided)
 
         Optimizations:
         - Combine TABLES with __TABLES__ metadata (same-project only)
         - Combine COLUMNS with PRIMARY KEY info via joins, then split in-memory
+
+        Args:
+            schema: Schema/dataset name
+            table_names: Optional list of specific table names to fetch (if None, fetch all)
+            project_id: Optional project ID for cross-project queries
         """
-        # Early return if identical request already cached
-        try:
-            current_set = None if table_names is None else set(table_names)
-            if self._cached_schema == schema:
-                if getattr(self, "_fetched_tables", None) is None and current_set is None:
-                    return
-                if getattr(self, "_fetched_tables", None) is not None and current_set is not None and current_set.issubset(self._fetched_tables):
-                    return
-        except Exception:
-            pass
         if self.conn is None:
             self.connect()
 
-        project_for_metadata = self.source_project_id or self.connection_params.get('project_id')
+        # Use provided project_id or fall back to source_project_id or connection project
+        project_for_metadata = project_id or self.source_project_id or self.connection_params.get('project_id')
+        cache_key = (project_id, schema)
+
+        # Initialize cache entry if it doesn't exist
+        if cache_key not in self._metadata_cache:
+            self._metadata_cache[cache_key] = {
+                'tables_df': None,
+                'columns_df': None,
+                'pk_df': None,
+                'rowcount_df': None,
+                'fetched_tables': None if table_names is None else set(table_names)
+            }
+
+        cache_entry = self._metadata_cache[cache_key]
 
         # Build WHERE clause filters for table filtering
         filters = build_table_filters(table_names)
@@ -84,99 +93,65 @@ class BigQueryAdapter(BaseAdapter):
         table_filter_qualified = filters['qualified']
         table_filter_columns = filters['columns']
 
-        # Build signatures to avoid duplicate metadata queries for the same schema+table set
-        tables_sig = None if not table_names else frozenset(table_names)
-        if not hasattr(self, "_last_tables_sig"):
-            self._last_tables_sig = {}
-        if not hasattr(self, "_last_columns_sig"):
-            self._last_columns_sig = {}
-
         # Query 1: Tables (+ row counts when same-project) (filtered)
         try:
-            if should_skip_query(schema, table_names, self._last_tables_sig, "bq TABLES"):
-                pass  # Skip query
+            # Check if we're querying cross-project (different from connection project)
+            is_cross_project = project_id and project_id != self.connection_params.get('project_id')
+
+            if not is_cross_project:
+                # Same-project: join INFORMATION_SCHEMA.TABLES with __TABLES__ once
+                tables_query = f"""
+                SELECT
+                    '{schema}' AS schema_name,
+                    t.table_name,
+                    t.table_type,
+                    t.creation_time,
+                    rt.row_count,
+                    rt.size_bytes,
+                    TIMESTAMP_MILLIS(rt.creation_time) AS created_at,
+                    TIMESTAMP_MILLIS(rt.last_modified_time) AS modified_at
+                FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
+                LEFT JOIN `{project_for_metadata}.{schema}.__TABLES__` rt
+                    ON rt.table_id = t.table_name
+                WHERE t.table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MATERIALIZED VIEW') {table_filter_tables}
+                ORDER BY t.table_name
+                """
+                logger.debug(f"[query] BigQuery metadata tables query:\n{tables_query}")
+                new_tables_df = self.conn.sql(tables_query).to_polars()
+
+                # Store in cache entry
+                cache_entry['tables_df'] = new_tables_df
+
+                # Also expose rowcount-like frame
+                cache_entry['rowcount_df'] = new_tables_df.select([
+                    pl.col("schema_name"),
+                    pl.col("table_name").alias("table_id"),
+                    pl.col("row_count"),
+                    pl.col("size_bytes"),
+                    pl.col("created_at"),
+                    pl.col("modified_at"),
+                ])
             else:
-                if not self.source_project_id:
-                    # Same-project: join INFORMATION_SCHEMA.TABLES with __TABLES__ once
-                    tables_query = f"""
-                    SELECT
-                        '{schema}' AS schema_name,
-                        t.table_name,
-                        t.table_type,
-                        t.creation_time,
-                        rt.row_count,
-                        rt.size_bytes,
-                        TIMESTAMP_MILLIS(rt.creation_time) AS created_at,
-                        TIMESTAMP_MILLIS(rt.last_modified_time) AS modified_at
-                    FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
-                    LEFT JOIN `{project_for_metadata}.{schema}.__TABLES__` rt
-                        ON rt.table_id = t.table_name
-                    WHERE t.table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MATERIALIZED VIEW') {table_filter_tables}
-                    ORDER BY t.table_name
-                    """
-                    logger.debug(f"[query] BigQuery metadata tables query:\n{tables_query}")
-                    new_tables_df = self.conn.sql(tables_query).to_polars()
+                # Cross-project: cannot use __TABLES__ across projects; only TABLES
+                tables_query = f"""
+                SELECT '{schema}' AS schema_name, t.table_name, t.table_type, t.creation_time
+                FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
+                WHERE t.table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MATERIALIZED VIEW') {table_filter_tables}
+                ORDER BY t.table_name
+                """
+                logger.debug(f"[query] BigQuery metadata tables query (cross-project):\n{tables_query}")
+                new_tables_df = self.conn.sql(tables_query).to_polars()
 
-                    # Append to existing DataFrames instead of replacing
-                    if self._tables_df is None or len(self._tables_df) == 0:
-                        self._tables_df = new_tables_df
-                    else:
-                        # Remove any existing rows for this schema+tables combination to avoid duplicates
-                        if table_names:
-                            self._tables_df = self._tables_df.filter(
-                                ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
-                            )
-                        else:
-                            self._tables_df = self._tables_df.filter(pl.col("schema_name") != schema)
-                        self._tables_df = pl.concat([self._tables_df, new_tables_df])
-
-                    # Backwards-compat: also expose rowcount-like frame
-                    self._rowcount_df = self._tables_df.select([
-                        pl.col("schema_name"),
-                        pl.col("table_name").alias("table_id"),
-                        pl.col("row_count"),
-                        pl.col("size_bytes"),
-                        pl.col("created_at"),
-                        pl.col("modified_at"),
-                    ])
-                    self._last_tables_sig[schema] = tables_sig
-                else:
-                    # Cross-project: cannot use __TABLES__ across projects; only TABLES
-                    tables_query = f"""
-                    SELECT '{schema}' AS schema_name, t.table_name, t.table_type, t.creation_time
-                    FROM `{project_for_metadata}.{schema}.INFORMATION_SCHEMA.TABLES` t
-                    WHERE t.table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MATERIALIZED VIEW') {table_filter_tables}
-                    ORDER BY t.table_name
-                    """
-                    logger.debug(f"[query] BigQuery metadata tables query (cross-project):\n{tables_query}")
-                    new_tables_df = self.conn.sql(tables_query).to_polars()
-
-                    # Append to existing DataFrames
-                    if self._tables_df is None or len(self._tables_df) == 0:
-                        self._tables_df = new_tables_df
-                    else:
-                        if table_names:
-                            self._tables_df = self._tables_df.filter(
-                                ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
-                            )
-                        else:
-                            self._tables_df = self._tables_df.filter(pl.col("schema_name") != schema)
-                        self._tables_df = pl.concat([self._tables_df, new_tables_df])
-
-                    self._rowcount_df = pl.DataFrame()
-                    self._last_tables_sig[schema] = tables_sig
+                # Store in cache entry
+                cache_entry['tables_df'] = new_tables_df
+                cache_entry['rowcount_df'] = pl.DataFrame()
         except Exception as e:
             logger.error(f"Could not fetch tables/rowcount metadata: {e}")
-            if self._tables_df is None:
-                self._tables_df = pl.DataFrame()
-            if self._rowcount_df is None:
-                self._rowcount_df = pl.DataFrame()
+            cache_entry['tables_df'] = pl.DataFrame()
+            cache_entry['rowcount_df'] = pl.DataFrame()
 
         # Query 2: Columns + Primary Keys (single joined query), then split to two frames
         try:
-            if should_skip_query(schema, table_names, self._last_columns_sig, "bq COLUMNS+PK"):
-                pass  # Skip query
-            else:
                 columns_pk_query = f"""
             WITH pk AS (
                 SELECT
@@ -238,41 +213,16 @@ class BigQueryAdapter(BaseAdapter):
                     pl.col("description"),
                 ])
 
-                # Append to existing DataFrames
-                if self._columns_df is None or len(self._columns_df) == 0:
-                    self._columns_df = new_columns_df
-                else:
-                    # Remove any existing rows for this schema+tables combination
-                    if table_names:
-                        self._columns_df = self._columns_df.filter(
-                            ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
-                        )
-                    else:
-                        self._columns_df = self._columns_df.filter(pl.col("schema_name") != schema)
-                    self._columns_df = pl.concat([self._columns_df, new_columns_df])
-
-                # Append PK DataFrame
-                if self._pk_df is None or len(self._pk_df) == 0:
-                    self._pk_df = new_pk_df
-                else:
-                    # Remove any existing rows for this schema+tables combination
-                    if table_names:
-                        self._pk_df = self._pk_df.filter(
-                            ~((pl.col("schema_name") == schema) & (pl.col("table_name").is_in(table_names)))
-                        )
-                    else:
-                        self._pk_df = self._pk_df.filter(pl.col("schema_name") != schema)
-                    self._pk_df = pl.concat([self._pk_df, new_pk_df])
-
-                self._last_columns_sig[schema] = tables_sig
+                # Store in cache entry
+                cache_entry['columns_df'] = new_columns_df
+                cache_entry['pk_df'] = new_pk_df
         except Exception as e:
             logger.error(f"Could not fetch columns/primary key metadata: {e}")
-            if self._columns_df is None:
-                self._columns_df = pl.DataFrame()
-            if self._pk_df is None:
-                self._pk_df = pl.DataFrame()
+            cache_entry['columns_df'] = pl.DataFrame()
+            cache_entry['pk_df'] = pl.DataFrame()
 
-        self._cached_schema = schema
+        # Update fetched_tables tracking
+        cache_entry['fetched_tables'] = None if table_names is None else set(table_names)
 
     def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
         """Get BigQuery table reference

@@ -179,7 +179,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             table_metadata['primary_key_source'] = 'user_config'
         else:
             try:
-                primary_key_columns = db_conn.get_primary_key_columns(table_name, schema)
+                primary_key_columns = db_conn.get_primary_key_columns(table_name, schema, project_id)
                 if primary_key_columns:
                     logger.info(f"Primary key from schema: {', '.join(primary_key_columns)}")
                     table_metadata['primary_key_columns'] = primary_key_columns
@@ -195,7 +195,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             row_count = None
         elif row_count is None and not is_cross_project:
             try:
-                row_count = db_conn.get_row_count(table_name, schema)
+                row_count = db_conn.get_row_count(table_name, schema, project_id)
                 if row_count is not None:
                     logger.info(f"Table has {row_count:,} rows")
                 else:

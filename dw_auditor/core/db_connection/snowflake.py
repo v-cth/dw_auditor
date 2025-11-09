@@ -53,13 +53,17 @@ class SnowflakeAdapter(BaseAdapter):
         logger.info(f"Connected to SNOWFLAKE ({auth_method})")
         return self.conn
 
-    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None):
+    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
         """Fetch metadata for schema in fewer queries (filtered by table_names if provided)
 
         Optimizations:
         - Tables query already includes row_count/bytes/timestamps (1 query)
         - Combine COLUMNS with PRIMARY KEY info via join, then split in-memory (1 query)
-        - Early-return if identical request already satisfied (de-dup)
+
+        Args:
+            schema: Schema/dataset name
+            table_names: Optional list of specific table names to fetch (if None, fetch all)
+            project_id: Ignored for Snowflake (used for BigQuery cross-project queries)
         """
         if self.conn is None:
             self.connect()
@@ -70,22 +74,26 @@ class SnowflakeAdapter(BaseAdapter):
 
         schema_name = schema or self.connection_params.get('schema', 'PUBLIC')
 
+        # Snowflake doesn't use project_id, always None in cache key
+        cache_key = (None, schema)
+
+        # Initialize cache entry if it doesn't exist
+        if cache_key not in self._metadata_cache:
+            self._metadata_cache[cache_key] = {
+                'tables_df': None,
+                'columns_df': None,
+                'pk_df': None,
+                'rowcount_df': None,
+                'fetched_tables': None if table_names is None else set(t.upper() for t in table_names)
+            }
+
+        cache_entry = self._metadata_cache[cache_key]
+
         # Build WHERE clause filters for table filtering (Snowflake uses uppercase)
         filters = build_table_filters(table_names, normalize_uppercase=True)
         table_filter = filters['tables']
         table_filter_qualified = filters['qualified']
         table_filter_columns = filters['columns']
-
-        # Early return if identical request already cached
-        try:
-            current_set = None if table_names is None else set(t.upper() for t in table_names)
-            if self._cached_schema == schema:
-                if getattr(self, "_fetched_tables", None) is None and current_set is None:
-                    return
-                if getattr(self, "_fetched_tables", None) is not None and current_set is not None and current_set.issubset(self._fetched_tables):
-                    return
-        except Exception:
-            pass
 
         # Query 1: Tables (filtered, includes row_count, size, timestamps, and clustering_key)
         try:
@@ -127,24 +135,11 @@ class SnowflakeAdapter(BaseAdapter):
                 pl.col('creation_time').alias('created_at')
             )
 
-            # Append to existing DataFrames instead of replacing (consistent with BigQuery)
-            if self._tables_df is None or len(self._tables_df) == 0:
-                self._tables_df = new_tables_df
-            else:
-                # Remove any existing rows for this schema+tables combination to avoid duplicates
-                if table_names:
-                    # Snowflake stores table names in uppercase, normalize for comparison
-                    normalized_table_names = [t.upper() for t in table_names]
-                    self._tables_df = self._tables_df.filter(
-                        ~((pl.col("schema_name") == schema_name) & (pl.col("table_name").is_in(normalized_table_names)))
-                    )
-                else:
-                    self._tables_df = self._tables_df.filter(pl.col("schema_name") != schema_name)
-                self._tables_df = pl.concat([self._tables_df, new_tables_df])
+            # Store in cache entry
+            cache_entry['tables_df'] = new_tables_df
         except Exception as e:
             logger.error(f"Could not fetch tables metadata: {e}")
-            if self._tables_df is None:
-                self._tables_df = pl.DataFrame()
+            cache_entry['tables_df'] = pl.DataFrame()
 
         # Query 2: Columns + Primary Keys (single joined query), then split to two frames
         try:
@@ -200,44 +195,19 @@ class SnowflakeAdapter(BaseAdapter):
                 pk_ordinal_column='pk_ordinal_position'
             )
 
-            # Append to existing DataFrames (consistent with BigQuery)
-            if self._columns_df is None or len(self._columns_df) == 0:
-                self._columns_df = new_columns_df
-            else:
-                # Remove any existing rows for this schema+tables combination
-                if table_names:
-                    normalized_table_names = [t.upper() for t in table_names]
-                    self._columns_df = self._columns_df.filter(
-                        ~((pl.col("schema_name") == schema_name) & (pl.col("table_name").is_in(normalized_table_names)))
-                    )
-                else:
-                    self._columns_df = self._columns_df.filter(pl.col("schema_name") != schema_name)
-                self._columns_df = pl.concat([self._columns_df, new_columns_df])
-
-            # Append PK DataFrame
-            if self._pk_df is None or len(self._pk_df) == 0:
-                self._pk_df = new_pk_df
-            else:
-                # Remove any existing rows for this schema+tables combination
-                if table_names:
-                    normalized_table_names = [t.upper() for t in table_names]
-                    self._pk_df = self._pk_df.filter(
-                        ~((pl.col("schema_name") == schema_name) & (pl.col("table_name").is_in(normalized_table_names)))
-                    )
-                else:
-                    self._pk_df = self._pk_df.filter(pl.col("schema_name") != schema_name)
-                self._pk_df = pl.concat([self._pk_df, new_pk_df])
+            # Store in cache entry
+            cache_entry['columns_df'] = new_columns_df
+            cache_entry['pk_df'] = new_pk_df
         except Exception as e:
             logger.error(f"Could not fetch columns/primary key metadata: {e}")
-            if self._columns_df is None:
-                self._columns_df = pl.DataFrame()
-            if self._pk_df is None:
-                self._pk_df = pl.DataFrame()
+            cache_entry['columns_df'] = pl.DataFrame()
+            cache_entry['pk_df'] = pl.DataFrame()
 
         # Snowflake includes row_count in TABLES query, so use that
         # Create rowcount_df with schema_name (consistent with BigQuery)
-        if self._tables_df is not None and len(self._tables_df) > 0:
-            self._rowcount_df = self._tables_df.select([
+        tables_df = cache_entry.get('tables_df')
+        if tables_df is not None and len(tables_df) > 0:
+            cache_entry['rowcount_df'] = tables_df.select([
                 pl.col('schema_name'),
                 pl.col('table_name').alias('table_id'),
                 pl.col('row_count'),
@@ -246,9 +216,10 @@ class SnowflakeAdapter(BaseAdapter):
                 pl.col('modified_at')
             ])
         else:
-            self._rowcount_df = pl.DataFrame()
+            cache_entry['rowcount_df'] = pl.DataFrame()
 
-        self._cached_schema = schema
+        # Update fetched_tables tracking
+        cache_entry['fetched_tables'] = None if table_names is None else set(t.upper() for t in table_names)
 
     def get_table_metadata(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Any]:
         """Get table metadata with Snowflake-specific fields
@@ -259,12 +230,18 @@ class SnowflakeAdapter(BaseAdapter):
 
         # Add clustering_key if present
         effective_schema = schema or self.connection_params.get('schema')
-        if effective_schema and self._tables_df is not None:
-            table_info = self._tables_df.filter(pl.col('table_name') == table_name)
-            if len(table_info) > 0 and 'clustering_key' in table_info.columns:
-                clustering_key = table_info['clustering_key'][0]
-                if clustering_key is not None and str(clustering_key) != 'null':
-                    metadata['clustering_key'] = str(clustering_key)
+        cache_key = (None, effective_schema)  # Snowflake always uses None for project_id
+
+        if cache_key in self._metadata_cache:
+            cache_entry = self._metadata_cache[cache_key]
+            tables_df = cache_entry.get('tables_df')
+
+            if tables_df is not None:
+                table_info = tables_df.filter(pl.col('table_name') == table_name)
+                if len(table_info) > 0 and 'clustering_key' in table_info.columns:
+                    clustering_key = table_info['clustering_key'][0]
+                    if clustering_key is not None and str(clustering_key) != 'null':
+                        metadata['clustering_key'] = str(clustering_key)
 
         return metadata
 

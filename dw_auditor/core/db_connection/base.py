@@ -16,15 +16,10 @@ class BaseAdapter(ABC):
         self.connection_params = connection_params
         self.conn: Optional[ibis.BaseBackend] = None
 
-        # Schema-wide metadata cache (Polars DataFrames)
-        self._tables_df: Optional[pl.DataFrame] = None
-        self._columns_df: Optional[pl.DataFrame] = None
-        self._pk_df: Optional[pl.DataFrame] = None
-        self._rowcount_df: Optional[pl.DataFrame] = None
-        self._cached_schema: Optional[str] = None
-        # Track which tables have been prefetched for the cached schema
-        # None => all tables fetched; set(str) => subset fetched
-        self._fetched_tables: Optional[set[str]] = None
+        # Multi-project/schema metadata cache
+        # Key: (project_id, schema) tuple where project_id can be None for single-project backends
+        # Value: dict with 'tables_df', 'columns_df', 'pk_df', 'rowcount_df', 'fetched_tables'
+        self._metadata_cache: Dict[tuple, Dict[str, Any]] = {}
 
     @abstractmethod
     def connect(self) -> ibis.BaseBackend:
@@ -32,89 +27,67 @@ class BaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None):
+    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
         """
         Fetch metadata for tables in schema (3-4 queries total)
 
         Args:
             schema: Schema/dataset name
             table_names: Optional list of specific table names to fetch (if None, fetch all)
+            project_id: Optional project ID for cross-project queries (BigQuery only)
 
-        Stores results in _tables_df, _columns_df, _pk_df, _rowcount_df
+        Stores results in _metadata_cache[(project_id, schema)]
         """
         pass
 
-    def _ensure_metadata(self, schema: str, table_names: Optional[List[str]] = None):
-        """Fetch metadata if not cached or schema changed; avoid unnecessary refetches."""
+    def _ensure_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
+        """Fetch metadata if not cached or (project_id, schema) changed; avoid unnecessary refetches."""
         logger = logging.getLogger(__name__)
-        # Initial or schema change: fetch exactly what's requested (or all if None)
-        if self._tables_df is None or self._cached_schema != schema:
-            logger.debug(f"[metadata] fetch INIT schema={schema} tables={'ALL' if table_names is None else ','.join(table_names)}")
-            self._fetch_all_metadata(schema, table_names)
-            self._fetched_tables = None if table_names is None else set(table_names)
+        cache_key = (project_id, schema)
+
+        # Get or create cache entry for this (project_id, schema) combination
+        if cache_key not in self._metadata_cache:
+            logger.debug(f"[metadata] fetch INIT project={project_id} schema={schema} tables={'ALL' if table_names is None else ','.join(table_names)}")
+            self._fetch_all_metadata(schema, table_names, project_id)
             return
 
-        # Same schema and we have some cache
+        cache_entry = self._metadata_cache[cache_key]
+        fetched_tables = cache_entry.get('fetched_tables')
+
+        # Cache exists for this (project_id, schema)
         if table_names is None:
             # Caller wants full coverage. If we don't already have all, upgrade to all.
-            if self._fetched_tables is not None:
-                logger.debug(f"[metadata] fetch UPGRADE schema={schema} tables=ALL (from subset of {len(self._fetched_tables)})")
-                self._fetch_all_metadata(schema, None)
-                self._fetched_tables = None
+            if fetched_tables is not None:
+                logger.debug(f"[metadata] fetch UPGRADE project={project_id} schema={schema} tables=ALL (from subset of {len(fetched_tables)})")
+                self._fetch_all_metadata(schema, None, project_id)
             return
 
         # Caller wants a subset of tables
         requested = set(table_names)
-        if self._fetched_tables is None:
+        if fetched_tables is None:
             # Already have full coverage
             return
 
-        if requested.issubset(self._fetched_tables):
+        if requested.issubset(fetched_tables):
             # Already covered
             return
 
         # Need to extend cache to cover union of requested and existing subset
-        union_tables = self._fetched_tables | requested
-        logger.debug(f"[metadata] fetch EXTEND schema={schema} tables={','.join(sorted(list(union_tables)))}")
-        self._fetch_all_metadata(schema, sorted(list(union_tables)))
-        self._fetched_tables = set(union_tables)
+        union_tables = fetched_tables | requested
+        logger.debug(f"[metadata] fetch EXTEND project={project_id} schema={schema} tables={','.join(sorted(list(union_tables)))}")
+        self._fetch_all_metadata(schema, sorted(list(union_tables)), project_id)
 
-    def prefetch_metadata(self, schema: str, table_names: List[str]):
+    def prefetch_metadata(self, schema: str, table_names: List[str], project_id: Optional[str] = None):
         """
         Pre-fetch metadata for specific tables (recommended for multi-table audits)
 
         Args:
             schema: Schema/dataset name
             table_names: List of table names to fetch metadata for
+            project_id: Optional project ID for cross-project queries (BigQuery only)
         """
-        # Deduplicate prefetches within the same schema
-        requested = set(table_names) if table_names else set()
-
-        # If switching schema, just fetch and reset tracking
-        if self._cached_schema != schema:
-            self._fetch_all_metadata(schema, table_names)
-            self._fetched_tables = None if not table_names else set(table_names)
-            return
-
-        # Same schema
-        if self._fetched_tables is None:
-            # Already fetched all tables; no need to fetch subset again
-            return
-
-        if not table_names:
-            # Requesting all tables now; upgrade cache to all
-            self._fetch_all_metadata(schema, None)
-            self._fetched_tables = None
-            return
-
-        # If requested subset is already covered, skip
-        if self._fetched_tables is not None and requested.issubset(self._fetched_tables):
-            return
-
-        # Need to extend cached subset to cover the union
-        union_tables = requested if self._fetched_tables is None else (self._fetched_tables | requested)
-        self._fetch_all_metadata(schema, sorted(list(union_tables)))
-        self._fetched_tables = set(union_tables)
+        # Use _ensure_metadata which handles all the caching logic
+        self._ensure_metadata(schema, table_names, project_id)
 
     @abstractmethod
     def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
@@ -149,33 +122,33 @@ class BaseAdapter(ABC):
         if not effective_schema:
             return {}
 
-        # For cross-project queries, temporarily update the source_project_id
-        original_source_project = getattr(self, 'source_project_id', None)
-        original_cached_schema = getattr(self, '_cached_schema', None)
-        if project_id and hasattr(self, 'source_project_id'):
-            self.source_project_id = project_id
-            # Clear cache to force refetch with new project_id
-            self._cached_schema = None
+        # Ensure metadata is cached for this (project_id, schema, table) combination
+        self._ensure_metadata(effective_schema, [table_name], project_id)
 
-        try:
-            self._ensure_metadata(effective_schema, [table_name])
-        finally:
-            # Restore original source_project_id and cache state
-            if hasattr(self, 'source_project_id'):
-                self.source_project_id = original_source_project
-                self._cached_schema = original_cached_schema
+        # Get cache entry for this (project_id, schema)
+        cache_key = (project_id, effective_schema)
+        if cache_key not in self._metadata_cache:
+            return {}
+
+        cache_entry = self._metadata_cache[cache_key]
+        tables_df = cache_entry.get('tables_df')
+        columns_df = cache_entry.get('columns_df')
+        rowcount_df = cache_entry.get('rowcount_df')
+
+        if tables_df is None:
+            return {}
 
         # Filter tables_df by both schema and table_name
-        table_info = self._tables_df.filter(
+        table_info = tables_df.filter(
             (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
         )
         if len(table_info) == 0:
             return {}
 
         # Filter columns_df for partition/clustering info
-        columns_info = self._columns_df.filter(
+        columns_info = columns_df.filter(
             (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
-        )
+        ) if columns_df is not None else pl.DataFrame()
 
         metadata = {
             'table_name': str(table_info['table_name'][0]),
@@ -188,22 +161,22 @@ class BaseAdapter(ABC):
         metadata['table_uid'] = self._build_table_uid(table_name, effective_schema)
 
         # Row count, size, and timestamps from __TABLES__ or equivalent
-        # Try _rowcount_df first (BigQuery), then fall back to _tables_df (Snowflake)
+        # Try rowcount_df first (BigQuery), then fall back to tables_df (Snowflake)
         source_df = None
         source_info = None
 
-        if self._rowcount_df is not None and len(self._rowcount_df) > 0:
+        if rowcount_df is not None and len(rowcount_df) > 0:
             # Filter by schema and table (first column is schema_name in new approach)
-            source_info = self._rowcount_df.filter(
+            source_info = rowcount_df.filter(
                 (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == table_name)
             )
             if len(source_info) > 0:
-                source_df = self._rowcount_df
+                source_df = rowcount_df
 
         # If not found in rowcount_df, try tables_df (Snowflake has these fields in tables)
         if source_df is None and len(table_info) > 0:
             source_info = table_info
-            source_df = self._tables_df
+            source_df = tables_df
 
         if source_df is not None and source_info is not None and len(source_info) > 0:
             # Row count
@@ -259,28 +232,26 @@ class BaseAdapter(ABC):
             logger.debug(f"No effective schema for table {table_name}")
             return {}
 
-        # For cross-project queries, temporarily update the source_project_id
-        original_source_project = getattr(self, 'source_project_id', None)
-        original_cached_schema = getattr(self, '_cached_schema', None)
-        if project_id and hasattr(self, 'source_project_id'):
-            self.source_project_id = project_id
-            # Clear cache to force refetch with new project_id
-            self._cached_schema = None
+        # Ensure metadata is cached for this (project_id, schema, table) combination
+        self._ensure_metadata(effective_schema, [table_name], project_id)
 
-        try:
-            self._ensure_metadata(effective_schema, [table_name])
-        finally:
-            # Restore original source_project_id and cache state
-            if hasattr(self, 'source_project_id'):
-                self.source_project_id = original_source_project
-                self._cached_schema = original_cached_schema
+        # Get cache entry for this (project_id, schema)
+        cache_key = (project_id, effective_schema)
+        if cache_key not in self._metadata_cache:
+            return {}
 
-        table_cols = self._columns_df.filter(
+        cache_entry = self._metadata_cache[cache_key]
+        columns_df = cache_entry.get('columns_df')
+
+        if columns_df is None:
+            return {}
+
+        table_cols = columns_df.filter(
             (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
         )
 
         # Check if description column exists
-        has_descriptions = 'description' in self._columns_df.columns
+        has_descriptions = 'description' in columns_df.columns
         if not has_descriptions:
             logger.debug(f"'description' column not found in columns_df for {table_name}")
 
@@ -296,61 +267,85 @@ class BaseAdapter(ABC):
 
         return result
 
-    def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None) -> List[str]:
+    def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
         """Get primary key columns by filtering cached pk_df"""
         effective_schema = schema or self.connection_params.get('schema')
         if not effective_schema:
             return []
 
-        self._ensure_metadata(effective_schema, [table_name])
+        # Ensure metadata is cached for this (project_id, schema, table) combination
+        self._ensure_metadata(effective_schema, [table_name], project_id)
 
-        if self._pk_df is None or len(self._pk_df) == 0:
+        # Get cache entry for this (project_id, schema)
+        cache_key = (project_id, effective_schema)
+        if cache_key not in self._metadata_cache:
             return []
 
-        pk_cols = self._pk_df.filter(
+        cache_entry = self._metadata_cache[cache_key]
+        pk_df = cache_entry.get('pk_df')
+
+        if pk_df is None or len(pk_df) == 0:
+            return []
+
+        pk_cols = pk_df.filter(
             (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
         )
 
         return [str(col) for col in pk_cols['column_name'].to_list()]
 
-    def get_row_count(self, table_name: str, schema: Optional[str] = None, approximate: bool = True) -> Optional[int]:
+    def get_row_count(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None, approximate: bool = True) -> Optional[int]:
         """Get row count from cached metadata or exact count"""
         effective_schema = schema or self.connection_params.get('schema')
         if not effective_schema:
             return None
 
         if approximate:
-            self._ensure_metadata(effective_schema, [table_name])
+            # Ensure metadata is cached for this (project_id, schema, table) combination
+            self._ensure_metadata(effective_schema, [table_name], project_id)
 
-            if self._rowcount_df is not None and len(self._rowcount_df) > 0:
-                rowcount_info = self._rowcount_df.filter(
-                    (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == table_name)
-                )
-                if len(rowcount_info) > 0 and 'row_count' in rowcount_info.columns:
-                    return int(rowcount_info['row_count'][0])
+            # Get cache entry for this (project_id, schema)
+            cache_key = (project_id, effective_schema)
+            if cache_key in self._metadata_cache:
+                cache_entry = self._metadata_cache[cache_key]
+                rowcount_df = cache_entry.get('rowcount_df')
+
+                if rowcount_df is not None and len(rowcount_df) > 0:
+                    rowcount_info = rowcount_df.filter(
+                        (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == table_name)
+                    )
+                    if len(rowcount_info) > 0 and 'row_count' in rowcount_info.columns:
+                        return int(rowcount_info['row_count'][0])
 
         # Fallback to exact count
         try:
-            table = self.get_table(table_name, schema)
+            table = self.get_table(table_name, schema, project_id)
             count_result = table.count().to_polars()
             return int(count_result[0, 0])
         except Exception as e:
             logging.getLogger(__name__).error(f"Could not get row count: {e}")
             return None
 
-    def get_all_tables(self, schema: Optional[str] = None) -> List[str]:
+    def get_all_tables(self, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
         """Get list of all tables by filtering cached tables_df"""
         effective_schema = schema or self.connection_params.get('schema')
         if not effective_schema:
             return []
 
         # Listing all tables requires full coverage
-        self._ensure_metadata(effective_schema, None)
+        self._ensure_metadata(effective_schema, None, project_id)
 
-        if self._tables_df is None or len(self._tables_df) == 0:
+        # Get cache entry for this (project_id, schema)
+        cache_key = (project_id, effective_schema)
+        if cache_key not in self._metadata_cache:
             return []
 
-        return self._tables_df['table_name'].to_list()
+        cache_entry = self._metadata_cache[cache_key]
+        tables_df = cache_entry.get('tables_df')
+
+        if tables_df is None or len(tables_df) == 0:
+            return []
+
+        return tables_df['table_name'].to_list()
 
     @abstractmethod
     def estimate_bytes_scanned(
@@ -380,12 +375,7 @@ class BaseAdapter(ABC):
         """Close database connection and clear cache"""
         if self.conn is not None:
             self.conn = None
-            self._tables_df = None
-            self._columns_df = None
-            self._pk_df = None
-            self._rowcount_df = None
-            self._cached_schema = None
-            self._fetched_tables = None
+            self._metadata_cache.clear()
 
     def __enter__(self):
         """Context manager entry"""
