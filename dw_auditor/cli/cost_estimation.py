@@ -43,17 +43,7 @@ def prefetch_metadata(
 
     # Prefetch filtered metadata per (project_id, schema) group
     for (project_id, schema), tables in tables_by_project_schema.items():
-        # Temporarily set source_project_id for cross-project metadata fetching
-        original_source_project = getattr(db_conn.adapter, 'source_project_id', None)
-        if project_id and hasattr(db_conn.adapter, 'source_project_id'):
-            db_conn.adapter.source_project_id = project_id
-
-        try:
-            db_conn.prefetch_metadata(schema, tables)
-        finally:
-            # Restore original source_project_id
-            if hasattr(db_conn.adapter, 'source_project_id'):
-                db_conn.adapter.source_project_id = original_source_project
+        db_conn.prefetch_metadata(schema, tables, project_id)
 
     print(f"Metadata cached for all tables")
 
@@ -90,18 +80,13 @@ def estimate_bigquery_costs(
         table_conn_params = config.get_table_connection_params(table)
         project_id = table_conn_params.get('project_id') if config.backend == 'bigquery' else None
 
-        # For estimation, avoid metadata lookups to prevent duplicate queries
-        is_cross_project = hasattr(db_conn, 'source_project_id') and db_conn.source_project_id
-
-        # Determine sample size for estimation (no row_count checks to avoid metadata)
+        # Determine sample size for estimation
+        # Note: We don't check row_count here to avoid duplicate metadata queries
+        # (metadata is already prefetched above)
         should_sample = False
         sample_size = None
         if custom_query:
             should_sample = False
-        elif is_cross_project:
-            # Heuristic without row_count
-            should_sample = False
-            sample_size = None
 
         # Temporarily set source_project_id for cross-project byte estimation
         original_source_project = getattr(db_conn.adapter, 'source_project_id', None)

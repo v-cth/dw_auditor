@@ -107,9 +107,9 @@ class DatabaseConnection:
             project_id=project_id
         )
 
-    def get_all_tables(self, schema: Optional[str] = None) -> List[str]:
+    def get_all_tables(self, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
         """Get list of all tables in the schema"""
-        return self.adapter.get_all_tables(schema)
+        return self.adapter.get_all_tables(schema, project_id)
 
     def get_table_metadata(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Any]:
         """Get table metadata
@@ -121,9 +121,9 @@ class DatabaseConnection:
         """
         return self.adapter.get_table_metadata(table_name, schema, project_id)
 
-    def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None) -> List[str]:
+    def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
         """Get primary key column names"""
-        return self.adapter.get_primary_key_columns(table_name, schema)
+        return self.adapter.get_primary_key_columns(table_name, schema, project_id)
 
     def get_table_schema(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
         """
@@ -160,23 +160,24 @@ class DatabaseConnection:
             columns=columns
         )
 
-    def get_row_count(self, table_name: str, schema: Optional[str] = None, approximate: bool = True) -> Optional[int]:
+    def get_row_count(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None, approximate: bool = True) -> Optional[int]:
         """Get row count for a table"""
-        return self.adapter.get_row_count(table_name, schema, approximate)
+        return self.adapter.get_row_count(table_name, schema, project_id, approximate)
 
     def list_tables(self, schema: Optional[str] = None) -> List[str]:
         """List available tables"""
         return self.adapter.list_tables(schema)
 
-    def prefetch_metadata(self, schema: str, table_names: List[str]):
+    def prefetch_metadata(self, schema: str, table_names: List[str], project_id: Optional[str] = None):
         """
         Pre-fetch metadata for specific tables (recommended for multi-table audits)
 
         Args:
             schema: Schema/dataset name
             table_names: List of table names to fetch metadata for
+            project_id: Optional project ID for cross-project queries (BigQuery only)
         """
-        return self.adapter.prefetch_metadata(schema, table_names)
+        return self.adapter.prefetch_metadata(schema, table_names, project_id)
 
     def close(self):
         """Close database connection"""

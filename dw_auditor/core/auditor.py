@@ -179,7 +179,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             table_metadata['primary_key_source'] = 'user_config'
         else:
             try:
-                primary_key_columns = db_conn.get_primary_key_columns(table_name, schema)
+                primary_key_columns = db_conn.get_primary_key_columns(table_name, schema, project_id)
                 if primary_key_columns:
                     logger.info(f"Primary key from schema: {', '.join(primary_key_columns)}")
                     table_metadata['primary_key_columns'] = primary_key_columns
@@ -188,14 +188,12 @@ class SecureTableAuditor(AuditorExporterMixin):
                 logger.warning(f"Could not get primary key info: {e}")
 
         # Handle row count for different scenarios
-        is_cross_project = backend == 'bigquery' and hasattr(db_conn, 'source_project_id') and db_conn.source_project_id
-
         if custom_query:
             logger.info("Using custom query - will count rows from query result")
             row_count = None
-        elif row_count is None and not is_cross_project:
+        elif row_count is None:
             try:
-                row_count = db_conn.get_row_count(table_name, schema)
+                row_count = db_conn.get_row_count(table_name, schema, project_id)
                 if row_count is not None:
                     logger.info(f"Table has {row_count:,} rows")
                 else:
@@ -203,9 +201,6 @@ class SecureTableAuditor(AuditorExporterMixin):
             except Exception as e:
                 logger.warning(f"Could not get row count: {e}")
                 logger.info("Will load full table")
-        elif is_cross_project:
-            logger.warning("Cross-project query detected - skipping row count (too expensive)")
-            logger.info(f"Will sample {self.sample_size:,} rows")
 
         return table_metadata, row_count, primary_key_columns
 
@@ -703,13 +698,9 @@ class SecureTableAuditor(AuditorExporterMixin):
                     columns_to_load = None
 
             # Determine if we should sample
-            is_cross_project = backend == 'bigquery' and hasattr(db_conn, 'source_project_id') and db_conn.source_project_id
-
             if custom_query:
                 should_sample = False
                 logger.info("Custom query provided - using query as-is (no additional sampling)")
-            elif is_cross_project:
-                should_sample = sample_in_db and (row_count is None or row_count > self.sample_size)
             else:
                 should_sample = sample_in_db and row_count and row_count > self.sample_size
 
