@@ -575,7 +575,7 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
 
             # Calculate lane offset for multiple parallel relationships
             if num_rels > 1:
-                lane_offset = (i - (num_rels - 1) / 2) * 15
+                lane_offset = (i - (num_rels - 1) / 2) * 30
             else:
                 lane_offset = 0
 
@@ -1063,7 +1063,7 @@ def generate_standalone_relationships_report(
 
             # Calculate lane offset for multiple parallel relationships
             if num_rels > 1:
-                lane_offset = (i - (num_rels - 1) / 2) * 15
+                lane_offset = (i - (num_rels - 1) / 2) * 30
             else:
                 lane_offset = 0
 

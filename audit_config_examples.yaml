@@ -28,6 +28,11 @@ bigquery_with_service_account:
       - "customer_id"
       - "user_email"
 
+  relationship_detection:
+    enabled: true
+    confidence_threshold: 0.7
+    min_confidence_display: 0.5
+
   output:
     directory: "audit_results/bigquery"
     formats:
@@ -185,6 +190,11 @@ bigquery_production:
     exclude_columns:
       - "internal_notes"
       - "system_metadata"
+
+  relationship_detection:
+    enabled: true
+    confidence_threshold: 0.8        # Higher threshold for production
+    min_confidence_display: 0.6
 
   output:
     directory: "/mnt/audit_reports"

@@ -33,6 +33,10 @@ tables:
   - orders
   - order_items
   - products
+  - name: dim_station_v
+    schema: dbt_prod
+  - name: dim_station
+    schema: dbt_prod
 
   # Cross-project table example (BigQuery)
   - name: crime
@@ -128,6 +132,29 @@ column_insights:
   #   orders:
   #     total_price:
   #       quantiles: true  # Note: composite insights only accept boolean, not custom quantile lists
+
+# Relationship Detection Configuration
+# ----------------------------------------------------------------------------
+# Automatically discover foreign key relationships between tables
+relationship_detection:
+  enabled: true                     # Enable automatic relationship detection
+  confidence_threshold: 0.7          # Minimum confidence (0.0-1.0) to report a relationship
+  min_confidence_display: 0.5        # Minimum confidence to display in reports
+
+  # How it works:
+  # - Analyzes column names, data types, and value distributions
+  # - Detects potential foreign key relationships (e.g., orders.customer_id → customers.id)
+  # - Generates confidence scores based on:
+  #   - Name similarity (e.g., "customer_id" matches "id" in customers table)
+  #   - Data type compatibility
+  #   - Value overlap (% of foreign key values that exist in primary key)
+  #   - Uniqueness constraints
+  # - Creates visual ER diagrams in HTML reports
+
+  # Example: Enable for multi-table audits to discover schema relationships
+  # enabled: true
+  # confidence_threshold: 0.7   # Report relationships with >= 70% confidence
+  # min_confidence_display: 0.5 # Show all relationships >= 50% in reports
 
 # Output Configuration
 # ----------------------------------------------------------------------------

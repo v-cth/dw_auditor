@@ -103,7 +103,7 @@ class PolarsRelationshipDetector:
     def _find_table_relationships(self, table1: str, table2: str,
                                  confidence_threshold: float) -> List[Dict]:
         """
-        Find all relationships between two tables
+        Find top 2 most relevant relationships between two tables
 
         Args:
             table1: First table name
@@ -111,7 +111,7 @@ class PolarsRelationshipDetector:
             confidence_threshold: Minimum confidence to report
 
         Returns:
-            List of relationship dictionaries
+            List of up to 2 relationship dictionaries (highest confidence)
         """
         relationships = []
         df1 = self.tables[table1]
@@ -150,7 +150,9 @@ class PolarsRelationshipDetector:
                     }
                     relationships.append(relationship)
 
-        return relationships
+        # Sort by confidence (descending) and keep only top 2
+        relationships.sort(key=lambda x: x['confidence'], reverse=True)
+        return relationships[:2]  # Keep only the 2 most relevant relationships
 
     def _calculate_relationship_confidence(self, table1: str, col1: str,
                                           table2: str, col2: str) -> float:
