@@ -118,7 +118,7 @@ class BaseAdapter(ABC):
             schema: Schema/dataset name
             project_id: Optional project ID for cross-project queries (BigQuery only)
         """
-        effective_schema = schema or self.connection_params.get('schema')
+        effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             return {}
 
@@ -227,7 +227,7 @@ class BaseAdapter(ABC):
         import logging
         logger = logging.getLogger(__name__)
 
-        effective_schema = schema or self.connection_params.get('schema')
+        effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             logger.debug(f"No effective schema for table {table_name}")
             return {}
@@ -269,7 +269,7 @@ class BaseAdapter(ABC):
 
     def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
         """Get primary key columns by filtering cached pk_df"""
-        effective_schema = schema or self.connection_params.get('schema')
+        effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             return []
 
@@ -295,7 +295,7 @@ class BaseAdapter(ABC):
 
     def get_row_count(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None, approximate: bool = True) -> Optional[int]:
         """Get row count from cached metadata or exact count"""
-        effective_schema = schema or self.connection_params.get('schema')
+        effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             return None
 
@@ -327,7 +327,7 @@ class BaseAdapter(ABC):
 
     def get_all_tables(self, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
         """Get list of all tables by filtering cached tables_df"""
-        effective_schema = schema or self.connection_params.get('schema')
+        effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             return []
 

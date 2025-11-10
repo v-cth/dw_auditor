@@ -7,16 +7,22 @@
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
-  # Connection string for your database
-  # Examples:
-  #   PostgreSQL: postgresql://user:password@localhost:5432/database
-  #   MySQL: mysql://user:password@localhost:3306/database
-  #   SQLite: sqlite:///path/to/database.db
-  #   Snowflake: snowflake://user:password@account/database/schema
-  connection_string: "postgresql://user:password@localhost:5432/mydb"
-  
-  # Optional: Schema name (e.g., 'public', 'dbo', 'analytics')
-  schema: "public"
+  backend: "bigquery"  # Options: bigquery, snowflake
+  connection_params:
+    # Required: default_database and default_schema for all backends
+    default_database: "portfolio-402"  # BigQuery: project_id | Snowflake: database name
+    default_schema: "demo"        # BigQuery: dataset | Snowflake: schema name
+
+    # Optional for BigQuery:
+    # credentials_path: "/path/to/service-account-key.json"
+    # If not specified, uses Application Default Credentials (gcloud auth)
+
+    # Required for Snowflake (if using Snowflake):
+    # account: "my-account"
+    # user: "my-user"
+    # password: "my-password"
+    # warehouse: "my-warehouse"  # Optional
+    # role: "my-role"            # Optional
 
 # Tables to Audit
 # ----------------------------------------------------------------------------
@@ -25,27 +31,25 @@ tables:
   # Simple table names
   - customers
   - orders
+  - order_items
   - products
-  
+
+  # Cross-project table example (BigQuery)
+  - name: crime
+    database: bigquery-public-data
+    schema: chicago_crime
+
   # Table with custom query (for filtering or joining)
-  - name: recent_transactions
-    query: "SELECT * FROM transactions WHERE created_at > NOW() - INTERVAL '30 days'"
-  
-  - name: active_users
-    query: "SELECT * FROM users WHERE status = 'active'"
+  # - name: recent_transactions
+  #   query: "SELECT * FROM transactions WHERE created_at > NOW() - INTERVAL '30 days'"
+
 
 # Sampling Configuration
 # ----------------------------------------------------------------------------
+# Sampling always uses database-native operations via Ibis (fast & secure)
 sampling:
-  # Number of rows to sample if table exceeds threshold
-  sample_size: 100000
-  
-  # Row count threshold to trigger sampling
-  sample_threshold: 1000000
-  
-  # Use database-native sampling (faster, more secure)
-  # If true, sampling happens in the database before loading data
-  sample_in_db: true
+  # Number of rows to sample from large tables
+  sample_size: 10000
 
 # Security Settings
 # ----------------------------------------------------------------------------
@@ -61,43 +65,69 @@ security:
     - "internal_code"
     - "confidential"
 
-# Quality Checks Configuration
+# Column-Level Quality Checks Configuration
 # ----------------------------------------------------------------------------
-# Enable/disable specific checks
-checks:
-  # Check for leading/trailing whitespace
-  trailing_spaces: true
-  
-  # Check for values that differ only in case (e.g., "JOHN" vs "john")
-  case_duplicates: true
-  
-  # Check for special characters (emojis, accents, etc.)
-  special_characters: true
-  
-  # Check for string columns containing only numbers
-  numeric_strings: true
-  
-  # Check for timestamps that are effectively dates
-  timestamp_patterns: true
-  
-  # Custom regex pattern for special characters
-  # Default: [^a-zA-Z0-9\s\.,\-_@]
-  special_chars_pattern: "[^a-zA-Z0-9\\s\\.,\\-_@]"
+# Define data quality checks per data type
+column_checks:
+  defaults:
+    string:
+      trailing_characters: true     # Detect trailing whitespace
+      case_duplicates: true          # Find duplicates ignoring case
+      numeric_strings: true          # Flag string columns containing mostly numbers
+    datetime:
+      future_dates: true             # Detect dates in the future
+      date_outliers:                 # Detect suspicious placeholder years
+        min_year: 1950
+        max_year: 2100
+        problematic_years: [1900, 1970, 2099, 2999, 9999]
+    numeric:
+      greater_than_or_equal: 0       # Ensure non-negative values
 
-# Detection Thresholds (percentages)
+  # Per-table/column overrides (optional)
+  tables:
+    orders:
+      order_id:
+        uniqueness: true             # Ensure order IDs are unique
+      order_date:
+        after: "2020-01-01"          # Business rule: orders after 2020
+    customers:
+      email:
+        regex_patterns:              # Validate email format
+          pattern: "^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"
+          mode: "match"
+          description: "Valid email format"
+
+# Column-Level Insights Configuration
 # ----------------------------------------------------------------------------
-thresholds:
-  # Percentage of numeric values to flag a string column as "should be numeric"
-  # Example: If 85% of values in a string column are numbers, flag it
-  numeric_string_pct: 80
-  
-  # Percentage threshold for constant hour detection
-  # Example: If 92% of timestamps have the same hour, flag as date-only
-  constant_hour_pct: 90
-  
-  # Percentage threshold for midnight timestamps
-  # Example: If 96% of timestamps are at midnight, suggest DATE type
-  midnight_pct: 95
+# Define statistical insights per data type
+column_insights:
+  defaults:
+    string:
+      top_values: 10                 # Show top 10 most frequent values
+      min_length: true
+      max_length: true
+      avg_length: true
+    numeric:
+      min: true
+      max: true
+      mean: true
+      std: true                      # Standard deviation
+      quantiles: true                # Default quantiles: 25th, 50th, 75th percentiles
+      top_values: 5                  # Show top 5 most common numeric values
+    datetime:
+      min_date: true
+      max_date: true
+      date_range_days: true
+      most_common_days: 7            # Most common days of week
+      most_common_hours: 10          # Most common hours of day
+    boolean:
+      top_values: 2                  # True/False distribution
+
+  # Per-table/column overrides (optional)
+  # tables:
+  #   orders:
+  #     total_price:
+  #       quantiles: true  # Note: composite insights only accept boolean, not custom quantile lists
 
 # Output Configuration
 # ----------------------------------------------------------------------------
@@ -158,7 +188,6 @@ filters:
 #     - "confidential"
 #     - "restricted"
 # sampling:
-#   sample_in_db: true
 #   sample_size: 10000
 # output:
 #   directory: "secure_audits"
@@ -176,8 +205,6 @@ filters:
 #   - dim_time
 # sampling:
 #   sample_size: 500000
-#   sample_threshold: 5000000
-#   sample_in_db: true
 # security:
 #   mask_pii: true
 # output:
@@ -196,8 +223,6 @@ filters:
 #   special_characters: false
 #   numeric_strings: false
 #   timestamp_patterns: false
-# sampling:
-#   sample_threshold: 10000
 # output:
 #   directory: "quick_audit"
 #   formats: [html]

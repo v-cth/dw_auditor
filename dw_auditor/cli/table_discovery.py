@@ -27,7 +27,7 @@ def discover_tables(config: 'AuditConfig') -> List[str]:
     db_conn.connect()
 
     try:
-        all_tables = db_conn.get_all_tables(config.schema)
+        all_tables = db_conn.get_all_tables(config.default_schema)
         print(f"📋 Found {len(all_tables)} tables in schema")
 
         # Apply filters

@@ -203,8 +203,8 @@ python audit.py --yes
 **Snowflake**: Check username/password or use `authenticator: externalbrowser` for SSO
 
 ### Performance
-- Use `sample_in_db: true` for large tables (database-native sampling)
-- Increase `sample_size` carefully (default: 10,000 rows)
+- Sampling is always database-native via Ibis (fast & secure)
+- Increase `sample_size` carefully (default: 100,000 rows)
 - Use `--discover` for metadata-only scans
 
 ### Memory Issues

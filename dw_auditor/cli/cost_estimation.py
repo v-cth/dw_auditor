@@ -34,9 +34,9 @@ def prefetch_metadata(
     tables_by_project_schema = defaultdict(list)
     for table in tables_to_audit:
         schema = config.get_table_schema(table)
-        # Get table-specific connection params to extract project_id
+        # Get table-specific connection params to extract database (project_id for BigQuery)
         table_conn_params = config.get_table_connection_params(table)
-        project_id = table_conn_params.get('project_id') if config.backend == 'bigquery' else None
+        project_id = table_conn_params.get('default_database') if config.backend == 'bigquery' else None
         # Use (project_id, schema) as key
         key = (project_id, schema)
         tables_by_project_schema[key].append(table)
@@ -78,7 +78,7 @@ def estimate_bigquery_costs(
         sampling_config = config.get_table_sampling_config(table)
         custom_query = config.table_queries.get(table, None)
         table_conn_params = config.get_table_connection_params(table)
-        project_id = table_conn_params.get('project_id') if config.backend == 'bigquery' else None
+        project_id = table_conn_params.get('default_database') if config.backend == 'bigquery' else None
 
         # Determine sample size for estimation
         # Note: We don't check row_count here to avoid duplicate metadata queries

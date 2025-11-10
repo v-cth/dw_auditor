@@ -42,8 +42,14 @@ class SnowflakeAdapter(BaseAdapter):
         if 'password' in self.connection_params:
             conn_kwargs['password'] = self.connection_params['password']
 
-        # Add optional parameters
-        optional_params = ['database', 'schema', 'warehouse', 'role', 'authenticator']
+        # Map unified naming to Snowflake terms
+        if 'default_database' in self.connection_params:
+            conn_kwargs['database'] = self.connection_params['default_database']
+        if 'default_schema' in self.connection_params:
+            conn_kwargs['schema'] = self.connection_params['default_schema']
+
+        # Add other optional parameters
+        optional_params = ['warehouse', 'role', 'authenticator']
         for param in optional_params:
             if param in self.connection_params:
                 conn_kwargs[param] = self.connection_params[param]
@@ -68,11 +74,11 @@ class SnowflakeAdapter(BaseAdapter):
         if self.conn is None:
             self.connect()
 
-        database = self.connection_params.get('database')
+        database = self.connection_params.get('default_database')
         if not database:
-            raise ValueError("Snowflake requires 'database' parameter")
+            raise ValueError("Snowflake requires 'default_database' parameter")
 
-        schema_name = schema or self.connection_params.get('schema', 'PUBLIC')
+        schema_name = schema or self.connection_params.get('default_schema', 'PUBLIC')
 
         # Snowflake doesn't use project_id, always None in cache key
         cache_key = (None, schema)
@@ -229,7 +235,7 @@ class SnowflakeAdapter(BaseAdapter):
         metadata = super().get_table_metadata(table_name, schema, project_id)
 
         # Add clustering_key if present
-        effective_schema = schema or self.connection_params.get('schema')
+        effective_schema = schema or self.connection_params.get('default_schema')
         cache_key = (None, effective_schema)  # Snowflake always uses None for project_id
 
         if cache_key in self._metadata_cache:
@@ -327,5 +333,5 @@ class SnowflakeAdapter(BaseAdapter):
 
     def _build_table_uid(self, table_name: str, schema: str) -> str:
         """Build Snowflake table UID: database.schema.table"""
-        database = self.connection_params.get('database')
+        database = self.connection_params.get('default_database')
         return f"{database}.{schema}.{table_name}"

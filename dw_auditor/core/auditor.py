@@ -586,7 +586,6 @@ class SecureTableAuditor(AuditorExporterMixin):
         connection_params: Dict,
         schema: Optional[str] = None,
         mask_pii: bool = True,
-        sample_in_db: bool = True,
         custom_query: Optional[str] = None,
         custom_pii_keywords: Optional[List[str]] = None,
         user_primary_key: Optional[List[str]] = None,
@@ -622,7 +621,6 @@ class SecureTableAuditor(AuditorExporterMixin):
                 }
             schema: Schema name (optional, overrides connection default)
             mask_pii: Automatically mask columns with PII keywords
-            sample_in_db: Use database sampling for large tables (faster & more secure)
             custom_query: Custom SQL query instead of SELECT * (advanced)
             custom_pii_keywords: Additional PII keywords beyond defaults
             audit_mode: Audit mode ('full', 'checks', 'insights', 'discover')
@@ -637,7 +635,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             Dictionary with audit results
         """
         # Log the audit
-        self._log_audit(table_name, f"{backend}://{connection_params.get('project_id') or connection_params.get('account')}")
+        self._log_audit(table_name, f"{backend}://{connection_params.get('default_database') or connection_params.get('account')}")
 
         logger.info("Secure audit mode: Direct database query via Ibis (no file export)")
 
@@ -653,8 +651,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                 should_close_conn = True
 
         try:
-            # Extract project_id for cross-project queries (BigQuery only)
-            project_id = connection_params.get('project_id') if backend == 'bigquery' else None
+            # Extract database (project_id for BigQuery) for cross-project queries
+            project_id = connection_params.get('default_database') if backend == 'bigquery' else None
 
             # Get table metadata
             with timing_phase('metadata', phase_timings):
@@ -697,12 +695,12 @@ class SecureTableAuditor(AuditorExporterMixin):
                     logger.warning(f"Column optimization failed ({e}), will load all columns")
                     columns_to_load = None
 
-            # Determine if we should sample
+            # Determine if we should sample (database-native sampling via Ibis)
             if custom_query:
                 should_sample = False
                 logger.info("Custom query provided - using query as-is (no additional sampling)")
             else:
-                should_sample = sample_in_db and row_count and row_count > self.sample_size
+                should_sample = row_count and row_count > self.sample_size
 
             # Load data
             with timing_phase('data_loading', phase_timings):

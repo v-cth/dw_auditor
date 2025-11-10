@@ -10,10 +10,9 @@ bigquery_with_service_account:
   database:
     backend: "bigquery"
     connection_params:
-      project_id: "my-gcp-project"
-      dataset_id: "analytics"
+      default_database: "my-gcp-project"  # BigQuery project_id
+      default_schema: "analytics"          # BigQuery dataset
       credentials_path: "/path/to/service-account-key.json"
-    schema: null  # Use dataset_id from connection_params
 
   tables:
     - users
@@ -22,8 +21,6 @@ bigquery_with_service_account:
 
   sampling:
     sample_size: 100000
-    sample_threshold: 1000000
-    sample_in_db: true
 
   security:
     mask_pii: true
@@ -45,10 +42,9 @@ bigquery_with_adc:
   database:
     backend: "bigquery"
     connection_params:
-      project_id: "my-gcp-project"
-      dataset_id: "analytics"
+      default_database: "my-gcp-project"  # BigQuery project_id
+      default_schema: "analytics"          # BigQuery dataset
       # No credentials_path - uses Application Default Credentials
-    schema: null
 
   tables:
     - dim_customers
@@ -56,8 +52,6 @@ bigquery_with_adc:
 
   sampling:
     sample_size: 50000
-    sample_threshold: 500000
-    sample_in_db: true
 
   security:
     mask_pii: true
@@ -74,14 +68,13 @@ snowflake_basic:
   database:
     backend: "snowflake"
     connection_params:
+      default_database: "ANALYTICS_DB"  # Snowflake database
+      default_schema: "PUBLIC"          # Snowflake schema
       account: "my-account"
       user: "audit_user"
       password: "secure_password"
-      database: "ANALYTICS_DB"
       warehouse: "COMPUTE_WH"
-      schema: "PUBLIC"
       role: "ANALYST_ROLE"
-    schema: null  # Use schema from connection_params
 
   tables:
     - CUSTOMERS
@@ -90,8 +83,6 @@ snowflake_basic:
 
   sampling:
     sample_size: 100000
-    sample_threshold: 1000000
-    sample_in_db: true
 
   security:
     mask_pii: true
@@ -115,12 +106,12 @@ snowflake_custom_queries:
   database:
     backend: "snowflake"
     connection_params:
+      default_database: "PROD_DB"      # Snowflake database
+      default_schema: "ANALYTICS"      # Snowflake schema
       account: "my-account"
       user: "audit_user"
       password: "secure_password"
-      database: "PROD_DB"
       warehouse: "AUDIT_WH"
-      schema: "ANALYTICS"
 
   tables:
     # Simple table name
@@ -135,8 +126,6 @@ snowflake_custom_queries:
 
   sampling:
     sample_size: 50000
-    sample_threshold: 500000
-    sample_in_db: true
 
   checks:
     trailing_spaces: true
@@ -165,8 +154,8 @@ bigquery_production:
   database:
     backend: "bigquery"
     connection_params:
-      project_id: "prod-data-warehouse"
-      dataset_id: "reporting"
+      default_database: "prod-data-warehouse"  # BigQuery project_id
+      default_schema: "reporting"               # BigQuery dataset
       credentials_path: "/etc/secrets/bq-audit-key.json"
 
   tables:
@@ -176,8 +165,6 @@ bigquery_production:
 
   sampling:
     sample_size: 250000
-    sample_threshold: 5000000
-    sample_in_db: true
 
   security:
     mask_pii: true
@@ -214,8 +201,8 @@ minimal_bigquery:
   database:
     backend: "bigquery"
     connection_params:
-      project_id: "my-project"
-      dataset_id: "my_dataset"
+      default_database: "my-project"   # BigQuery project_id
+      default_schema: "my_dataset"     # BigQuery dataset
 
   tables:
     - users
@@ -229,10 +216,11 @@ minimal_snowflake:
   database:
     backend: "snowflake"
     connection_params:
+      default_database: "my_db"        # Snowflake database
+      default_schema: "PUBLIC"         # Snowflake schema
       account: "my-account"
       user: "my-user"
       password: "my-password"
-      database: "my_db"
       warehouse: "my_warehouse"
 
   tables:
