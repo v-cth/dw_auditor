@@ -1103,6 +1103,7 @@ class SecureTableAuditor(AuditorExporterMixin):
                         'converted_values': successful_conversions
                     })
                     logger.info(f"  ✓ {col}: string → int64 ({success_rate:.1%} success)")
+                    print(f"⚠️  Auto-converted '{col}' from string to int64 ({success_rate:.1%} success)\n")
                     continue
             except Exception:
                 pass  # Integer conversion failed, try next type
@@ -1124,6 +1125,7 @@ class SecureTableAuditor(AuditorExporterMixin):
                         'converted_values': successful_conversions
                     })
                     logger.info(f"  ✓ {col}: string → float64 ({success_rate:.1%} success)")
+                    print(f"⚠️  Auto-converted '{col}' from string to float64 ({success_rate:.1%} success)\n")
                     continue
             except Exception:
                 pass  # Float conversion failed, try next type
@@ -1145,6 +1147,7 @@ class SecureTableAuditor(AuditorExporterMixin):
                         'converted_values': successful_conversions
                     })
                     logger.info(f"  ✓ {col}: string → datetime ({success_rate:.1%} success)")
+                    print(f"⚠️  Auto-converted '{col}' from string to datetime ({success_rate:.1%} success)\n")
                     continue
             except Exception:
                 pass  # Datetime conversion failed, try next type
@@ -1166,6 +1169,7 @@ class SecureTableAuditor(AuditorExporterMixin):
                         'converted_values': successful_conversions
                     })
                     logger.info(f"  ✓ {col}: string → date ({success_rate:.1%} success)")
+                    print(f"⚠️  Auto-converted '{col}' from string to date ({success_rate:.1%} success)\n")
                     continue
             except Exception:
                 pass  # Date conversion failed, keep as string

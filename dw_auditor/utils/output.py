@@ -59,6 +59,17 @@ def print_column_summary(results: Dict):
         print(f"{col_name:<30} {dtype_display:<30} {status_display:<12} {null_display:<15} {distinct_display:<15}")
 
     print("=" * 115)
+
+    # Show conversion summary if any columns were converted
+    converted_cols = [(col_name, col_data) for col_name, col_data in results['column_summary'].items()
+                      if 'source_dtype' in col_data]
+    if converted_cols:
+        print("\n💡 Auto-converted columns:")
+        for col_name, col_data in converted_cols:
+            source = col_data['source_dtype'].lower()
+            converted = col_data['dtype'].lower()
+            print(f"   • {col_name}: {source} → {converted}")
+
     print()
 
 

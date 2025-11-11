@@ -77,7 +77,6 @@ column_checks:
     string:
       trailing_characters: true     # Detect trailing whitespace
       case_duplicates: true          # Find duplicates ignoring case
-      numeric_strings: true          # Flag string columns containing mostly numbers
     datetime:
       future_dates: true             # Detect dates in the future
       date_outliers:                 # Detect suspicious placeholder years
@@ -248,7 +247,6 @@ filters:
 #   trailing_spaces: true
 #   case_duplicates: true
 #   special_characters: false
-#   numeric_strings: false
 #   timestamp_patterns: false
 # output:
 #   directory: "quick_audit"

@@ -350,4 +350,19 @@ def _generate_column_summary_table(results: Dict) -> str:
         </table>
     </div>
 """
+
+    # Show conversion summary if any columns were converted
+    converted_cols = [(col_name, col_data) for col_name, col_data in results['column_summary'].items()
+                      if 'source_dtype' in col_data]
+    if converted_cols:
+        html += '    <div style="margin-top: 16px; padding: 12px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">\n'
+        html += '        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">💡 Auto-converted columns:</div>\n'
+        html += '        <ul style="margin: 0; padding-left: 20px; color: #78350f;">\n'
+        for col_name, col_data in converted_cols:
+            source = col_data['source_dtype'].lower()
+            converted = col_data['dtype'].lower()
+            html += f'            <li><code>{col_name}</code>: {source} → {converted}</li>\n'
+        html += '        </ul>\n'
+        html += '    </div>\n'
+
     return html

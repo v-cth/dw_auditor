@@ -618,7 +618,6 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
         return ""
 
     html = """
-    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <h2 style="margin-top: 0; color: #1f2937;">Column Insights</h2>
         <p style="color: #666; margin-bottom: 20px;">Data profiling and distribution analysis</p>
 """
@@ -628,11 +627,17 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
         col_id = f"insights-{col_idx}"
         col_idx += 1
 
+        # Get column dtype from column_summary
+        dtype = results.get('column_summary', {}).get(col_name, {}).get('dtype', 'unknown')
+
         html += f"""
-        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
-            <div class="collapsible-header" onclick="toggleCollapse('{col_id}')">
+        <div class="column-card">
+            <div class="collapsible-header collapsible-section" onclick="toggleCollapse('{col_id}')">
                 <span class="collapse-icon" id="{col_id}-icon">▼</span>
-                <h3 style="margin: 0; color: #4b5563;">{col_name}</h3>
+                <div class="flex flex-between flex-center flex-1">
+                    <div class="column-name">{col_name}</div>
+                    <div class="column-type">{dtype}</div>
+                </div>
             </div>
             <div class="collapsible-content" id="{col_id}">
 """
@@ -648,7 +653,4 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
         </div>
 """
 
-    html += """
-    </div>
-"""
     return html
