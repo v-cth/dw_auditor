@@ -226,7 +226,10 @@ def _generate_metadata_section(results: Dict) -> str:
     html += '            <div class="divider"></div>\n'
     html += '                <h3 class="subsection-title">Audit Information</h3>\n'
     html += meta_item("Generated", results.get('timestamp', 'N/A'))
-    html += meta_item("Duration", f"{results.get('duration_seconds', 0):.2f}s")
+
+    # Use phase_timings total if available (more accurate), otherwise fall back to duration_seconds
+    duration = sum(results['phase_timings'].values()) if 'phase_timings' in results else results.get('duration_seconds', 0)
+    html += meta_item("Duration", f"{duration:.2f}s")
     html += meta_item("Sampled", 'Yes' if results.get('sampled', False) else 'No')
 
     html += """        </div>

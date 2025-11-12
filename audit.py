@@ -267,7 +267,8 @@ def detect_and_export_relationships(
     # Detect and display relationships
     detected_relationships = detect_and_display_relationships(
         all_table_results,
-        confidence_threshold=config.relationship_confidence_threshold
+        confidence_threshold=config.relationship_confidence_threshold,
+        exclude_tables=config.relationship_exclude_tables
     )
 
     return detected_relationships

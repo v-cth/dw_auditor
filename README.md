@@ -23,21 +23,18 @@ cd database_audit
 # 3. Install dependencies (creates venv automatically)
 uv sync
 
-# 4. Configure your database (edit audit_config.yaml)
-database:
-  backend: "bigquery"
-  connection_params:
-    project_id: "your-project"
-    schema: "your_dataset"
+# 4. Create config file
+uv run dw_auditor init
 
-tables:
-  - name: users
-  - name: orders
+# 5. Edit config with your database details
+# Config location shown after init (OS-native path)
+# Linux/Mac: ~/.config/dw_auditor/config.yaml
+# Windows: %APPDATA%\dw_auditor\config.yaml
 
-# 5. Run the audit
-uv run python audit.py
+# 6. Run the audit
+uv run dw_auditor run
 
-# 6. Open the HTML report
+# 7. Open the HTML report
 open audit_results/audit_run_*/summary.html
 ```
 
@@ -166,20 +163,25 @@ relationship_detection:
 
 ## 🔧 Advanced Usage
 
-### Discovery Mode (Metadata Only)
+### Initialize Config
 ```bash
-python audit.py --discover
-```
-Fast scan that shows all tables/views without loading data.
-
-### Custom Config File
-```bash
-python audit.py my_custom_config.yaml
+dw_auditor init                      # Create in OS-native location
+dw_auditor init --force              # Overwrite existing config
+dw_auditor init --path ./my.yaml     # Create in custom location
 ```
 
-### Auto-confirm Prompts
+### Run Audit
 ```bash
-python audit.py --yes
+dw_auditor run                       # Auto-discover config
+dw_auditor run custom.yaml           # Use specific config file
+dw_auditor run --yes                 # Auto-confirm prompts
+```
+
+### Audit Modes
+```bash
+dw_auditor run --discover            # Metadata only (fast)
+dw_auditor run --check               # Quality checks only
+dw_auditor run --insight             # Profiling only
 ```
 
 ---

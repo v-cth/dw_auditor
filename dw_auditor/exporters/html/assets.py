@@ -216,6 +216,15 @@ def _generate_css_styles() -> str:
             font-weight: 400;
         }
 
+        /* Column Summary table specific widths */
+        .table-container th:nth-child(1) { width: 20%; }  /* Column Name */
+        .table-container th:nth-child(2) { width: 18%; }  /* Data Type */
+        .table-container th:nth-child(3) { width: 12%; }  /* Status */
+        .table-container th:nth-child(4) { width: 10%; }  /* Null Count */
+        .table-container th:nth-child(5) { width: 8%; }   /* Null % */
+        .table-container th:nth-child(6) { width: 12%; }  /* Distinct Values */
+        .table-container th:nth-child(7) { width: 20%; }  /* Description */
+
         /* Column cards */
         .column-card {
             background: white;

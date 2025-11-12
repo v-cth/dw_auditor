@@ -303,9 +303,21 @@ class BaseAdapter(ABC):
             # Ensure metadata is cached for this (project_id, schema, table) combination
             self._ensure_metadata(effective_schema, [table_name], project_id)
 
-            # Get cache entry for this (project_id, schema)
+            # Check if this is a VIEW - if so, skip approximate count and go to exact count
             cache_key = (project_id, effective_schema)
             if cache_key in self._metadata_cache:
+                cache_entry = self._metadata_cache[cache_key]
+                tables_df = cache_entry.get('tables_df')
+
+                if tables_df is not None and len(tables_df) > 0:
+                    table_info = tables_df.filter(pl.col('table_name') == table_name)
+                    if len(table_info) > 0 and 'table_type' in table_info.columns:
+                        table_type = table_info['table_type'][0]
+                        if table_type == 'VIEW':
+                            # Skip approximate count for VIEWs, go directly to exact count
+                            approximate = False
+
+            if approximate and cache_key in self._metadata_cache:
                 cache_entry = self._metadata_cache[cache_key]
                 rowcount_df = cache_entry.get('rowcount_df')
 
@@ -314,7 +326,10 @@ class BaseAdapter(ABC):
                         (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == table_name)
                     )
                     if len(rowcount_info) > 0 and 'row_count' in rowcount_info.columns:
-                        return int(rowcount_info['row_count'][0])
+                        row_count = rowcount_info['row_count'][0]
+                        # If row count is 0 or None, fall through to exact count
+                        if row_count and row_count > 0:
+                            return int(row_count)
 
         # Fallback to exact count
         try:

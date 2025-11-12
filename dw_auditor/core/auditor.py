@@ -153,8 +153,13 @@ class SecureTableAuditor(AuditorExporterMixin):
                     table_type = table_metadata['table_type']
                     logger.info(f"Table type: {table_type}")
                 if 'row_count' in table_metadata and table_metadata['row_count'] is not None:
-                    row_count = table_metadata['row_count']
-                    logger.info(f"Table has {row_count:,} rows")
+                    # For VIEWs, metadata row_count is often 0 or inaccurate - skip and get exact count later
+                    if table_metadata.get('table_type') == 'VIEW' and table_metadata['row_count'] == 0:
+                        row_count = None
+                        logger.info("VIEW detected - will get exact row count")
+                    else:
+                        row_count = table_metadata['row_count']
+                        logger.info(f"Table has {row_count:,} rows")
 
                 # Display partition information
                 if 'partition_column' in table_metadata and table_metadata['partition_column']:
@@ -1046,7 +1051,9 @@ class SecureTableAuditor(AuditorExporterMixin):
         if 'check_durations' in results and results['check_durations']:
             for check_type, check_duration in results['check_durations'].items():
                 logger.info(f"  • {check_type}: {check_duration:.3f}s")
-        logger.info(f"  • Total: {duration:.2f}s")
+            # Calculate actual sum of checks (not entire audit duration)
+            total_checks = sum(results['check_durations'].values())
+            logger.info(f"  • Total: {total_checks:.2f}s")
 
         # Store DataFrame if requested (for relationship detection)
         if store_dataframe:

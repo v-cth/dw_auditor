@@ -29,10 +29,14 @@ database:
 # Can be a simple list of table names OR objects with custom queries
 tables:
   # Simple table names
-  - customers
+  - name: customers
+    primary_key: customer_id
   - orders
   - order_items
   - products
+  - name: fct_avaibility_part
+    schema: dbt_prod
+    query: "select * from fct_avaibility_part where collected_at > '2025-10-01'"
   - name: dim_station_v
     schema: dbt_prod
   - name: dim_station
@@ -53,7 +57,7 @@ tables:
 # Sampling always uses database-native operations via Ibis (fast & secure)
 sampling:
   # Number of rows to sample from large tables
-  sample_size: 10000
+  sample_size: 500000
 
 # Security Settings
 # ----------------------------------------------------------------------------
@@ -117,6 +121,11 @@ column_insights:
       std: true                      # Standard deviation
       quantiles: true                # Default quantiles: 25th, 50th, 75th percentiles
       top_values: 5                  # Show top 5 most common numeric values
+      histogram:
+        bins: 15
+        method: "equal_frequency"  # equal_width, equal_frequency, quartiles, explicit
+        edge_handling: "include_left"
+
     datetime:
       min_date: true
       max_date: true
@@ -139,6 +148,7 @@ relationship_detection:
   enabled: true                     # Enable automatic relationship detection
   confidence_threshold: 0.7          # Minimum confidence (0.0-1.0) to report a relationship
   min_confidence_display: 0.5        # Minimum confidence to display in reports
+  exclude_tables: ["dim_station_v"]                 # Tables to exclude from relationship detection (e.g., ["staging_temp", "logs"])
 
   # How it works:
   # - Analyzes column names, data types, and value distributions
@@ -178,136 +188,8 @@ filters:
   # If specified, ONLY audit these columns (leave empty to audit all)
   include_columns: []
     # - "customer_name"
-    # - "email"
-    # - "created_at"
   
   # If specified, SKIP these columns
   exclude_columns: []
     # - "internal_metadata"
-    # - "system_field"
-    # - "deprecated_column"
 
-
-# ============================================================================
-# Example Configurations for Different Scenarios
-# ============================================================================
-
-# --- Example 1: Minimal Configuration ---
-# database:
-#   connection_string: "postgresql://user:pass@localhost/db"
-# tables:
-#   - users
-#   - orders
-# output:
-#   directory: "audit_results"
-#   formats: [html]
-
-# --- Example 2: High-Security Configuration ---
-# database:
-#   connection_string: "postgresql://user:pass@localhost/db"
-# tables:
-#   - sensitive_data
-# security:
-#   mask_pii: true
-#   custom_pii_keywords:
-#     - "proprietary"
-#     - "confidential"
-#     - "restricted"
-# sampling:
-#   sample_size: 10000
-# output:
-#   directory: "secure_audits"
-#   formats: [html, json]
-
-# --- Example 3: Production Data Warehouse ---
-# database:
-#   connection_string: "postgresql://readonly:pass@prod-warehouse/analytics"
-#   schema: "public"
-# tables:
-#   - fact_sales
-#   - fact_orders
-#   - dim_customers
-#   - dim_products
-#   - dim_time
-# sampling:
-#   sample_size: 500000
-# security:
-#   mask_pii: true
-# output:
-#   directory: "/shared/audit_reports"
-#   formats: [html, csv, parquet]
-#   file_prefix: "prod_audit"
-
-# --- Example 4: Quick Development Audit ---
-# database:
-#   connection_string: "sqlite:///local.db"
-# tables:
-#   - test_table
-# checks:
-#   trailing_spaces: true
-#   case_duplicates: true
-#   special_characters: false
-#   timestamp_patterns: false
-# output:
-#   directory: "quick_audit"
-#   formats: [html]
-
-# --- Example 5: Specific Columns Only ---
-# database:
-#   connection_string: "postgresql://user:pass@localhost/db"
-# tables:
-#   - customer_data
-# filters:
-#   include_columns:
-#     - "email"
-#     - "phone"
-#     - "address"
-#     - "name"
-# output:
-#   directory: "column_audit"
-#   formats: [csv]
-
-# --- Example 6: Exclude System Columns ---
-# database:
-#   connection_string: "postgresql://user:pass@localhost/db"
-# tables:
-#   - application_logs
-# filters:
-#   exclude_columns:
-#     - "id"
-#     - "created_at"
-#     - "updated_at"
-#     - "deleted_at"
-#     - "version"
-# output:
-#   formats: [html]
-
-# --- Example 7: Custom Thresholds ---
-# database:
-#   connection_string: "postgresql://user:pass@localhost/db"
-# tables:
-#   - legacy_data
-# thresholds:
-#   numeric_string_pct: 95  # Very strict
-#   constant_hour_pct: 99   # Very strict
-#   midnight_pct: 99        # Very strict
-# output:
-#   formats: [html, csv]
-
-# --- Example 8: Multiple Tables with Custom Queries ---
-# database:
-#   connection_string: "postgresql://user:pass@localhost/analytics"
-#   schema: "public"
-# tables:
-#   - name: recent_sales
-#     query: "SELECT * FROM sales WHERE sale_date >= CURRENT_DATE - INTERVAL '7 days'"
-#   - name: active_customers
-#     query: "SELECT * FROM customers WHERE last_login > CURRENT_DATE - INTERVAL '30 days'"
-#   - name: high_value_orders
-#     query: "SELECT * FROM orders WHERE total_amount > 1000"
-# security:
-#   mask_pii: true
-# output:
-#   directory: "filtered_audits"
-#   formats: [html, csv, json]
-#   file_prefix: "filtered"

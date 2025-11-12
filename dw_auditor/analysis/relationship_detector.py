@@ -332,7 +332,8 @@ class PolarsRelationshipDetector:
 
 def detect_and_display_relationships(
     all_table_results: list,
-    confidence_threshold: float = 0.7
+    confidence_threshold: float = 0.7,
+    exclude_tables: list = None
 ) -> list:
     """
     Detect relationships between tables and display results
@@ -340,6 +341,7 @@ def detect_and_display_relationships(
     Args:
         all_table_results: List of audit results (must include 'data' key with DataFrame)
         confidence_threshold: Minimum confidence threshold (0.0 to 1.0)
+        exclude_tables: List of table names to exclude from relationship detection
 
     Returns:
         List of detected relationships
@@ -349,15 +351,20 @@ def detect_and_display_relationships(
     print(f"{'='*70}")
 
     detected_relationships = []
+    exclude_tables = exclude_tables or []
 
     try:
         detector = PolarsRelationshipDetector()
 
-        # Add all audited tables with their DataFrames
+        # Add all audited tables with their DataFrames (excluding specified tables)
         for result in all_table_results:
+            table_name = result['table_name']
+            if table_name in exclude_tables:
+                print(f"   Skipped (excluded): {table_name}")
+                continue
             if 'data' in result:  # Check if DataFrame was stored
-                detector.add_table(result['table_name'], result['data'])
-                print(f"   Added table: {result['table_name']}")
+                detector.add_table(table_name, result['data'])
+                print(f"   Added table: {table_name}")
 
         # Detect relationships
         detected_relationships = detector.detect_relationships(

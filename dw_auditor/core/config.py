@@ -143,6 +143,7 @@ class RelationshipDetectionConfig(BaseModel):
     enabled: bool = Field(False, description="Enable relationship detection")
     confidence_threshold: float = Field(0.7, ge=0.0, le=1.0, description="Minimum confidence to report")
     min_confidence_display: float = Field(0.5, ge=0.0, le=1.0, description="Minimum confidence to display")
+    exclude_tables: List[str] = Field(default_factory=list, description="Tables to exclude from relationship detection")
 
     @model_validator(mode='after')
     def validate_thresholds(self):
@@ -310,6 +311,7 @@ class AuditConfig:
         self.relationship_detection_enabled = self._model.relationship_detection.enabled
         self.relationship_confidence_threshold = self._model.relationship_detection.confidence_threshold
         self.relationship_min_display_confidence = self._model.relationship_detection.min_confidence_display
+        self.relationship_exclude_tables = self._model.relationship_detection.exclude_tables
 
     def get_column_checks(self, table_name: str, column_name: str, column_dtype: str) -> Dict:
         """
