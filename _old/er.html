@@ -1,0 +1,73 @@
+<html>
+<head>
+  <title>ER Diagram</title>
+</head>
+<body>
+<h2 style='font-family:Arial'>Entity Relationship Diagram</h2>
+<object type="image/svg+xml" width="100%" height="800px">
+<!-- Embedded SVG (simplified for readability) -->
+<svg width="800pt" height="400pt"
+ viewBox="0.00 0.00 800.00 400.00" xmlns="http://www.w3.org/2000/svg">
+
+  <!-- users table -->
+  <g id="node1" class="node" tooltip="users: id">
+    <title>users</title>
+    <polygon fill="none" stroke="black" points="10,300 110,300 110,250 10,250"/>
+    <text text-anchor="middle" x="60" y="265" font-family="Arial" font-weight="bold">users</text>
+    <rect x="10" y="270" width="100" height="20" fill="#d5f5e3" stroke="black"/>
+    <text text-anchor="left" x="15" y="285" font-family="Arial">id</text>
+  </g>
+
+  <!-- orders table -->
+  <g id="node2" class="node" tooltip="orders: id, user_id">
+    <title>orders</title>
+    <polygon fill="none" stroke="black" points="180,300 280,300 280,250 180,250"/>
+    <text text-anchor="middle" x="230" y="265" font-family="Arial" font-weight="bold">orders</text>
+    <rect x="180" y="270" width="100" height="20" fill="#d5f5e3" stroke="black"/>
+    <text text-anchor="left" x="185" y="285" font-family="Arial">id</text>
+    <rect x="180" y="290" width="100" height="20" fill="white" stroke="black"/>
+    <text text-anchor="left" x="185" y="305" font-family="Arial">user_id</text>
+  </g>
+
+  <!-- order_items table -->
+  <g id="node3" class="node" tooltip="order_items: id, order_id, product_id">
+    <title>order_items</title>
+    <polygon fill="none" stroke="black" points="350,320 470,320 470,250 350,250"/>
+    <text text-anchor="middle" x="410" y="265" font-family="Arial" font-weight="bold">order_items</text>
+    <rect x="350" y="270" width="120" height="20" fill="#d5f5e3" stroke="black"/>
+    <text text-anchor="left" x="355" y="285" font-family="Arial">id</text>
+    <rect x="350" y="290" width="120" height="20" fill="white" stroke="black"/>
+    <text text-anchor="left" x="355" y="305" font-family="Arial">order_id</text>
+    <rect x="350" y="310" width="120" height="20" fill="white" stroke="black"/>
+    <text text-anchor="left" x="355" y="325" font-family="Arial">product_id</text>
+  </g>
+
+  <!-- products table -->
+  <g id="node4" class="node" tooltip="products: id">
+    <title>products</title>
+    <polygon fill="none" stroke="black" points="520,280 620,280 620,250 520,250"/>
+    <text text-anchor="middle" x="570" y="265" font-family="Arial" font-weight="bold">products</text>
+    <rect x="520" y="270" width="100" height="20" fill="#d5f5e3" stroke="black"/>
+    <text text-anchor="left" x="525" y="285" font-family="Arial">id</text>
+  </g>
+
+  <!-- edges -->
+  <g id="edge1" class="edge" tooltip="users.id → orders.user_id">
+    <path d="M110,275 C130,275 160,275 180,275" stroke="black" fill="none"/>
+    <text text-anchor="middle" x="145" y="265" font-family="Arial">1 → n</text>
+  </g>
+
+  <g id="edge2" class="edge" tooltip="orders.id → order_items.order_id">
+    <path d="M280,275 C310,275 340,275 350,275" stroke="black" fill="none"/>
+    <text text-anchor="middle" x="315" y="265" font-family="Arial">1 → n</text>
+  </g>
+
+  <g id="edge3" class="edge" tooltip="products.id → order_items.product_id">
+    <path d="M520,265 C490,265 460,265 450,265" stroke="black" fill="none"/>
+    <text text-anchor="middle" x="485" y="255" font-family="Arial">1 → n</text>
+  </g>
+
+</svg>
+</object>
+</body>
+</html>

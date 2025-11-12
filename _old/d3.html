@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ER Diagram with D3.js</title>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  body { font-family: Arial, sans-serif; }
+  .table-box { fill: #f0f4f8; stroke: #64748b; stroke-width: 1.2; rx: 6; ry: 6; }
+  .table-header { fill: #3b82f6; font-weight: bold; fill-opacity: 0.8; }
+  .column-text { fill: #000; font-size: 12px; font-family: monospace; }
+  .fk-column { fill: #2e7d32; font-style: italic; }
+  .edge { stroke: #999; stroke-width: 1.5; fill: none; marker-end: url(#arrow); }
+  .edge-label { font-size: 12px; fill: #444; }
+</style>
+</head>
+<body>
+
+<svg id="erDiagram" width="900" height="400"></svg>
+
+<script>
+const svg = d3.select("#erDiagram");
+
+const tables = [
+  {name: "users", columns: ["id"], pk: "id"},
+  {name: "orders", columns: ["id", "user_id"], pk: "id"},
+  {name: "order_items", columns: ["id", "order_id", "product_id"], pk: "id"},
+  {name: "products", columns: ["id"], pk: "id"}
+];
+
+const relationships = [
+  {source: "users", target: "orders", sourceCol: "id", targetCol: "user_id"},
+  {source: "orders", target: "order_items", sourceCol: "id", targetCol: "order_id"},
+  {source: "products", target: "order_items", sourceCol: "id", targetCol: "product_id"}
+];
+
+// Precompute table positions (simple grid layout)
+tables.forEach((t, i) => {
+  t.x = 50 + i*200;
+  t.y = 50 + (i%2)*150;
+});
+
+// Define arrow marker
+svg.append("defs").append("marker")
+  .attr("id", "arrow")
+  .attr("viewBox", "0 -5 10 10")
+  .attr("refX", 10)
+  .attr("refY", 0)
+  .attr("markerWidth", 6)
+  .attr("markerHeight", 6)
+  .attr("orient", "auto")
+  .append("path")
+  .attr("d", "M0,-5L10,0L0,5")
+  .attr("fill", "#999");
+
+// Draw edges
+relationships.forEach(rel => {
+  const source = tables.find(t => t.name === rel.source);
+  const target = tables.find(t => t.name === rel.target);
+  svg.append("line")
+    .attr("class", "edge")
+    .attr("x1", source.x + 100)  // right side of source box
+    .attr("y1", source.y + 20)
+    .attr("x2", target.x)        // left side of target box
+    .attr("y2", target.y + 20)
+    .append("title")
+    .text(`${rel.source}.${rel.sourceCol} → ${rel.target}.${rel.targetCol}`);
+
+  // Edge label
+  svg.append("text")
+    .attr("class", "edge-label")
+    .attr("x", (source.x + 100 + target.x)/2)
+    .attr("y", (source.y + 20 + target.y + 20)/2 - 5)
+    .text("1 → n");
+});
+
+// Draw tables
+tables.forEach(t => {
+  // Box
+  svg.append("rect")
+    .attr("class", "table-box")
+    .attr("x", t.x)
+    .attr("y", t.y)
+    .attr("width", 100)
+    .attr("height", 20 + t.columns.length*20);
+
+  // Header
+  svg.append("text")
+    .attr("class", "table-header")
+    .attr("x", t.x + 5)
+    .attr("y", t.y + 15)
+    .text(t.name)
+    .append("title")
+    .text(`Table: ${t.name}`);
+
+  // Columns
+  t.columns.forEach((col, i) => {
+    svg.append("text")
+      .attr("class", col === t.pk ? "column-text" : "column-text fk-column")
+      .attr("x", t.x + 5)
+      .attr("y", t.y + 35 + i*20)
+      .text(col)
+      .append("title")
+      .text(`Column: ${col}`);
+  });
+});
+</script>
+
+</body>
+</html>

@@ -133,7 +133,6 @@ def _generate_metadata_section(results: Dict) -> str:
     """Generate the metadata tab section with detailed table information"""
     html = """
     <section id="metadata" class="tab-content">
-        <div class="section-container">
 """
 
     # Config metadata section (if available)
@@ -232,7 +231,7 @@ def _generate_metadata_section(results: Dict) -> str:
     html += meta_item("Duration", f"{duration:.2f}s")
     html += meta_item("Sampled", 'Yes' if results.get('sampled', False) else 'No')
 
-    html += """        </div>
+    html += """ 
     </section>
 """
 
