@@ -64,12 +64,59 @@ open audit_results/audit_run_*/summary.html
 
 ---
 
+## 🔐 Security Features
+
+**Built-in security controls to protect sensitive data:**
+
+### 1. **Automatic PII Masking**
+- Auto-detects 32+ PII keywords (email, phone, SSN, credit card, etc.)
+- Replaces values with `***PII_MASKED***` before analysis
+- Customizable keyword list per your compliance needs
+
+```yaml
+security:
+  mask_pii: true
+  custom_pii_keywords: ["employee_id", "internal_code"]
+```
+
+### 2. **Zero Data Export Architecture**
+- **Database-native queries** - All computation happens in your database (via Ibis)
+- **No intermediate files** - Data never written to disk
+- **Metadata-only exports** - Reports contain statistics, not raw data
+
+### 3. **Credential Protection**
+- Connection strings sanitized in logs (`user:***@host`)
+- Passwords never logged or displayed
+- Secure credential handling (env vars, service accounts)
+
+### 4. **Data Minimization**
+- **Column filtering** - Exclude sensitive columns entirely
+- **Sampling** - Analyze subset of data (database-native TABLESAMPLE)
+- **Temporary in-memory only** - Data discarded after analysis
+
+### 5. **What's Exported vs Protected**
+
+✅ **Exported** (Safe for Reports):
+- Column metadata (names, types, descriptions)
+- Statistics (nulls, distinct counts, ranges)
+- Quality check results
+- Top values (with PII masked)
+
+❌ **Never Exported**:
+- Raw column data
+- Full table contents
+- PII values
+- Credentials
+
+**Result**: Comprehensive audits without exposing sensitive data.
+
+---
+
 ## 📋 What You Can Audit
 
 - **Tables & Views** - Base tables, VIEWs, and MATERIALIZED VIEWs
 - **Multiple Schemas** - Audit across datasets/databases in one run
 - **Custom Queries** - Audit filtered data (e.g., "last 7 days only")
-- **Large Tables** - Database-native sampling (BigQuery TABLESAMPLE, Snowflake SAMPLE)
 
 ---
 
