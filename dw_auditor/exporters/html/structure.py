@@ -133,7 +133,6 @@ def _generate_metadata_section(results: Dict) -> str:
     """Generate the metadata tab section with detailed table information"""
     html = """
     <section id="metadata" class="tab-content">
-        <div class="section-container">
 """
 
     # Config metadata section (if available)
@@ -226,10 +225,13 @@ def _generate_metadata_section(results: Dict) -> str:
     html += '            <div class="divider"></div>\n'
     html += '                <h3 class="subsection-title">Audit Information</h3>\n'
     html += meta_item("Generated", results.get('timestamp', 'N/A'))
-    html += meta_item("Duration", f"{results.get('duration_seconds', 0):.2f}s")
+
+    # Use phase_timings total if available (more accurate), otherwise fall back to duration_seconds
+    duration = sum(results['phase_timings'].values()) if 'phase_timings' in results else results.get('duration_seconds', 0)
+    html += meta_item("Duration", f"{duration:.2f}s")
     html += meta_item("Sampled", 'Yes' if results.get('sampled', False) else 'No')
 
-    html += """        </div>
+    html += """ 
     </section>
 """
 
@@ -350,4 +352,19 @@ def _generate_column_summary_table(results: Dict) -> str:
         </table>
     </div>
 """
+
+    # Show conversion summary if any columns were converted
+    converted_cols = [(col_name, col_data) for col_name, col_data in results['column_summary'].items()
+                      if 'source_dtype' in col_data]
+    if converted_cols:
+        html += '    <div style="margin-top: 16px; padding: 12px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">\n'
+        html += '        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">💡 Auto-converted columns:</div>\n'
+        html += '        <ul style="margin: 0; padding-left: 20px; color: #78350f;">\n'
+        for col_name, col_data in converted_cols:
+            source = col_data['source_dtype'].lower()
+            converted = col_data['dtype'].lower()
+            html += f'            <li><code>{col_name}</code>: {source} → {converted}</li>\n'
+        html += '        </ul>\n'
+        html += '    </div>\n'
+
     return html

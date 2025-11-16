@@ -380,54 +380,6 @@ def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",",
                 </div>
             </div>
 """
-
-    # Fallback for incomplete data
-    elif 'min' in insights_dict or 'max' in insights_dict or 'mean' in insights_dict:
-        html += """
-            <div class="insight-section">
-                <h4 class="insight-header">Numeric Statistics:</h4>
-                <div class="numeric-stats-container">
-"""
-        if 'min' in insights_dict:
-            html += f"""
-                    <div class="numeric-stat-item">
-                        <span class="numeric-stat-label">Min:</span>
-                        <span class="numeric-stat-value">{insights_dict['min']:.2f}</span>
-                    </div>
-"""
-        if 'max' in insights_dict:
-            html += f"""
-                    <div class="numeric-stat-item">
-                        <span class="numeric-stat-label">Max:</span>
-                        <span class="numeric-stat-value">{insights_dict['max']:.2f}</span>
-                    </div>
-"""
-        if 'mean' in insights_dict:
-            html += f"""
-                    <div class="numeric-stat-item">
-                        <span class="numeric-stat-label">Mean:</span>
-                        <span class="numeric-stat-value">{insights_dict['mean']:.2f}</span>
-                    </div>
-"""
-        if 'median' in insights_dict:
-            html += f"""
-                    <div class="numeric-stat-item">
-                        <span class="numeric-stat-label">Median:</span>
-                        <span class="numeric-stat-value">{insights_dict['median']:.2f}</span>
-                    </div>
-"""
-        if 'std' in insights_dict:
-            html += f"""
-                    <div class="numeric-stat-item">
-                        <span class="numeric-stat-label">Std Dev:</span>
-                        <span class="numeric-stat-value">{insights_dict['std']:.2f}</span>
-                    </div>
-"""
-        html += """
-                </div>
-            </div>
-"""
-
     return html
 
 
@@ -666,7 +618,6 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
         return ""
 
     html = """
-    <div style="background: white; padding: 25px; border-radius: 8px; margin-bottom: 30px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
         <h2 style="margin-top: 0; color: #1f2937;">Column Insights</h2>
         <p style="color: #666; margin-bottom: 20px;">Data profiling and distribution analysis</p>
 """
@@ -676,11 +627,17 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
         col_id = f"insights-{col_idx}"
         col_idx += 1
 
+        # Get column dtype from column_summary
+        dtype = results.get('column_summary', {}).get(col_name, {}).get('dtype', 'unknown')
+
         html += f"""
-        <div style="background: #f9fafb; border-left: 4px solid #667eea; padding: 20px; margin-bottom: 20px; border-radius: 6px;">
-            <div class="collapsible-header" onclick="toggleCollapse('{col_id}')">
+        <div class="column-card">
+            <div class="collapsible-header collapsible-section" onclick="toggleCollapse('{col_id}')">
                 <span class="collapse-icon" id="{col_id}-icon">▼</span>
-                <h3 style="margin: 0; color: #4b5563;">{col_name}</h3>
+                <div class="flex flex-between flex-center flex-1">
+                    <div class="column-name">{col_name}</div>
+                    <div class="column-type">{dtype}</div>
+                </div>
             </div>
             <div class="collapsible-content" id="{col_id}">
 """
@@ -696,7 +653,4 @@ def _generate_column_insights(results: Dict, thousand_separator: str = ",", deci
         </div>
 """
 
-    html += """
-    </div>
-"""
     return html

@@ -23,8 +23,7 @@ column_insights:
       min: true
       max: true
       mean: true
-      median: true
-      quantiles: [0.25, 0.5, 0.75]
+      quantiles: true
     datetime:
       min_date: true
       max_date: true
@@ -32,7 +31,7 @@ column_insights:
   tables:
     orders:
       total_price:
-        quantiles: [0.1, 0.25, 0.5, 0.75, 0.9]
+        quantiles: true
 ```
 
 Each insight returns aggregated metrics used in **audit reports** (CSV, JSON, HTML).
@@ -73,8 +72,38 @@ column_insights:
 | **`mean`** | `bool` | Arithmetic average of all values. | `mean: true` |
 | **`median`** | `bool` | Median value. | `median: true` |
 | **`std`** | `bool` | Standard deviation (useful for variance detection). | `std: true` |
-| **`quantiles`** | `list` | Specific percentiles to report. | `quantiles: [0.25, 0.5, 0.75, 0.9]` |
+| **`quantiles`** | `bool` \| `list` | Percentiles to report. `true` = [0.25, 0.5, 0.75] or provide custom list. | `quantiles: true`<br>`quantiles: [0.1, 0.25, 0.5, 0.75, 0.9]` |
 | **`top_values`** | `int` | Most frequent numeric values (useful for low-cardinality fields). | `top_values: 5` |
+| **`histogram`** | `bool` \| `int` \| `dict` | Distribution buckets. `true` = 10 bins, int = custom bins, dict = advanced config. | `histogram: true`<br>`histogram: 20`<br>`histogram: {bins: 15, method: "equal_frequency"}` |
+
+### Histogram Configuration
+
+The `histogram` insight supports multiple binning strategies:
+
+```yaml
+# Simple: Use defaults (10 bins, equal_width)
+histogram: true
+
+# Custom bin count
+histogram: 20
+
+# Advanced configuration
+histogram:
+  bins: 15
+  method: "equal_frequency"  # equal_width, equal_frequency, quartiles, explicit
+  edge_handling: "include_left"  # include_left, include_right, include_both
+
+# Explicit bucket boundaries
+histogram:
+  method: "explicit"
+  buckets: [0, 10, 50, 100, 500, 1000]
+```
+
+**Binning methods:**
+- `equal_width` - Equal-sized ranges (default)
+- `equal_frequency` - Equal number of values per bin
+- `quartiles` - Use Q1, Q2, Q3 boundaries
+- `explicit` - Custom bucket boundaries via `buckets` parameter
 
 ### Example
 
@@ -85,7 +114,15 @@ column_insights:
       min: true
       max: true
       mean: true
-      quantiles: [0.25, 0.5, 0.75]
+      quantiles: true  # Uses defaults [0.25, 0.5, 0.75]
+      histogram: 10    # 10 bins, equal_width
+  tables:
+    orders:
+      total_amount:
+        quantiles: [0.1, 0.25, 0.5, 0.75, 0.9, 0.95]
+        histogram:
+          bins: 20
+          method: "equal_frequency"
 ```
 
 ---

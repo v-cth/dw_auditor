@@ -6,6 +6,13 @@ from typing import List, Dict, Optional, Tuple, Set
 import json
 import math
 
+# Import new routing system
+from .routing import (
+    Grid, LaneRegistry,
+    scan_corridors, select_best_corridor,
+    astar_route
+)
+
 
 def _get_table_columns_for_diagram(table_name: str, relationships: List[Dict], tables_metadata: Dict[str, Dict]) -> Dict[str, List[str]]:
     """
@@ -158,9 +165,11 @@ def _boxes_overlap_segment(box_list: List[Tuple[float, float, float, float]],
 def _create_orthogonal_path(start_x: float, start_y: float, start_side: str,
                             end_x: float, end_y: float, end_side: str,
                             lane_offset: float, all_boxes: List[Tuple[float, float, float, float]],
-                            corner_radius: int = 4) -> Tuple[str, List[Tuple[float, float]]]:
+                            corner_radius: int = 4,
+                            grid: Optional[Grid] = None,
+                            lane_registry: Optional[LaneRegistry] = None) -> Tuple[str, List[Tuple[float, float]]]:
     """
-    Create an orthogonal path with collision avoidance and corner rounding
+    Create an orthogonal path using grid-based A* routing with collision avoidance.
 
     Args:
         start_x, start_y: Starting point on box edge
@@ -170,12 +179,20 @@ def _create_orthogonal_path(start_x: float, start_y: float, start_side: str,
         lane_offset: Offset for parallel lines (lane system)
         all_boxes: List of (x, y, w, h) for all table boxes for collision detection
         corner_radius: Radius for rounded corners (3-6px)
+        grid: Optional pre-configured Grid (creates new if None)
+        lane_registry: Optional LaneRegistry for global lane management
 
     Returns:
         Tuple of (SVG path string, list of label positions on straight segments)
     """
-    # Base clearance from edges - increased to avoid table collisions
-    base_clearance = 100
+    # Dynamic clearance based on obstacle density
+    obstacle_count_between = sum(
+        1 for bx, by, bw, bh in all_boxes
+        if (min(start_x, end_x) <= bx + bw and max(start_x, end_x) >= bx and
+            min(start_y, end_y) <= by + bh and max(start_y, end_y) >= by)
+    )
+    base_clearance = 60 + (obstacle_count_between * 60)
+
     clearance = base_clearance + abs(lane_offset)
 
     # Calculate exit points (perpendicular exit from edge)
@@ -206,134 +223,101 @@ def _create_orthogonal_path(start_x: float, start_y: float, start_side: str,
         entry_x = end_x
         entry_y = end_y + clearance
 
-    # Snap to grid for clean routing
-    exit_x = _snap_to_grid(exit_x)
-    exit_y = _snap_to_grid(exit_y)
-    entry_x = _snap_to_grid(entry_x)
-    entry_y = _snap_to_grid(entry_y)
+    # Initialize grid if not provided
+    if grid is None:
+        # Estimate canvas size from boxes
+        max_x = max((bx + bw for bx, by, bw, bh in all_boxes), default=1500)
+        max_y = max((by + bh for bx, by, bw, bh in all_boxes), default=1000)
+        grid = Grid(max_x + 200, max_y + 200, resolution=30)
 
-    # Build waypoints for the path
-    waypoints = [(start_x, start_y)]
+        # Mark all boxes as obstacles
+        for box in all_boxes:
+            grid.mark_obstacle(box, margin=20)
 
-    # First segment: exit perpendicular from start box
-    waypoints.append((exit_x, exit_y))
+    # Try corridor scan first (fast for simple cases)
+    vertical_corridors, horizontal_corridors = scan_corridors(
+        (exit_x, exit_y), (entry_x, entry_y), all_boxes
+    )
 
-    # Middle routing: choose strategy based on edge orientations
-    if start_side in ['left', 'right'] and end_side in ['left', 'right']:
-        # Both horizontal edges: route with vertical segment in middle
-        mid_x = (exit_x + entry_x) / 2
-        mid_x = _snap_to_grid(mid_x)
-        # Apply lane offset to vertical rail
-        exit_y_offset = exit_y + lane_offset
-        entry_y_offset = entry_y + lane_offset
+    # Determine routing strategy based on edge orientations
+    use_vertical_corridor = start_side in ['left', 'right'] and end_side in ['left', 'right']
+    use_horizontal_corridor = start_side in ['top', 'bottom'] and end_side in ['top', 'bottom']
 
-        # Check for collision and adjust if needed
-        if _boxes_overlap_segment(all_boxes, exit_x, exit_y_offset, mid_x, exit_y_offset, margin=20):
-            # Route further out
-            exit_y_offset = exit_y + lane_offset + (120 if lane_offset >= 0 else -120)
-            entry_y_offset = entry_y + lane_offset + (120 if lane_offset >= 0 else -120)
+    corridor_route = None
 
-        waypoints.append((exit_x, exit_y_offset))
-        waypoints.append((mid_x, exit_y_offset))
-        waypoints.append((mid_x, entry_y_offset))
-        waypoints.append((entry_x, entry_y_offset))
-    elif start_side in ['top', 'bottom'] and end_side in ['top', 'bottom']:
-        # Both vertical edges: route with horizontal segment in middle
-        mid_y = (exit_y + entry_y) / 2
-        mid_y = _snap_to_grid(mid_y)
-        # Apply lane offset to horizontal rail
-        exit_x_offset = exit_x + lane_offset
-        entry_x_offset = entry_x + lane_offset
+    if use_vertical_corridor and vertical_corridors:
+        # Try corridor routing
+        ideal_x = (exit_x + entry_x) / 2
+        best_corridor = select_best_corridor(vertical_corridors, ideal_x, lane_registry)
 
-        # Check for collision and adjust if needed
-        if _boxes_overlap_segment(all_boxes, exit_x_offset, exit_y, exit_x_offset, mid_y, margin=20):
-            # Route further out
-            exit_x_offset = exit_x + lane_offset + (120 if lane_offset >= 0 else -120)
-            entry_x_offset = entry_x + lane_offset + (120 if lane_offset >= 0 else -120)
+        if best_corridor:
+            # Build simple 4-waypoint path through corridor
+            corridor_route = [
+                (start_x, start_y),
+                (exit_x, exit_y),
+                (best_corridor.position, exit_y),
+                (best_corridor.position, entry_y),
+                (entry_x, entry_y),
+                (end_x, end_y)
+            ]
 
-        waypoints.append((exit_x_offset, exit_y))
-        waypoints.append((exit_x_offset, mid_y))
-        waypoints.append((entry_x_offset, mid_y))
-        waypoints.append((entry_x_offset, entry_y))
+    elif use_horizontal_corridor and horizontal_corridors:
+        # Try corridor routing
+        ideal_y = (exit_y + entry_y) / 2
+        best_corridor = select_best_corridor(horizontal_corridors, ideal_y, lane_registry)
+
+        if best_corridor:
+            # Build simple 4-waypoint path through corridor
+            corridor_route = [
+                (start_x, start_y),
+                (exit_x, exit_y),
+                (exit_x, best_corridor.position),
+                (entry_x, best_corridor.position),
+                (entry_x, entry_y),
+                (end_x, end_y)
+            ]
+
+    # If corridor routing succeeded, use it
+    if corridor_route:
+        waypoints = corridor_route
     else:
-        # Mixed: horizontal and vertical edges
-        if start_side in ['left', 'right']:
-            # Start horizontal, apply lane offset to vertical segment
-            vert_pos = exit_y + lane_offset
+        # Fall back to A* routing
+        start_cell = grid.to_grid(exit_x, exit_y)
+        end_cell = grid.to_grid(entry_x, entry_y)
 
-            # Check if the vertical segment would collide
-            if _boxes_overlap_segment(all_boxes, exit_x, vert_pos, entry_x, vert_pos, margin=20):
-                # Route further out vertically
-                vert_pos = exit_y + lane_offset + (120 if exit_y < entry_y else -120)
+        cell_path = astar_route(start_cell, end_cell, grid, lane_registry)
 
-            waypoints.append((entry_x, vert_pos))
+        if cell_path:
+            # Convert grid cells to canvas coordinates
+            from .routing.path_optimizer import cells_to_canvas
+            middle_waypoints = cells_to_canvas(cell_path, grid.resolution)
+
+            # Build complete path: start → exit → A* path → entry → end
+            waypoints = [(start_x, start_y), (exit_x, exit_y)]
+            waypoints.extend(middle_waypoints)
+            waypoints.extend([(entry_x, entry_y), (end_x, end_y)])
         else:
-            # Start vertical, apply lane offset to horizontal segment
-            horiz_pos = exit_x + lane_offset
+            # A* failed - fallback to simple direct path
+            waypoints = [(start_x, start_y), (exit_x, exit_y), (entry_x, entry_y), (end_x, end_y)]
 
-            # Check if the horizontal segment would collide
-            if _boxes_overlap_segment(all_boxes, horiz_pos, exit_y, horiz_pos, entry_y, margin=20):
-                # Route further out horizontally
-                horiz_pos = exit_x + lane_offset + (120 if exit_x < entry_x else -120)
+    # Register path segments in lane registry
+    if lane_registry:
+        lane_registry.add_path(waypoints)
 
-            waypoints.append((horiz_pos, entry_y))
+    # Optimize path
+    from .routing.path_optimizer import (
+        remove_duplicate_points,
+        remove_micro_segments,
+        snap_orthogonal,
+        smooth_corners
+    )
 
-    # Last segment: enter perpendicular to target box
-    waypoints.append((entry_x, entry_y))
-    waypoints.append((end_x, end_y))
+    waypoints = remove_duplicate_points(waypoints)
+    waypoints = remove_micro_segments(waypoints)
+    waypoints = snap_orthogonal(waypoints)
 
-    # Remove consecutive duplicate waypoints
-    cleaned_waypoints = [waypoints[0]]
-    for i in range(1, len(waypoints)):
-        if waypoints[i] != waypoints[i-1]:
-            cleaned_waypoints.append(waypoints[i])
-    waypoints = cleaned_waypoints
-
-    # Build SVG path with rounded corners
-    path = f"M {waypoints[0][0]},{waypoints[0][1]}"
-
-    for i in range(1, len(waypoints)):
-        curr = waypoints[i]
-        if i < len(waypoints) - 1 and corner_radius > 0:
-            # Add rounded corner
-            prev = waypoints[i - 1]
-            next_pt = waypoints[i + 1]
-
-            # Calculate vectors
-            dx_in = curr[0] - prev[0]
-            dy_in = curr[1] - prev[1]
-            dx_out = next_pt[0] - curr[0]
-            dy_out = next_pt[1] - curr[1]
-
-            # Normalize and shorten for corner
-            len_in = math.sqrt(dx_in*dx_in + dy_in*dy_in)
-            len_out = math.sqrt(dx_out*dx_out + dy_out*dy_out)
-
-            if len_in > corner_radius * 2 and len_out > corner_radius * 2:
-                # Calculate corner points
-                corner_start_x = curr[0] - (dx_in / len_in) * corner_radius
-                corner_start_y = curr[1] - (dy_in / len_in) * corner_radius
-                corner_end_x = curr[0] + (dx_out / len_out) * corner_radius
-                corner_end_y = curr[1] + (dy_out / len_out) * corner_radius
-
-                # Line to corner start, arc to corner end
-                path += f" L {corner_start_x},{corner_start_y}"
-                path += f" Q {curr[0]},{curr[1]} {corner_end_x},{corner_end_y}"
-            else:
-                path += f" L {curr[0]},{curr[1]}"
-        else:
-            path += f" L {curr[0]},{curr[1]}"
-
-    # Calculate good label positions (middle of longest straight segments)
-    label_positions = []
-    for i in range(1, len(waypoints) - 1):
-        prev = waypoints[i - 1]
-        curr = waypoints[i]
-        seg_len = math.sqrt((curr[0] - prev[0])**2 + (curr[1] - prev[1])**2)
-        if seg_len > 50:  # Only on segments long enough for labels
-            mid_x = (prev[0] + curr[0]) / 2
-            mid_y = (prev[1] + curr[1]) / 2
-            label_positions.append((mid_x, mid_y))
+    # Generate SVG with smooth corners
+    path, label_positions = smooth_corners(waypoints, corner_radius)
 
     return path, label_positions
 
@@ -413,6 +397,10 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
     table_boxes_svg = ""
     table_dimensions = {}  # Store box dimensions for each table
 
+    # Initialize global routing infrastructure for multi-pass routing
+    grid = Grid(max_x, max_y, resolution=30)
+    lane_registry = LaneRegistry()
+
     for table_name in tables_list:
         x, y = positions[table_name]
         columns = _get_table_columns_for_diagram(table_name, display_relationships, tables_metadata)
@@ -480,6 +468,10 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
             y_offset += column_spacing
 
         table_boxes_svg += "</g>"
+
+    # Mark all table boxes as obstacles in the grid
+    for box in table_dimensions.values():
+        grid.mark_obstacle(box, margin=20)
 
     # Group relationships by table pair to handle multiple relationships between same tables
     from collections import defaultdict
@@ -575,7 +567,7 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
 
             # Calculate lane offset for multiple parallel relationships
             if num_rels > 1:
-                lane_offset = (i - (num_rels - 1) / 2) * 15
+                lane_offset = (i - (num_rels - 1) / 2) * 12
             else:
                 lane_offset = 0
 
@@ -587,40 +579,62 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
                 start_x, start_y, start_side,
                 end_x, end_y, end_side,
                 lane_offset, all_box_dims,
-                corner_radius=4
+                corner_radius=4,
+                grid=grid,
+                lane_registry=lane_registry
             )
 
             # Position cardinality labels based on edge sides (perpendicular offset from exit/entry)
+            # Adjust offset to account for multiple parallel relationships
+            base_offset = 22
+
             # Start label: offset perpendicular to the start edge
             if start_side == 'top' or start_side == 'bottom':
                 label_start_x = start_x
-                label_start_y = start_y + (22 if start_side == 'bottom' else -22)
+                label_start_y = start_y + (base_offset if start_side == 'bottom' else -base_offset) + lane_offset
             else:  # left or right
-                label_start_x = start_x + (22 if start_side == 'right' else -22)
-                label_start_y = start_y
+                label_start_x = start_x + (base_offset if start_side == 'right' else -base_offset)
+                label_start_y = start_y + lane_offset
 
             # End label: offset perpendicular to the end edge
             if end_side == 'top' or end_side == 'bottom':
                 label_end_x = end_x
-                label_end_y = end_y + (22 if end_side == 'bottom' else -22)
+                label_end_y = end_y + (base_offset if end_side == 'bottom' else -base_offset) + lane_offset
             else:  # left or right
-                label_end_x = end_x + (22 if end_side == 'right' else -22)
-                label_end_y = end_y
+                label_end_x = end_x + (base_offset if end_side == 'right' else -base_offset)
+                label_end_y = end_y + lane_offset
 
             # Position column name label on the longest straight segment
+            # Add offset to prevent overlap with parallel relationship labels
             if label_positions:
                 # Find the longest segment
                 max_len = 0
                 best_pos = label_positions[0]
+                best_seg_start = None
+                best_seg_end = None
                 for j in range(len(label_positions) - 1):
                     seg_len = math.sqrt((label_positions[j+1][0] - label_positions[j][0])**2 +
                                        (label_positions[j+1][1] - label_positions[j][1])**2)
                     if seg_len > max_len:
                         max_len = seg_len
+                        best_seg_start = label_positions[j]
+                        best_seg_end = label_positions[j+1]
                         # Place label at midpoint of this segment
                         best_pos = ((label_positions[j][0] + label_positions[j+1][0]) / 2,
                                    (label_positions[j][1] + label_positions[j+1][1]) / 2)
+
                 col_label_x, col_label_y = best_pos
+
+                # Determine if segment is horizontal or vertical and offset accordingly
+                if best_seg_start and best_seg_end:
+                    dx = abs(best_seg_end[0] - best_seg_start[0])
+                    dy = abs(best_seg_end[1] - best_seg_start[1])
+                    # Horizontal segment: add vertical offset (base 8px + lane offset)
+                    if dx > dy:
+                        col_label_y += -8 + (lane_offset * 0.5)  # Offset above the line
+                    # Vertical segment: add horizontal offset (base 8px + lane offset)
+                    else:
+                        col_label_x += 8 + (lane_offset * 0.5)  # Offset to the right of line
             else:
                 # Fallback if no label positions
                 col_label_x = (start_x + end_x) / 2
@@ -630,24 +644,24 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
         <g class="er-relationship" data-table1="{rel['table1']}" data-table2="{rel['table2']}" data-rel-id="rel-{rel_idx}">
             <title>{tooltip_text}</title>
             <path d="{path_d}" stroke="{line_color}" stroke-width="{line_width}"
-                  fill="none" stroke-dasharray="{5 if i > 0 else 0}"/>
+                  fill="none"/>
             <!-- Cardinality labels with backgrounds -->
-            <rect x="{label_start_x - 9}" y="{label_start_y - 9}" width="18" height="18"
-                  fill="white" stroke="{line_color}" stroke-width="0.5" rx="3" opacity="0.95"/>
+            <rect x="{label_start_x - 10}" y="{label_start_y - 10}" width="20" height="20"
+                  fill="white" stroke="{line_color}" stroke-width="1" rx="3"/>
             <text x="{label_start_x}" y="{label_start_y}" font-family="Inter, sans-serif" font-size="13" font-weight="700"
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle">
                 {label_start}
             </text>
-            <rect x="{label_end_x - 9}" y="{label_end_y - 9}" width="18" height="18"
-                  fill="white" stroke="{line_color}" stroke-width="0.5" rx="3" opacity="0.95"/>
+            <rect x="{label_end_x - 10}" y="{label_end_y - 10}" width="20" height="20"
+                  fill="white" stroke="{line_color}" stroke-width="1" rx="3"/>
             <text x="{label_end_x}" y="{label_end_y}" font-family="Inter, sans-serif" font-size="13" font-weight="700"
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle">
                 {label_end}
             </text>
             <!-- Column name label with background (no rotation for orthogonal lines) -->
-            <rect x="{col_label_x - len(rel['column1']) * 3.5}" y="{col_label_y - 8}"
-                  width="{len(rel['column1']) * 7}" height="16"
-                  fill="white" rx="3" opacity="0.9"/>
+            <rect x="{col_label_x - len(rel['column1']) * 3.5 - 2}" y="{col_label_y - 10}"
+                  width="{len(rel['column1']) * 7 + 4}" height="20"
+                  fill="white" rx="3" stroke="{line_color}" stroke-width="0.5"/>
             <text x="{col_label_x}" y="{col_label_y}" font-family="Inter, sans-serif" font-size="10"
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle" font-weight="500">
                 {rel['column1']}
@@ -907,8 +921,13 @@ def generate_standalone_relationships_report(
     max_x = max(pos[0] for pos in positions.values()) + 300
     max_y = max(pos[1] for pos in positions.values()) + 250
 
+    # Initialize global routing infrastructure for multi-pass routing
+    grid = Grid(max_x, max_y, resolution=30)
+    lane_registry = LaneRegistry()
+
     # Build table boxes SVG
     table_boxes_svg = ""
+    table_dimensions = {}  # Track for obstacle marking
     for table_name in tables_list:
         x, y = positions[table_name]
         columns = _get_table_columns_for_diagram(table_name, display_relationships, tables_metadata)
@@ -924,6 +943,10 @@ def generate_standalone_relationships_report(
         # Calculate box height based on number of columns
         total_columns = len(columns['pk']) + len(columns['fk'])
         box_height = 60 + (total_columns * 22)
+        box_width = 280
+
+        # Track dimensions for routing
+        table_dimensions[table_name] = (x, y, box_width, box_height)
 
         # Create table box
         table_boxes_svg += f"""
@@ -962,7 +985,12 @@ def generate_standalone_relationships_report(
 
         table_boxes_svg += "</g>"
 
+    # Mark all table boxes as obstacles in the grid
+    for box in table_dimensions.values():
+        grid.mark_obstacle(box, margin=20)
+
     # Group relationships by table pair (same logic as summary section)
+    from collections import defaultdict
     table_pair_rels = defaultdict(list)
     for rel in display_relationships:
         pair_key = tuple(sorted([rel['table1'], rel['table2']]))
@@ -1063,7 +1091,7 @@ def generate_standalone_relationships_report(
 
             # Calculate lane offset for multiple parallel relationships
             if num_rels > 1:
-                lane_offset = (i - (num_rels - 1) / 2) * 15
+                lane_offset = (i - (num_rels - 1) / 2) * 12
             else:
                 lane_offset = 0
 
@@ -1075,40 +1103,62 @@ def generate_standalone_relationships_report(
                 start_x, start_y, start_side,
                 end_x, end_y, end_side,
                 lane_offset, all_box_dims,
-                corner_radius=4
+                corner_radius=4,
+                grid=grid,
+                lane_registry=lane_registry
             )
 
             # Position cardinality labels based on edge sides (perpendicular offset from exit/entry)
+            # Adjust offset to account for multiple parallel relationships
+            base_offset = 22
+
             # Start label: offset perpendicular to the start edge
             if start_side == 'top' or start_side == 'bottom':
                 label_start_x = start_x
-                label_start_y = start_y + (22 if start_side == 'bottom' else -22)
+                label_start_y = start_y + (base_offset if start_side == 'bottom' else -base_offset) + lane_offset
             else:  # left or right
-                label_start_x = start_x + (22 if start_side == 'right' else -22)
-                label_start_y = start_y
+                label_start_x = start_x + (base_offset if start_side == 'right' else -base_offset)
+                label_start_y = start_y + lane_offset
 
             # End label: offset perpendicular to the end edge
             if end_side == 'top' or end_side == 'bottom':
                 label_end_x = end_x
-                label_end_y = end_y + (22 if end_side == 'bottom' else -22)
+                label_end_y = end_y + (base_offset if end_side == 'bottom' else -base_offset) + lane_offset
             else:  # left or right
-                label_end_x = end_x + (22 if end_side == 'right' else -22)
-                label_end_y = end_y
+                label_end_x = end_x + (base_offset if end_side == 'right' else -base_offset)
+                label_end_y = end_y + lane_offset
 
             # Position column name label on the longest straight segment
+            # Add offset to prevent overlap with parallel relationship labels
             if label_positions:
                 # Find the longest segment
                 max_len = 0
                 best_pos = label_positions[0]
+                best_seg_start = None
+                best_seg_end = None
                 for j in range(len(label_positions) - 1):
                     seg_len = math.sqrt((label_positions[j+1][0] - label_positions[j][0])**2 +
                                        (label_positions[j+1][1] - label_positions[j][1])**2)
                     if seg_len > max_len:
                         max_len = seg_len
+                        best_seg_start = label_positions[j]
+                        best_seg_end = label_positions[j+1]
                         # Place label at midpoint of this segment
                         best_pos = ((label_positions[j][0] + label_positions[j+1][0]) / 2,
                                    (label_positions[j][1] + label_positions[j+1][1]) / 2)
+
                 col_label_x, col_label_y = best_pos
+
+                # Determine if segment is horizontal or vertical and offset accordingly
+                if best_seg_start and best_seg_end:
+                    dx = abs(best_seg_end[0] - best_seg_start[0])
+                    dy = abs(best_seg_end[1] - best_seg_start[1])
+                    # Horizontal segment: add vertical offset (base 8px + lane offset)
+                    if dx > dy:
+                        col_label_y += -8 + (lane_offset * 0.5)  # Offset above the line
+                    # Vertical segment: add horizontal offset (base 8px + lane offset)
+                    else:
+                        col_label_x += 8 + (lane_offset * 0.5)  # Offset to the right of line
             else:
                 # Fallback if no label positions
                 col_label_x = (start_x + end_x) / 2
@@ -1118,24 +1168,24 @@ def generate_standalone_relationships_report(
         <g class="er-relationship" data-table1="{rel['table1']}" data-table2="{rel['table2']}" data-rel-id="rel-{rel_idx}">
             <title>{tooltip_text}</title>
             <path d="{path_d}" stroke="{line_color}" stroke-width="{line_width}"
-                  fill="none" stroke-dasharray="{5 if i > 0 else 0}"/>
+                  fill="none"/>
             <!-- Cardinality labels with backgrounds -->
-            <rect x="{label_start_x - 9}" y="{label_start_y - 9}" width="18" height="18"
-                  fill="white" stroke="{line_color}" stroke-width="0.5" rx="3" opacity="0.95"/>
+            <rect x="{label_start_x - 10}" y="{label_start_y - 10}" width="20" height="20"
+                  fill="white" stroke="{line_color}" stroke-width="1" rx="3"/>
             <text x="{label_start_x}" y="{label_start_y}" font-family="Inter, sans-serif" font-size="13" font-weight="700"
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle">
                 {label_start}
             </text>
-            <rect x="{label_end_x - 9}" y="{label_end_y - 9}" width="18" height="18"
-                  fill="white" stroke="{line_color}" stroke-width="0.5" rx="3" opacity="0.95"/>
+            <rect x="{label_end_x - 10}" y="{label_end_y - 10}" width="20" height="20"
+                  fill="white" stroke="{line_color}" stroke-width="1" rx="3"/>
             <text x="{label_end_x}" y="{label_end_y}" font-family="Inter, sans-serif" font-size="13" font-weight="700"
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle">
                 {label_end}
             </text>
             <!-- Column name label with background (no rotation for orthogonal lines) -->
-            <rect x="{col_label_x - len(rel['column1']) * 3.5}" y="{col_label_y - 8}"
-                  width="{len(rel['column1']) * 7}" height="16"
-                  fill="white" rx="3" opacity="0.9"/>
+            <rect x="{col_label_x - len(rel['column1']) * 3.5 - 2}" y="{col_label_y - 10}"
+                  width="{len(rel['column1']) * 7 + 4}" height="20"
+                  fill="white" rx="3" stroke="{line_color}" stroke-width="0.5"/>
             <text x="{col_label_x}" y="{col_label_y}" font-family="Inter, sans-serif" font-size="10"
                   fill="{line_color}" text-anchor="middle" dominant-baseline="middle" font-weight="500">
                 {rel['column1']}

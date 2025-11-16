@@ -28,18 +28,19 @@ class BigQueryAdapter(BaseAdapter):
         if self.conn is not None:
             return self.conn
 
-        project_id = self.connection_params.get('project_id')
-        schema = self.connection_params.get('schema')
+        # Map unified naming to BigQuery-specific terms
+        default_database = self.connection_params.get('default_database')  # BigQuery project_id
+        default_schema = self.connection_params.get('default_schema')      # BigQuery dataset
         credentials_path = self.connection_params.get('credentials_path')
         credentials_json = self.connection_params.get('credentials_json')
 
-        if not project_id:
-            raise ValueError("BigQuery requires 'project_id' parameter")
+        if not default_database:
+            raise ValueError("BigQuery requires 'default_database' (project_id)")
 
         # Set environment variable to prevent "No project ID" warning from BigQuery client
-        os.environ['GOOGLE_CLOUD_PROJECT'] = project_id
+        os.environ['GOOGLE_CLOUD_PROJECT'] = default_database
 
-        conn_kwargs = {'project_id': project_id}
+        conn_kwargs = {'project_id': default_database}
 
         if credentials_path:
             conn_kwargs['credentials'] = credentials_path
@@ -48,8 +49,8 @@ class BigQueryAdapter(BaseAdapter):
                 credentials_json = json.loads(credentials_json)
             conn_kwargs['credentials'] = credentials_json
 
-        if schema:
-            conn_kwargs['dataset_id'] = schema
+        if default_schema:
+            conn_kwargs['dataset_id'] = default_schema
 
         self.conn = ibis.bigquery.connect(**conn_kwargs)
         logger.info("Connected to BIGQUERY")
@@ -70,8 +71,8 @@ class BigQueryAdapter(BaseAdapter):
         if self.conn is None:
             self.connect()
 
-        # Use provided project_id or fall back to source_project_id or connection project
-        project_for_metadata = project_id or self.source_project_id or self.connection_params.get('project_id')
+        # Use provided project_id or fall back to source_project_id or default_database
+        project_for_metadata = project_id or self.source_project_id or self.connection_params.get('default_database')
         cache_key = (project_id, schema)
 
         # Initialize cache entry if it doesn't exist
@@ -217,12 +218,12 @@ class BigQueryAdapter(BaseAdapter):
         if self.conn is None:
             self.connect()
 
-        # Determine the project to use (priority: parameter > source_project_id > connection project)
+        # Determine the project to use (priority: parameter > source_project_id > default_database)
         target_project = project_id or self.source_project_id
-        dataset = schema or self.connection_params.get('schema')
+        dataset = schema or self.connection_params.get('default_schema')
 
         # Cross-project query support
-        if target_project and target_project != self.connection_params.get('project_id'):
+        if target_project and target_project != self.connection_params.get('default_database'):
             if not dataset:
                 raise ValueError("schema is required for BigQuery cross-project queries")
 
@@ -253,7 +254,7 @@ class BigQueryAdapter(BaseAdapter):
             self.connect()
 
         if custom_query:
-            dataset = schema or self.connection_params.get('schema')
+            dataset = schema or self.connection_params.get('default_schema')
             target_project = project_id or self.source_project_id
 
             if target_project and dataset:
@@ -307,7 +308,7 @@ class BigQueryAdapter(BaseAdapter):
             from google.cloud import bigquery
 
             bq_client = self.conn.client
-            dataset = schema or self.connection_params.get('schema')
+            dataset = schema or self.connection_params.get('default_schema')
 
             if custom_query:
                 if self.source_project_id and dataset:
@@ -367,5 +368,5 @@ class BigQueryAdapter(BaseAdapter):
 
     def _build_table_uid(self, table_name: str, schema: str) -> str:
         """Build BigQuery table UID: project.dataset.table"""
-        project = self.source_project_id or self.connection_params.get('project_id')
+        project = self.source_project_id or self.connection_params.get('default_database')
         return f"{project}.{schema}.{table_name}"

@@ -71,8 +71,7 @@ database:
 
 sampling:
   sample_size: 10000
-  sample_threshold: 100000
-
+  
 output:
   number_format:
     thousand_separator: ","

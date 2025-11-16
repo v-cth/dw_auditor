@@ -20,12 +20,14 @@ class TableConfig(BaseModel):
     name: str = Field(..., min_length=1, description="Table name")
     primary_key: Optional[Union[str, List[str]]] = Field(None, description="Primary key column(s)")
     query: Optional[str] = Field(None, description="Custom SQL query")
-    db_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Override schema/dataset for this table")
 
-    # Connection parameter overrides (backend-specific)
-    project_id: Optional[str] = Field(None, description="Override project for this table (BigQuery only)")
-    database: Optional[str] = Field(None, description="Override database for this table (Snowflake only)")
-    account: Optional[str] = Field(None, description="Override account for this table (Snowflake only)")
+    # Unified connection parameter overrides (works for both BigQuery and Snowflake)
+    database: Optional[str] = Field(None, description="Override database (project_id for BigQuery, database for Snowflake)")
+    table_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Override schema (dataset for BigQuery, schema for Snowflake)")
+
+    # Per-table column filtering
+    include_columns: Optional[List[str]] = Field(None, description="Columns to include (overrides global filters)")
+    exclude_columns: Optional[List[str]] = Field(None, description="Columns to exclude (overrides global filters)")
 
     @field_validator('primary_key')
     @classmethod
@@ -51,14 +53,20 @@ class DatabaseConfig(BaseModel):
         """Validate backend-specific required parameters"""
         params = self.connection_params.model_dump(exclude_none=True)
 
+        # Validate required unified params
+        if 'default_database' not in params:
+            raise ValueError("connection_params requires 'default_database' (project_id for BigQuery, database for Snowflake)")
+        if 'default_schema' not in params:
+            raise ValueError("connection_params requires 'default_schema' (dataset for BigQuery, schema for Snowflake)")
+
         if self.backend == 'bigquery':
-            # Validate required params
-            if 'project_id' not in params:
-                raise ValueError("BigQuery backend requires 'project_id' in connection_params")
+            # BigQuery-specific: only need default_database and default_schema
+            # Optional: credentials_path, credentials_json
+            pass
 
         elif self.backend == 'snowflake':
-            # Validate required params
-            required = ['account', 'user', 'database']
+            # Snowflake-specific: requires account, user
+            required = ['account', 'user']
             missing = [p for p in required if p not in params]
             if missing:
                 raise ValueError(f"Snowflake backend requires: {', '.join(missing)}")
@@ -86,7 +94,6 @@ class TableSamplingConfig(BaseModel):
 class SamplingConfig(BaseModel):
     """Sampling configuration"""
     sample_size: int = Field(100000, gt=0, description="Number of rows to sample")
-    sample_in_db: bool = Field(True, description="Use database-native sampling")
     method: Literal['random', 'recent', 'top', 'systematic'] = Field('random', description="Sampling method")
     key_column: Optional[str] = Field(None, description="Column for non-random sampling")
     tables: Dict[str, TableSamplingConfig] = Field(default_factory=dict, description="Per-table overrides")
@@ -140,6 +147,7 @@ class RelationshipDetectionConfig(BaseModel):
     enabled: bool = Field(False, description="Enable relationship detection")
     confidence_threshold: float = Field(0.7, ge=0.0, le=1.0, description="Minimum confidence to report")
     min_confidence_display: float = Field(0.5, ge=0.0, le=1.0, description="Minimum confidence to display")
+    exclude_tables: List[str] = Field(default_factory=list, description="Tables to exclude from relationship detection")
 
     @model_validator(mode='after')
     def validate_thresholds(self):
@@ -220,14 +228,19 @@ class AuditConfig:
         # Database connection
         self.backend = self._model.database.backend
         self.connection_params = self._model.database.connection_params.model_dump(by_alias=True)
-        self.schema = self.connection_params.get('schema')
+
+        # Extract default_database and default_schema (required)
+        self.default_database = self.connection_params.get('default_database')
+        self.default_schema = self.connection_params.get('default_schema')
 
         # Tables - normalize format
         self.tables = []
         self.table_primary_keys = {}
         self.table_queries = {}
-        self.table_schemas = {}
-        self.table_connection_params = {}
+        self.table_databases = {}  # Renamed: stores table-level database overrides
+        self.table_schemas = {}     # Stores table-level schema overrides
+        self.table_include_columns = {}  # Per-table column includes
+        self.table_exclude_columns = {}  # Per-table column excludes
 
         for table_entry in self._model.tables:
             if isinstance(table_entry, str):
@@ -238,17 +251,18 @@ class AuditConfig:
                     self.table_primary_keys[table_entry.name] = table_entry.primary_key
                 if table_entry.query:
                     self.table_queries[table_entry.name] = table_entry.query
-                if table_entry.db_schema:
-                    self.table_schemas[table_entry.name] = table_entry.db_schema
 
-                # Store table-specific connection params (backend-specific)
-                table_conn_params = {}
-                for field in ['project_id', 'database', 'account']:
-                    value = getattr(table_entry, field, None)
-                    if value is not None:
-                        table_conn_params[field] = value
-                if table_conn_params:
-                    self.table_connection_params[table_entry.name] = table_conn_params
+                # Store table-specific overrides (unified naming)
+                if table_entry.database:
+                    self.table_databases[table_entry.name] = table_entry.database
+                if table_entry.table_schema:
+                    self.table_schemas[table_entry.name] = table_entry.table_schema
+
+                # Store per-table column filters
+                if table_entry.include_columns:
+                    self.table_include_columns[table_entry.name] = table_entry.include_columns
+                if table_entry.exclude_columns:
+                    self.table_exclude_columns[table_entry.name] = table_entry.exclude_columns
 
         # Table filtering
         if self._model.table_filters:
@@ -262,7 +276,6 @@ class AuditConfig:
 
         # Sampling
         self.sample_size = self._model.sampling.sample_size
-        self.sample_in_db = self._model.sampling.sample_in_db
         self.sampling_method = self._model.sampling.method
         self.sampling_key_column = self._model.sampling.key_column
         self.table_sampling_config = {
@@ -310,6 +323,7 @@ class AuditConfig:
         self.relationship_detection_enabled = self._model.relationship_detection.enabled
         self.relationship_confidence_threshold = self._model.relationship_detection.confidence_threshold
         self.relationship_min_display_confidence = self._model.relationship_detection.min_confidence_display
+        self.relationship_exclude_tables = self._model.relationship_detection.exclude_tables
 
     def get_column_checks(self, table_name: str, column_name: str, column_dtype: str) -> Dict:
         """
@@ -401,6 +415,19 @@ class AuditConfig:
 
         return sampling_config
 
+    def get_table_database(self, table_name: str) -> str:
+        """
+        Get database for a specific table
+
+        Args:
+            table_name: Name of the table
+
+        Returns:
+            Database name (falls back to default_database if not specified)
+        """
+        # Return table-specific database if defined, otherwise use default_database
+        return self.table_databases.get(table_name, self.default_database)
+
     def get_table_schema(self, table_name: str) -> str:
         """
         Get schema/dataset for a specific table
@@ -409,10 +436,30 @@ class AuditConfig:
             table_name: Name of the table
 
         Returns:
-            Schema/dataset name (falls back to global schema if not specified)
+            Schema/dataset name (falls back to default_schema if not specified)
         """
-        # Return table-specific schema if defined, otherwise use global schema
-        return self.table_schemas.get(table_name, self.schema)
+        # Return table-specific schema if defined, otherwise use default_schema
+        return self.table_schemas.get(table_name, self.default_schema)
+
+    def get_table_column_filters(self, table_name: str) -> Dict[str, List[str]]:
+        """
+        Get column filters for a specific table
+
+        Args:
+            table_name: Name of the table
+
+        Returns:
+            Dictionary with 'include_columns' and 'exclude_columns' lists
+            (per-table filters override global filters)
+        """
+        # Per-table filters take precedence over global filters
+        include_cols = self.table_include_columns.get(table_name) or self.include_columns
+        exclude_cols = self.table_exclude_columns.get(table_name) or self.exclude_columns
+
+        return {
+            'include_columns': include_cols,
+            'exclude_columns': exclude_cols
+        }
 
     def get_table_connection_params(self, table_name: str) -> Dict:
         """
@@ -427,15 +474,15 @@ class AuditConfig:
         # Start with global connection params
         conn_params = self.connection_params.copy()
 
-        # Override with table-specific connection params if any
-        if table_name in self.table_connection_params:
-            # Merge table-specific params (already in backend-specific format)
-            conn_params.update(self.table_connection_params[table_name])
+        # Override default_database if table has specific database
+        table_database = self.get_table_database(table_name)
+        if table_database:
+            conn_params['default_database'] = table_database
 
-        # Also update schema if table has a specific schema
+        # Override default_schema if table has specific schema
         table_schema = self.get_table_schema(table_name)
         if table_schema:
-            conn_params['schema'] = table_schema
+            conn_params['default_schema'] = table_schema
 
         return conn_params
 
@@ -484,13 +531,11 @@ class AuditConfig:
         return {
             'database': {
                 'backend': self.backend,
-                'connection_params': self.connection_params,
-                'schema': self.schema
+                'connection_params': self.connection_params
             },
             'tables': self.tables,
             'sampling': {
-                'sample_size': self.sample_size,
-                'sample_in_db': self.sample_in_db
+                'sample_size': self.sample_size
             },
             'security': {
                 'mask_pii': self.mask_pii,

@@ -267,7 +267,8 @@ def detect_and_export_relationships(
     # Detect and display relationships
     detected_relationships = detect_and_display_relationships(
         all_table_results,
-        confidence_threshold=config.relationship_confidence_threshold
+        confidence_threshold=config.relationship_confidence_threshold,
+        exclude_tables=config.relationship_exclude_tables
     )
 
     return detected_relationships
@@ -340,81 +341,83 @@ def main():
     parser = setup_argument_parser()
     args = parser.parse_args()
 
-    # Handle optional "run" subcommand
-    # If first arg is "run", just ignore it (config_file will be the next arg)
-    # If first arg is NOT "run" and exists, treat it as config_file
-    if args.subcommand and args.subcommand != 'run':
-        config_file = args.subcommand
-    else:
-        config_file = args.config_file
+    # Handle init command
+    if args.command == 'init':
+        from dw_auditor.cli.init_command import run_init_command
+        sys.exit(run_init_command(force=args.force, path=args.path))
 
-    # Validate config file exists
-    if not Path(config_file).exists():
-        print(f"❌ Config file not found: {config_file}")
-        print(f"Usage: dw_auditor [run] [config_file] [options]")
-        sys.exit(1)
+    # Handle run command
+    elif args.command == 'run':
+        from dw_auditor.cli.config_discovery import discover_config
 
-    # Determine audit mode
-    audit_mode = determine_audit_mode(args)
+        # Auto-discover config file
+        try:
+            config_file = discover_config(args.config_file)
+        except FileNotFoundError as e:
+            print(f"❌ {e}")
+            sys.exit(1)
 
-    # Start timing
-    total_start_time = datetime.now()
-    run_timestamp = total_start_time.strftime("%Y%m%d_%H%M%S")
+        # Determine audit mode
+        audit_mode = determine_audit_mode(args)
 
-    # Load configuration
-    print(f"📋 Loading config from: {config_file}")
-    config = AuditConfig.from_yaml(config_file)
+        # Start timing
+        total_start_time = datetime.now()
+        run_timestamp = total_start_time.strftime("%Y%m%d_%H%M%S")
 
-    # Initialize run directory
-    run_dir = initialize_run_directory(config, run_timestamp)
+        # Load configuration
+        print(f"📋 Loading config from: {config_file}")
+        config = AuditConfig.from_yaml(config_file)
 
-    # Setup logging
-    log_file = run_dir / "audit.log"
-    setup_logging(log_file, log_level=args.log_level)
-    logger = logging.getLogger(__name__)
+        # Initialize run directory
+        run_dir = initialize_run_directory(config, run_timestamp)
 
-    print(f"📁 Audit run directory: {run_dir}")
-    print(f"📝 Logs will be saved to: {log_file}")
+        # Setup logging
+        log_file = run_dir / "audit.log"
+        setup_logging(log_file, log_level=args.log_level)
+        logger = logging.getLogger(__name__)
 
-    # Print mode info
-    print_mode_info(audit_mode)
+        print(f"📁 Audit run directory: {run_dir}")
+        print(f"📝 Logs will be saved to: {log_file}")
 
-    # Create auditor
-    auditor = SecureTableAuditor(
-        sample_size=config.sample_size
-    )
+        # Print mode info
+        print_mode_info(audit_mode)
 
-    # Get tables to audit
-    tables_to_audit = get_tables_to_audit(config)
-
-    # Setup database connection (with cost estimation for BigQuery)
-    db_conn = setup_database_connection(config, tables_to_audit, audit_mode, args.yes)
-
-    try:
-        # Audit all tables
-        all_table_results = audit_tables(
-            auditor, tables_to_audit, config, audit_mode,
-            run_dir, db_conn, logger
+        # Create auditor
+        auditor = SecureTableAuditor(
+            sample_size=config.sample_size
         )
 
-        # Detect relationships
-        detected_relationships = []
-        if all_table_results and audit_mode != 'discover' and config.relationship_detection_enabled and len(all_table_results) >= 2:
-            detected_relationships = detect_and_export_relationships(all_table_results, config, run_dir, logger)
+        # Get tables to audit
+        tables_to_audit = get_tables_to_audit(config)
 
-        # Generate summary reports
-        if all_table_results:
-            total_duration = (datetime.now() - total_start_time).total_seconds()
-            generate_summary_reports(auditor, all_table_results, config, run_dir, total_duration, detected_relationships, logger)
+        # Setup database connection (with cost estimation for BigQuery)
+        db_conn = setup_database_connection(config, tables_to_audit, audit_mode, args.yes)
 
-    finally:
-        db_conn.close()
+        try:
+            # Audit all tables
+            all_table_results = audit_tables(
+                auditor, tables_to_audit, config, audit_mode,
+                run_dir, db_conn, logger
+            )
 
-    # Print completion message
-    total_duration = (datetime.now() - total_start_time).total_seconds()
-    logger.info(f"Audit completed! Results saved to: {run_dir}")
-    logger.info(f"Total duration: {total_duration:.2f} seconds")
-    logger.info(f"Logs saved to: {log_file}")
+            # Detect relationships
+            detected_relationships = []
+            if all_table_results and audit_mode != 'discover' and config.relationship_detection_enabled and len(all_table_results) >= 2:
+                detected_relationships = detect_and_export_relationships(all_table_results, config, run_dir, logger)
+
+            # Generate summary reports
+            if all_table_results:
+                total_duration = (datetime.now() - total_start_time).total_seconds()
+                generate_summary_reports(auditor, all_table_results, config, run_dir, total_duration, detected_relationships, logger)
+
+        finally:
+            db_conn.close()
+
+        # Print completion message
+        total_duration = (datetime.now() - total_start_time).total_seconds()
+        logger.info(f"Audit completed! Results saved to: {run_dir}")
+        logger.info(f"Total duration: {total_duration:.2f} seconds")
+        logger.info(f"Logs saved to: {log_file}")
 
 
 if __name__ == '__main__':

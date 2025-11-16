@@ -40,3 +40,4 @@ venv.bak/
 #  you could uncomment the following to ignore the entire vscode folder
 # .vscode/
 .aider*
+audit_results/.DS_Store

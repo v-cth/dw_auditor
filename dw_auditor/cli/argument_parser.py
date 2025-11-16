@@ -1,5 +1,5 @@
 """
-Command-line argument parser configuration
+Command-line argument parser configuration with subcommands
 """
 
 import argparse
@@ -7,48 +7,82 @@ import argparse
 
 def setup_argument_parser() -> argparse.ArgumentParser:
     """
-    Configure and return the argument parser for the audit CLI
+    Configure and return the argument parser with subcommands (init, run)
 
     Returns:
         Configured ArgumentParser instance
     """
     parser = argparse.ArgumentParser(
-        description='Run database audit with quality checks and insights',
+        prog='dw_auditor',
+        description='Data warehouse audit tool for quality checks and profiling',
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-  dw_auditor                              # Run audit (default: checks + insights)
-  dw_auditor run                          # Same as above
-  dw_auditor my_config.yaml               # Use custom config
-  dw_auditor run my_config.yaml           # Same as above
-  dw_auditor --check                      # Quality checks only
-  dw_auditor --insight                    # Profiling/insights only
-  dw_auditor --discover                   # Metadata discovery only
-  dw_auditor --log-level DEBUG            # Enable debug logging (shows SQL queries)
+  # Initialize configuration
+  dw_auditor init                          # Create config in OS-native location
+  dw_auditor init --force                  # Overwrite existing config
+  dw_auditor init --path ./my_config.yaml  # Create in custom location
+
+  # Run audits
+  dw_auditor run                           # Auto-discover config and run audit
+  dw_auditor run my_config.yaml            # Use specific config file
+  dw_auditor run --check                   # Quality checks only
+  dw_auditor run --insight                 # Profiling/insights only
+  dw_auditor run --discover                # Metadata discovery only
+  dw_auditor run --log-level DEBUG         # Enable debug logging (shows SQL queries)
         """
     )
 
-    # Optional "run" subcommand (for convenience)
-    parser.add_argument(
-        'subcommand',
-        nargs='?',
-        help=argparse.SUPPRESS  # Hide from help
+    # Create subcommands
+    subparsers = parser.add_subparsers(
+        dest='command',
+        required=True,
+        help='Command to execute'
     )
 
-    parser.add_argument(
+    # ========================================================================
+    # INIT SUBCOMMAND
+    # ========================================================================
+    init_parser = subparsers.add_parser(
+        'init',
+        help='Create a new configuration file',
+        description='Initialize dw_auditor by creating a configuration file'
+    )
+
+    init_parser.add_argument(
+        '--force', '-f',
+        action='store_true',
+        help='Overwrite existing configuration file'
+    )
+
+    init_parser.add_argument(
+        '--path', '-p',
+        type=str,
+        help='Custom path for config file (default: OS-native config directory)'
+    )
+
+    # ========================================================================
+    # RUN SUBCOMMAND
+    # ========================================================================
+    run_parser = subparsers.add_parser(
+        'run',
+        help='Run database audit',
+        description='Run audit with quality checks and insights'
+    )
+
+    run_parser.add_argument(
         'config_file',
         nargs='?',
-        default='audit_config.yaml',
-        help='Path to YAML configuration file (default: audit_config.yaml)'
+        help='Path to YAML configuration file (optional, will auto-discover)'
     )
 
-    parser.add_argument(
+    run_parser.add_argument(
         '--yes', '-y',
         action='store_true',
         help='Automatically answer yes to prompts (proceed without confirmation)'
     )
 
-    parser.add_argument(
+    run_parser.add_argument(
         '--log-level',
         choices=['DEBUG', 'INFO', 'WARNING', 'ERROR'],
         default='INFO',
@@ -56,7 +90,7 @@ Examples:
     )
 
     # Create mutually exclusive group for audit modes
-    mode_group = parser.add_mutually_exclusive_group()
+    mode_group = run_parser.add_mutually_exclusive_group()
     mode_group.add_argument(
         '--check', '-c',
         action='store_true',

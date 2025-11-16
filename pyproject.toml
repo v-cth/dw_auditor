@@ -16,6 +16,7 @@ dependencies = [
     "ibis-framework[snowflake]>=9.0.0",
     "google-cloud-bigquery>=3.0.0",
     "snowflake-connector-python>=3.0.0",
+    "platformdirs>=3.0.0",
 ]
 
 [project.scripts]

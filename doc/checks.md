@@ -38,9 +38,8 @@ column_checks:
 |-------|------|--------------|----------------|
 | **`trailing_characters`** | `bool` \| `string` \| `list` | Detects unwanted suffixes or trailing characters (e.g., whitespace, `_tmp`). | `true` → default whitespace<br>`["_tmp", "_dim"]` → custom patterns |
 | **`ending_characters`** | `bool` \| `string` \| `list` | Flags strings ending with punctuation or undesired endings. | `[".", "!"]` |
-| **`case_duplicates`** | `bool` | Detects duplicates ignoring case sensitivity (e.g., “Paris” vs “PARIS”). | `true` |
+| **`case_duplicates`** | `bool` | Detects duplicates ignoring case sensitivity (e.g., "Paris" vs "PARIS"). | `true` |
 | **`regex_patterns`** | `bool` \| `string` \| `dict` | Validates string format using regex patterns. Can be simple or detailed config. | ```regex_patterns: { pattern: "^[A-Z]{2}\\d{4}$", mode: "match", description: "Station code format" }``` |
-| **`numeric_strings`** | `bool` | Flags string columns where most values are numeric (e.g., `"12345"`). | `true` |
 | **`uniqueness`** | `bool` | Checks if all string values are unique. | `true` |
 
 ### Notes
@@ -198,9 +197,12 @@ column_checks:
   defaults:
     string:
       trailing_characters: true
-      numeric_strings: true
+      case_duplicates: true
     datetime:
       future_dates: true
+      date_outliers:
+        min_year: 1950
+        max_year: 2100
     numeric:
       greater_than_or_equal: 0
   tables:

@@ -23,21 +23,18 @@ cd database_audit
 # 3. Install dependencies (creates venv automatically)
 uv sync
 
-# 4. Configure your database (edit audit_config.yaml)
-database:
-  backend: "bigquery"
-  connection_params:
-    project_id: "your-project"
-    schema: "your_dataset"
+# 4. Create config file
+uv run dw_auditor init
 
-tables:
-  - name: users
-  - name: orders
+# 5. Edit config with your database details
+# Config location shown after init (OS-native path)
+# Linux/Mac: ~/.config/dw_auditor/config.yaml
+# Windows: %APPDATA%\dw_auditor\config.yaml
 
-# 5. Run the audit
-uv run python audit.py
+# 6. Run the audit
+uv run dw_auditor run
 
-# 6. Open the HTML report
+# 7. Open the HTML report
 open audit_results/audit_run_*/summary.html
 ```
 
@@ -67,12 +64,59 @@ open audit_results/audit_run_*/summary.html
 
 ---
 
+## 🔐 Security Features
+
+**Built-in security controls to protect sensitive data:**
+
+### 1. **Automatic PII Masking**
+- Auto-detects 32+ PII keywords (email, phone, SSN, credit card, etc.)
+- Replaces values with `***PII_MASKED***` before analysis
+- Customizable keyword list per your compliance needs
+
+```yaml
+security:
+  mask_pii: true
+  custom_pii_keywords: ["employee_id", "internal_code"]
+```
+
+### 2. **Zero Data Export Architecture**
+- **Database-native queries** - All computation happens in your database (via Ibis)
+- **No intermediate files** - Data never written to disk
+- **Metadata-only exports** - Reports contain statistics, not raw data
+
+### 3. **Credential Protection**
+- Connection strings sanitized in logs (`user:***@host`)
+- Passwords never logged or displayed
+- Secure credential handling (env vars, service accounts)
+
+### 4. **Data Minimization**
+- **Column filtering** - Exclude sensitive columns entirely
+- **Sampling** - Analyze subset of data (database-native TABLESAMPLE)
+- **Temporary in-memory only** - Data discarded after analysis
+
+### 5. **What's Exported vs Protected**
+
+✅ **Exported** (Safe for Reports):
+- Column metadata (names, types, descriptions)
+- Statistics (nulls, distinct counts, ranges)
+- Quality check results
+- Top values (with PII masked)
+
+❌ **Never Exported**:
+- Raw column data
+- Full table contents
+- PII values
+- Credentials
+
+**Result**: Comprehensive audits without exposing sensitive data.
+
+---
+
 ## 📋 What You Can Audit
 
 - **Tables & Views** - Base tables, VIEWs, and MATERIALIZED VIEWs
 - **Multiple Schemas** - Audit across datasets/databases in one run
 - **Custom Queries** - Audit filtered data (e.g., "last 7 days only")
-- **Large Tables** - Database-native sampling (BigQuery TABLESAMPLE, Snowflake SAMPLE)
 
 ---
 
@@ -166,20 +210,25 @@ relationship_detection:
 
 ## 🔧 Advanced Usage
 
-### Discovery Mode (Metadata Only)
+### Initialize Config
 ```bash
-python audit.py --discover
-```
-Fast scan that shows all tables/views without loading data.
-
-### Custom Config File
-```bash
-python audit.py my_custom_config.yaml
+dw_auditor init                      # Create in OS-native location
+dw_auditor init --force              # Overwrite existing config
+dw_auditor init --path ./my.yaml     # Create in custom location
 ```
 
-### Auto-confirm Prompts
+### Run Audit
 ```bash
-python audit.py --yes
+dw_auditor run                       # Auto-discover config
+dw_auditor run custom.yaml           # Use specific config file
+dw_auditor run --yes                 # Auto-confirm prompts
+```
+
+### Audit Modes
+```bash
+dw_auditor run --discover            # Metadata only (fast)
+dw_auditor run --check               # Quality checks only
+dw_auditor run --insight             # Profiling only
 ```
 
 ---
@@ -203,8 +252,8 @@ python audit.py --yes
 **Snowflake**: Check username/password or use `authenticator: externalbrowser` for SSO
 
 ### Performance
-- Use `sample_in_db: true` for large tables (database-native sampling)
-- Increase `sample_size` carefully (default: 10,000 rows)
+- Sampling is always database-native via Ibis (fast & secure)
+- Increase `sample_size` carefully (default: 100,000 rows)
 - Use `--discover` for metadata-only scans
 
 ### Memory Issues

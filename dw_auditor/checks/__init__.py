@@ -7,7 +7,6 @@ from . import (
     string_leading_check,
     string_case_check,
     string_regex_check,
-    string_numeric_check,
     timestamp_pattern_check,
     date_range_check,
     date_outlier_check,

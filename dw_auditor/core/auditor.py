@@ -20,6 +20,7 @@ from ..utils.output import print_results
 from .db_connection import DatabaseConnection
 from ..insights import generate_column_insights
 from .exporter_mixin import AuditorExporterMixin
+from .type_converter import TypeConverter
 
 # Setup module logger
 logger = logging.getLogger(__name__)
@@ -59,7 +60,9 @@ def timing_phase(phase_name: str, phase_timings: Dict[str, float]):
     finally:
         duration = (datetime.now() - start_time).total_seconds()
         phase_timings[phase_name] = duration
-        logger.debug(f"Phase '{phase_name}' completed in {duration:.3f}s")
+        # Skip debug log for audit_checks phase (gets adjusted and logged separately)
+        if phase_name != 'audit_checks':
+            logger.debug(f"Phase '{phase_name}' completed in {duration:.3f}s")
 
 
 # Complex types that don't support standard quality checks
@@ -153,8 +156,13 @@ class SecureTableAuditor(AuditorExporterMixin):
                     table_type = table_metadata['table_type']
                     logger.info(f"Table type: {table_type}")
                 if 'row_count' in table_metadata and table_metadata['row_count'] is not None:
-                    row_count = table_metadata['row_count']
-                    logger.info(f"Table has {row_count:,} rows")
+                    # For VIEWs, metadata row_count is often 0 or inaccurate - skip and get exact count later
+                    if table_metadata.get('table_type') == 'VIEW' and table_metadata['row_count'] == 0:
+                        row_count = None
+                        logger.info("VIEW detected - will get exact row count")
+                    else:
+                        row_count = table_metadata['row_count']
+                        logger.info(f"Table has {row_count:,} rows")
 
                 # Display partition information
                 if 'partition_column' in table_metadata and table_metadata['partition_column']:
@@ -586,7 +594,6 @@ class SecureTableAuditor(AuditorExporterMixin):
         connection_params: Dict,
         schema: Optional[str] = None,
         mask_pii: bool = True,
-        sample_in_db: bool = True,
         custom_query: Optional[str] = None,
         custom_pii_keywords: Optional[List[str]] = None,
         user_primary_key: Optional[List[str]] = None,
@@ -622,7 +629,6 @@ class SecureTableAuditor(AuditorExporterMixin):
                 }
             schema: Schema name (optional, overrides connection default)
             mask_pii: Automatically mask columns with PII keywords
-            sample_in_db: Use database sampling for large tables (faster & more secure)
             custom_query: Custom SQL query instead of SELECT * (advanced)
             custom_pii_keywords: Additional PII keywords beyond defaults
             audit_mode: Audit mode ('full', 'checks', 'insights', 'discover')
@@ -637,7 +643,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             Dictionary with audit results
         """
         # Log the audit
-        self._log_audit(table_name, f"{backend}://{connection_params.get('project_id') or connection_params.get('account')}")
+        self._log_audit(table_name, f"{backend}://{connection_params.get('default_database') or connection_params.get('account')}")
 
         logger.info("Secure audit mode: Direct database query via Ibis (no file export)")
 
@@ -653,8 +659,8 @@ class SecureTableAuditor(AuditorExporterMixin):
                 should_close_conn = True
 
         try:
-            # Extract project_id for cross-project queries (BigQuery only)
-            project_id = connection_params.get('project_id') if backend == 'bigquery' else None
+            # Extract database (project_id for BigQuery) for cross-project queries
+            project_id = connection_params.get('default_database') if backend == 'bigquery' else None
 
             # Get table metadata
             with timing_phase('metadata', phase_timings):
@@ -671,9 +677,14 @@ class SecureTableAuditor(AuditorExporterMixin):
                     table_schema = db_conn.get_table_schema(table_name, schema, project_id)
 
                     if table_schema:
-                        # Get filter configuration
-                        include_columns = getattr(column_check_config, 'include_columns', None) if column_check_config else None
-                        exclude_columns = getattr(column_check_config, 'exclude_columns', None) if column_check_config else None
+                        # Get filter configuration (per-table overrides global)
+                        if column_check_config and hasattr(column_check_config, 'get_table_column_filters'):
+                            table_filters = column_check_config.get_table_column_filters(table_name)
+                            include_columns = table_filters['include_columns']
+                            exclude_columns = table_filters['exclude_columns']
+                        else:
+                            include_columns = getattr(column_check_config, 'include_columns', None) if column_check_config else None
+                            exclude_columns = getattr(column_check_config, 'exclude_columns', None) if column_check_config else None
 
                         # Determine which columns to load
                         columns_to_load = self.determine_columns_to_load(
@@ -697,12 +708,12 @@ class SecureTableAuditor(AuditorExporterMixin):
                     logger.warning(f"Column optimization failed ({e}), will load all columns")
                     columns_to_load = None
 
-            # Determine if we should sample
+            # Determine if we should sample (database-native sampling via Ibis)
             if custom_query:
                 should_sample = False
                 logger.info("Custom query provided - using query as-is (no additional sampling)")
             else:
-                should_sample = sample_in_db and row_count and row_count > self.sample_size
+                should_sample = row_count and row_count > self.sample_size
 
             # Load data
             with timing_phase('data_loading', phase_timings):
@@ -877,7 +888,12 @@ class SecureTableAuditor(AuditorExporterMixin):
 
         # Attempt automatic type conversions on string columns before auditing
         conversion_start = datetime.now()
-        df, conversion_log = self._attempt_type_conversions(df)
+        converter = TypeConverter(
+            sample_threshold=0.90,
+            full_threshold=0.95,
+            sample_fraction=0.05
+        )
+        df, conversion_log = converter.convert_dataframe(df)
         conversion_duration = (datetime.now() - conversion_start).total_seconds()
 
         # Create a mapping of converted types for easy lookup
@@ -1043,12 +1059,14 @@ class SecureTableAuditor(AuditorExporterMixin):
 
         print_results(results)
 
-        # Log duration breakdown
-        logger.info("Audit Duration Breakdown:")
+        # Log quality checks duration breakdown
+        logger.info("Quality Checks Duration Breakdown:")
         if 'check_durations' in results and results['check_durations']:
             for check_type, check_duration in results['check_durations'].items():
                 logger.info(f"  • {check_type}: {check_duration:.3f}s")
-        logger.info(f"  • Total: {duration:.2f}s")
+            # Calculate actual sum of checks
+            total_checks = sum(results['check_durations'].values())
+            logger.info(f"  • Total: {total_checks:.2f}s")
 
         # Store DataFrame if requested (for relationship detection)
         if store_dataframe:
@@ -1056,128 +1074,6 @@ class SecureTableAuditor(AuditorExporterMixin):
 
         return results
 
-    def _attempt_type_conversions(self, df: pl.DataFrame, conversion_threshold: float = 0.95) -> Tuple[pl.DataFrame, List[Dict]]:
-        """
-        Attempt to convert string columns to more specific types (date, datetime, numeric)
-
-        Args:
-            df: Polars DataFrame
-            conversion_threshold: Minimum proportion of successful conversions to apply type change (default: 0.95)
-
-        Returns:
-            Tuple of (modified DataFrame, list of conversion info dicts)
-        """
-        conversion_log = []
-
-        # Identify string columns
-        string_columns = [col for col in df.columns if df[col].dtype in [pl.Utf8, pl.String]]
-
-        if not string_columns:
-            return df, conversion_log
-
-        logger.info(f"Attempting type conversions on {len(string_columns)} string column(s)...")
-
-        for col in string_columns:
-            # Get non-null values for conversion testing
-            non_null_values = df[col].drop_nulls()
-            if len(non_null_values) == 0:
-                continue
-
-            total_non_null = len(non_null_values)
-
-            # Try conversions in order: int → float → datetime → date
-            # If a conversion is successful, skip remaining types
-
-            # 1. Try INTEGER conversion
-            try:
-                # Attempt to cast to integer
-                converted = df[col].cast(pl.Int64, strict=False)
-                successful_conversions = converted.drop_nulls().len()
-                success_rate = successful_conversions / total_non_null if total_non_null > 0 else 0
-
-                if success_rate >= conversion_threshold:
-                    df = df.with_columns(converted.alias(col))
-                    conversion_log.append({
-                        'column': col,
-                        'from_type': 'string',
-                        'to_type': 'int64',
-                        'success_rate': success_rate,
-                        'converted_values': successful_conversions
-                    })
-                    logger.info(f"  ✓ {col}: string → int64 ({success_rate:.1%} success)")
-                    continue
-            except Exception:
-                pass  # Integer conversion failed, try next type
-
-            # 2. Try FLOAT conversion
-            try:
-                # Attempt to cast to float
-                converted = df[col].cast(pl.Float64, strict=False)
-                successful_conversions = converted.drop_nulls().len()
-                success_rate = successful_conversions / total_non_null if total_non_null > 0 else 0
-
-                if success_rate >= conversion_threshold:
-                    df = df.with_columns(converted.alias(col))
-                    conversion_log.append({
-                        'column': col,
-                        'from_type': 'string',
-                        'to_type': 'float64',
-                        'success_rate': success_rate,
-                        'converted_values': successful_conversions
-                    })
-                    logger.info(f"  ✓ {col}: string → float64 ({success_rate:.1%} success)")
-                    continue
-            except Exception:
-                pass  # Float conversion failed, try next type
-
-            # 3. Try DATETIME conversion
-            try:
-                # Attempt to parse as datetime
-                converted = df[col].str.to_datetime(strict=False)
-                successful_conversions = converted.drop_nulls().len()
-                success_rate = successful_conversions / total_non_null if total_non_null > 0 else 0
-
-                if success_rate >= conversion_threshold:
-                    df = df.with_columns(converted.alias(col))
-                    conversion_log.append({
-                        'column': col,
-                        'from_type': 'string',
-                        'to_type': 'datetime',
-                        'success_rate': success_rate,
-                        'converted_values': successful_conversions
-                    })
-                    logger.info(f"  ✓ {col}: string → datetime ({success_rate:.1%} success)")
-                    continue
-            except Exception:
-                pass  # Datetime conversion failed, try next type
-
-            # 4. Try DATE conversion
-            try:
-                # Attempt to parse as date
-                converted = df[col].str.to_date(strict=False)
-                successful_conversions = converted.drop_nulls().len()
-                success_rate = successful_conversions / total_non_null if total_non_null > 0 else 0
-
-                if success_rate >= conversion_threshold:
-                    df = df.with_columns(converted.alias(col))
-                    conversion_log.append({
-                        'column': col,
-                        'from_type': 'string',
-                        'to_type': 'date',
-                        'success_rate': success_rate,
-                        'converted_values': successful_conversions
-                    })
-                    logger.info(f"  ✓ {col}: string → date ({success_rate:.1%} success)")
-                    continue
-            except Exception:
-                pass  # Date conversion failed, keep as string
-
-        if conversion_log:
-            logger.info(f"Successfully converted {len(conversion_log)} column(s) to more specific types")
-        else:
-            logger.info(f"No string columns could be converted (threshold: {conversion_threshold:.0%})")
-
-        return df, conversion_log
 
     def _audit_complex_column(self, df: pl.DataFrame, col: str) -> Dict:
         """
