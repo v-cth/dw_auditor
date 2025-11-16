@@ -28,7 +28,7 @@ Install test dependencies:
 
 ```bash
 source audit_env/bin/activate
-pip install -e ".[test]"
+pip install -e ".[tests]"
 ```
 
 ## Running Tests
