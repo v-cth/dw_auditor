@@ -10,3 +10,9 @@ Requires-Dist: ibis-framework[bigquery]>=9.0.0
 Requires-Dist: ibis-framework[snowflake]>=9.0.0
 Requires-Dist: google-cloud-bigquery>=3.0.0
 Requires-Dist: snowflake-connector-python>=3.0.0
+Requires-Dist: platformdirs>=3.0.0
+Provides-Extra: test
+Requires-Dist: pytest>=7.0.0; extra == "test"
+Requires-Dist: pytest-asyncio>=0.21.0; extra == "test"
+Requires-Dist: pytest-cov>=4.0.0; extra == "test"
+Requires-Dist: hypothesis>=6.0.0; extra == "test"
