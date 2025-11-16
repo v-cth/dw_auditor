@@ -2,7 +2,6 @@ README.md
 pyproject.toml
 dw_auditor/__init__.py
 dw_auditor/__main__.py
-dw_auditor/cli.py
 dw_auditor.egg-info/PKG-INFO
 dw_auditor.egg-info/SOURCES.txt
 dw_auditor.egg-info/dependency_links.txt
