@@ -61,9 +61,10 @@ def generate_column_insights(df: pl.DataFrame, col: str, config: dict) -> List[I
 
     if dtype in [pl.Utf8, pl.String]:
         insight_name = 'string_insights'
-    elif dtype in [pl.Int8, pl.Int16, pl.Int32, pl.Int64,
-                   pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-                   pl.Float32, pl.Float64]:
+    elif (dtype in [pl.Int8, pl.Int16, pl.Int32, pl.Int64,
+                    pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
+                    pl.Float32, pl.Float64] or
+          isinstance(dtype, pl.Decimal)):  # Decimal is parameterized type
         insight_name = 'numeric_insights'
     elif dtype in [pl.Datetime, pl.Date]:
         insight_name = 'datetime_insights'

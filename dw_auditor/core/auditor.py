@@ -402,6 +402,16 @@ class SecureTableAuditor(AuditorExporterMixin):
             # Check if this check is in the config
             config_value = check_config.get(check_name)
 
+            # Special handling for range checks - detect if range parameters exist
+            if config_value is None and check_name == 'numeric_range':
+                range_keys = ['greater_than', 'greater_than_or_equal', 'less_than', 'less_than_or_equal']
+                if any(key in check_config for key in range_keys):
+                    config_value = True  # Signal that check should run
+            elif config_value is None and check_name == 'date_range':
+                range_keys = ['after', 'after_or_equal', 'before', 'before_or_equal']
+                if any(key in check_config for key in range_keys):
+                    config_value = True  # Signal that check should run
+
             # Skip if not configured or explicitly disabled
             if config_value is False or config_value is None:
                 continue
@@ -977,10 +987,11 @@ class SecureTableAuditor(AuditorExporterMixin):
             elif audit_mode == 'insights':
                 # In insights mode, columns are marked as PROFILED
                 status = 'PROFILED'
-            elif dtype in [pl.Utf8, pl.String, pl.Datetime, pl.Date,
-                          pl.Int8, pl.Int16, pl.Int32, pl.Int64,
-                          pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-                          pl.Float32, pl.Float64]:
+            elif (dtype in [pl.Utf8, pl.String, pl.Datetime, pl.Date,
+                           pl.Int8, pl.Int16, pl.Int32, pl.Int64,
+                           pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
+                           pl.Float32, pl.Float64] or
+                  isinstance(dtype, pl.Decimal)):  # Decimal is parameterized type
                 # Columns that are checked for quality issues
                 # Distinguish between "checks run and passed" vs "no checks configured"
                 if col_results['issues']:

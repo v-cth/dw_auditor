@@ -153,28 +153,45 @@ class SnowflakeAdapter(BaseAdapter):
 
         # Query 2: Primary Keys using Snowflake SHOW command
         try:
-            # First, execute SHOW PRIMARY KEYS
-            show_pk_cmd = f"SHOW PRIMARY KEYS IN SCHEMA {database}.{schema_name}"
-            logger.debug(f"[query] Snowflake show primary keys:\n{show_pk_cmd}")
-            self.conn.raw_sql(show_pk_cmd)
+            # Use native Snowflake cursor to execute SHOW and fetch results
+            cursor = self.conn.con.cursor()
 
-            # Then scan the result
-            pk_query = 'SELECT "table_name", "column_name", "key_sequence" FROM TABLE(RESULT_SCAN(LAST_QUERY_ID())) ORDER BY "table_name", "key_sequence"'
+            # Execute SHOW PRIMARY KEYS
+            show_cmd = f"SHOW PRIMARY KEYS IN SCHEMA {database}.{schema_name}"
+            logger.debug(f"[query] Snowflake show primary keys:\n{show_cmd}")
+            cursor.execute(show_cmd)
+            show_query_id = cursor.sfqid  # Save the query ID
+
+            # Fetch results from the SHOW command using RESULT_SCAN
+            pk_query = f"""
+            SELECT
+                "table_name" as table_name,
+                "column_name" as column_name,
+                "key_sequence" as key_sequence
+            FROM TABLE(RESULT_SCAN('{show_query_id}'))
+            ORDER BY "table_name", "key_sequence"
+            """
             logger.debug(f"[query] Snowflake fetch PK results:\n{pk_query}")
-            pk_df = self.conn.sql(pk_query).to_polars()
+            cursor.execute(pk_query)
 
-            # Normalize column names and add schema_name
-            if len(pk_df) > 0:
-                pk_df = normalize_snowflake_columns(pk_df, {
-                    'table_name': 'table_name',
-                    'column_name': 'column_name',
-                    'key_sequence': 'ordinal_position'
+            # Fetch all rows
+            rows = cursor.fetchall()
+
+            # Create Polars DataFrame from results
+            if rows:
+                pk_df = pl.DataFrame({
+                    'table_name': [row[0] for row in rows],
+                    'column_name': [row[1] for row in rows],
+                    'ordinal_position': [row[2] for row in rows]
                 })
                 # Add schema_name column
                 pk_df = pk_df.with_columns(pl.lit(schema_name).alias('schema_name'))
                 # Reorder columns to match expected format
                 pk_df = pk_df.select(['schema_name', 'table_name', 'column_name', 'ordinal_position'])
+            else:
+                pk_df = pl.DataFrame()
 
+            cursor.close()
             cache_entry['pk_df'] = pk_df
         except Exception as e:
             logger.warning(f"Could not fetch primary key metadata: {e}")
@@ -185,15 +202,15 @@ class SnowflakeAdapter(BaseAdapter):
             columns_query = f"""
             SELECT
                 '{schema_name}' AS schema_name,
-                TABLE_NAME,
-                COLUMN_NAME,
-                DATA_TYPE,
-                ORDINAL_POSITION,
-                COMMENT
-            FROM {database}.INFORMATION_SCHEMA.COLUMNS
-            WHERE TABLE_SCHEMA = '{schema_name}'
+                c.TABLE_NAME,
+                c.COLUMN_NAME,
+                c.DATA_TYPE,
+                c.ORDINAL_POSITION,
+                c.COMMENT
+            FROM {database}.INFORMATION_SCHEMA.COLUMNS AS c
+            WHERE c.TABLE_SCHEMA = '{schema_name}'
               {table_filter_columns}
-            ORDER BY TABLE_NAME, ORDINAL_POSITION
+            ORDER BY c.TABLE_NAME, c.ORDINAL_POSITION
             """
             logger.debug(f"[query] Snowflake metadata columns query:\n{columns_query}")
             columns_df = self.conn.sql(columns_query).to_polars()

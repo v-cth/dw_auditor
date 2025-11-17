@@ -200,8 +200,10 @@ dw_auditor run --insight             # Profiling only
 ## 📚 Documentation
 
 - **[Configuration Reference](./audit_config.yaml)** - Inline documentation for all options
-- **[Quality Checks Guide](./doc/checks.md)** - All 11 checks with examples
-- **[Architecture Guide](./.claude/CLAUDE.md)** - How it works, extending checks
+- **[Quality Checks Guide](./doc/checks.md)** - All checks with examples
+- **[Data Inisghts Guide](./doc/insights.md)** - All insights with examples
+
+
 
 ---
 

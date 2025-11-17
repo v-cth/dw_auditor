@@ -36,6 +36,7 @@ tables:
     query: "select * from order_items where product_id > 104"
 
   - products
+  - demo_users
   # - name: fct_avaibility_part
   #   schema: dbt_prod
   #   query: "select * from fct_avaibility_part where collected_at > '2025-10-01'"
@@ -71,7 +72,7 @@ sampling:
 # ----------------------------------------------------------------------------
 security:
   # Automatically mask columns containing PII
-  mask_pii: true
+  mask_pii: false
   
   # Additional keywords to identify PII columns (beyond defaults)
   # Default keywords: ssn, email, phone, address, credit_card, password, etc.
@@ -90,10 +91,9 @@ column_checks:
       trailing_characters: true     # Detect trailing whitespace
       case_duplicates: true          # Find duplicates ignoring case
     datetime:
+      greater_than: '2025-10-01'
       future_dates: true             # Detect dates in the future
       date_outliers:                 # Detect suspicious placeholder years
-        min_year: 1950
-        max_year: 2100
         problematic_years: [1900, 1970, 2099, 2999, 9999]
     numeric:
       greater_than_or_equal: 0       # Ensure non-negative values
@@ -104,10 +104,10 @@ column_checks:
       order_id:
         uniqueness: true             # Ensure order IDs are unique
       order_date:
-        after: "2020-01-01"          # Business rule: orders after 2020
+        after: "2026-01-01"          # Business rule: orders after 2020
     customers:
       email:
-        regex_patterns:              # Validate email format
+        regex_pattern:               # Validate email format
           pattern: "^[\\w._%+-]+@[\\w.-]+\\.[a-zA-Z]{2,}$"
           mode: "match"
           description: "Valid email format"
@@ -131,7 +131,7 @@ column_insights:
       top_values: 5                  # Show top 5 most common numeric values
       histogram:
         bins: 15
-        method: "equal_frequency"  # equal_width, equal_frequency, quartiles, explicit
+        method: "quartiles"  # equal_width, equal_frequency, quartiles, explicit
         edge_handling: "include_left"
 
     datetime:

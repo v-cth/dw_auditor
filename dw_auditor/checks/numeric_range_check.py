@@ -58,7 +58,7 @@ class NumericRangeCheck(BaseCheck):
     supported_dtypes = [
         pl.Int8, pl.Int16, pl.Int32, pl.Int64,
         pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-        pl.Float32, pl.Float64
+        pl.Float32, pl.Float64, pl.Decimal
     ]
 
     def _validate_params(self) -> None:

@@ -343,14 +343,20 @@ class AuditConfig:
             base_config = self.column_check_defaults.get('string', {}).copy()
         elif 'datetime' in dtype_key or 'date' in dtype_key:
             base_config = self.column_check_defaults.get('datetime', {}).copy()
+        elif 'int' in dtype_key or 'float' in dtype_key or 'decimal' in dtype_key or 'numeric' in dtype_key:
+            base_config = self.column_check_defaults.get('numeric', {}).copy()
         else:
             base_config = {}
 
-        # Apply table-level overrides
-        if table_name in self.column_check_overrides:
-            table_config = self.column_check_overrides[table_name]
-            if column_name in table_config:
-                column_overrides = table_config[column_name]
+        # Apply table-level overrides (case-insensitive lookup)
+        # Normalize to lowercase for lookup since Snowflake returns uppercase column names
+        table_name_lower = table_name.lower()
+        column_name_lower = column_name.lower()
+
+        if table_name_lower in self.column_check_overrides:
+            table_config = self.column_check_overrides[table_name_lower]
+            if column_name_lower in table_config:
+                column_overrides = table_config[column_name_lower]
                 base_config.update(column_overrides)
 
         return base_config
@@ -375,16 +381,20 @@ class AuditConfig:
             base_config = self.column_insights_defaults.get('datetime', {}).copy()
         elif 'bool' in dtype_key:
             base_config = self.column_insights_defaults.get('boolean', {}).copy()
-        elif 'int' in dtype_key or 'float' in dtype_key:
+        elif 'int' in dtype_key or 'float' in dtype_key or 'decimal' in dtype_key or 'numeric' in dtype_key:
             base_config = self.column_insights_defaults.get('numeric', {}).copy()
         else:
             base_config = {}
 
-        # Apply table-level overrides
-        if table_name in self.column_insights_overrides:
-            table_config = self.column_insights_overrides[table_name]
-            if column_name in table_config:
-                column_overrides = table_config[column_name]
+        # Apply table-level overrides (case-insensitive lookup)
+        # Normalize to lowercase for lookup since Snowflake returns uppercase column names
+        table_name_lower = table_name.lower()
+        column_name_lower = column_name.lower()
+
+        if table_name_lower in self.column_insights_overrides:
+            table_config = self.column_insights_overrides[table_name_lower]
+            if column_name_lower in table_config:
+                column_overrides = table_config[column_name_lower]
                 base_config.update(column_overrides)
 
         return base_config

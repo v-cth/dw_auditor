@@ -39,12 +39,26 @@ class QuantilesInsight(BaseInsight):
     supported_dtypes = [
         pl.Int8, pl.Int16, pl.Int32, pl.Int64,
         pl.UInt8, pl.UInt16, pl.UInt32, pl.UInt64,
-        pl.Float32, pl.Float64
+        pl.Float32, pl.Float64, pl.Decimal
     ]
 
     def _validate_params(self) -> None:
         """Validate parameters using Pydantic"""
         self.config = QuantilesParams(**self.params)
+
+    def _get_non_null_series(self) -> pl.Series:
+        """Get series filtered to non-null values, with Decimal→Float64 conversion
+
+        Returns:
+            Polars Series with non-null values, cast to Float64 if Decimal
+        """
+        series = self.df[self.col].drop_nulls()
+
+        # Cast Decimal to Float64 to avoid overflow in quantile operations
+        if isinstance(series.dtype, pl.Decimal):
+            series = series.cast(pl.Float64)
+
+        return series
 
     def generate(self) -> List[InsightResult]:
         """Generate quantiles insight

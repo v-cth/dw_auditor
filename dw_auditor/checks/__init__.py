@@ -25,7 +25,6 @@ from ..core.registry import (
 )
 
 from ..core.runner import (
-    run_check,
     run_check_sync,
     run_multiple_checks,
     validate_check_config
@@ -40,7 +39,6 @@ __all__ = [
     "get_check_info",
     "check_exists",
     # Runner functions
-    "run_check",
     "run_check_sync",
     "run_multiple_checks",
     "validate_check_config"
