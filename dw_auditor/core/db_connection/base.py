@@ -21,6 +21,15 @@ class BaseAdapter(ABC):
         # Value: dict with 'tables_df', 'columns_df', 'pk_df', 'rowcount_df', 'fetched_tables'
         self._metadata_cache: Dict[tuple, Dict[str, Any]] = {}
 
+    def _normalize_table_name(self, table_name: str) -> str:
+        """
+        Normalize table name for database lookups.
+
+        Override in subclasses if needed (e.g., Snowflake uses uppercase).
+        Default implementation returns table name as-is.
+        """
+        return table_name
+
     @abstractmethod
     def connect(self) -> ibis.BaseBackend:
         """Establish database connection"""
@@ -45,17 +54,20 @@ class BaseAdapter(ABC):
         logger = logging.getLogger(__name__)
         cache_key = (project_id, schema)
 
+        # Normalize table names for this database backend
+        normalized_table_names = [self._normalize_table_name(t) for t in table_names] if table_names else None
+
         # Get or create cache entry for this (project_id, schema) combination
         if cache_key not in self._metadata_cache:
-            logger.debug(f"[metadata] fetch INIT project={project_id} schema={schema} tables={'ALL' if table_names is None else ','.join(table_names)}")
-            self._fetch_all_metadata(schema, table_names, project_id)
+            logger.debug(f"[metadata] fetch INIT project={project_id} schema={schema} tables={'ALL' if normalized_table_names is None else ','.join(normalized_table_names)}")
+            self._fetch_all_metadata(schema, normalized_table_names, project_id)
             return
 
         cache_entry = self._metadata_cache[cache_key]
         fetched_tables = cache_entry.get('fetched_tables')
 
         # Cache exists for this (project_id, schema)
-        if table_names is None:
+        if normalized_table_names is None:
             # Caller wants full coverage. If we don't already have all, upgrade to all.
             if fetched_tables is not None:
                 logger.debug(f"[metadata] fetch UPGRADE project={project_id} schema={schema} tables=ALL (from subset of {len(fetched_tables)})")
@@ -63,7 +75,7 @@ class BaseAdapter(ABC):
             return
 
         # Caller wants a subset of tables
-        requested = set(table_names)
+        requested = set(normalized_table_names)
         if fetched_tables is None:
             # Already have full coverage
             return
@@ -122,6 +134,9 @@ class BaseAdapter(ABC):
         if not effective_schema:
             return {}
 
+        # Normalize table name for database-specific lookups
+        normalized_table_name = self._normalize_table_name(table_name)
+
         # Ensure metadata is cached for this (project_id, schema, table) combination
         self._ensure_metadata(effective_schema, [table_name], project_id)
 
@@ -138,16 +153,16 @@ class BaseAdapter(ABC):
         if tables_df is None:
             return {}
 
-        # Filter tables_df by both schema and table_name
+        # Filter tables_df by both schema and normalized table_name
         table_info = tables_df.filter(
-            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
+            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == normalized_table_name)
         )
         if len(table_info) == 0:
             return {}
 
         # Filter columns_df for partition/clustering info
         columns_info = columns_df.filter(
-            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
+            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == normalized_table_name)
         ) if columns_df is not None else pl.DataFrame()
 
         metadata = {
@@ -166,9 +181,9 @@ class BaseAdapter(ABC):
         source_info = None
 
         if rowcount_df is not None and len(rowcount_df) > 0:
-            # Filter by schema and table (first column is schema_name in new approach)
+            # Filter by schema and normalized table (first column is schema_name in new approach)
             source_info = rowcount_df.filter(
-                (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == table_name)
+                (pl.col('schema_name') == effective_schema) & (pl.col('table_id') == normalized_table_name)
             )
             if len(source_info) > 0:
                 source_df = rowcount_df
@@ -232,6 +247,9 @@ class BaseAdapter(ABC):
             logger.debug(f"No effective schema for table {table_name}")
             return {}
 
+        # Normalize table name for database-specific lookups
+        normalized_table_name = self._normalize_table_name(table_name)
+
         # Ensure metadata is cached for this (project_id, schema, table) combination
         self._ensure_metadata(effective_schema, [table_name], project_id)
 
@@ -247,7 +265,7 @@ class BaseAdapter(ABC):
             return {}
 
         table_cols = columns_df.filter(
-            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == table_name)
+            (pl.col('schema_name') == effective_schema) & (pl.col('table_name') == normalized_table_name)
         )
 
         # Check if description column exists
@@ -335,7 +353,12 @@ class BaseAdapter(ABC):
         try:
             table = self.get_table(table_name, schema, project_id)
             count_result = table.count().to_polars()
-            return int(count_result[0, 0])
+
+            # Handle both DataFrame and scalar returns
+            if isinstance(count_result, (int, float)):
+                return int(count_result)
+            else:
+                return int(count_result[0, 0])
         except Exception as e:
             logging.getLogger(__name__).error(f"Could not get row count: {e}")
             return None

@@ -185,5 +185,5 @@ def build_table_filters(
         'tables': f"AND t.table_name IN ({table_list})",
         'only': f"WHERE table_name IN ({table_list})",
         'qualified': f"AND tc.table_name IN ({table_list})",
-        'columns': f"WHERE c.table_name IN ({table_list})"
+        'columns': f"AND c.table_name IN ({table_list})"
     }

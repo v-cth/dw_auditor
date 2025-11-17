@@ -13,14 +13,14 @@ database:
   backend: "bigquery"  # Options: bigquery, snowflake
   connection_params:
     # Required for all backends
-    default_database: "your-project-id"  # BigQuery: project_id | Snowflake: database
-    default_schema: "your-dataset"       # BigQuery: dataset | Snowflake: schema
+    default_database: "your-project-id"  # BigQuery: project_id | Snowflake: DATABASE
+    default_schema: "your-dataset"       # BigQuery: dataset | Snowflake: SCHEMA
 
     # BigQuery Authentication (optional):
     # credentials_path: "/path/to/service-account-key.json"
     # If not specified, uses Application Default Credentials (gcloud auth)
 
-    # Snowflake Connection (if using Snowflake):
+    # Snowflake Connection (if using Snowflake, use UPPERCASE):
     # account: "your-account"
     # user: "your-user"
     # password: "your-password"
@@ -54,6 +54,7 @@ sampling:
 output:
   directory: "audit_results"
   formats: [html, json, csv]  # Choose: html, json, csv
+  auto_open_html: false # Opens HTML reports in browser when audit ends
 
   # Number formatting (optional)
   number_format:
@@ -78,7 +79,6 @@ column_checks:
 # ----------------------------------------------------------------------------
 # Profile data distributions and statistics
 column_insights:
-  enabled: true
   defaults:
     numeric:
       quantiles: true  # Calculate percentiles

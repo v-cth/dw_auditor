@@ -174,7 +174,7 @@ def export_run_summary_to_html(all_results: List[Dict], file_path: str = "summar
     """
     from datetime import datetime
     from .html.assets import _generate_css_styles
-    # from .html.relationships import generate_relationships_summary_section  # DISABLED: ER diagram temporarily disabled
+    from .html.relationships import generate_relationships_summary_section
 
     # Calculate run-level metrics
     total_tables = len(all_results)
@@ -195,7 +195,8 @@ def export_run_summary_to_html(all_results: List[Dict], file_path: str = "summar
     for result in all_results:
         tables_metadata[result.get('table_name')] = {
             'total_rows': result.get('total_rows', 0),
-            'column_count': len(result.get('column_summary', {}))
+            'column_count': len(result.get('column_summary', {})),
+            'primary_key_columns': result.get('primary_key_columns', [])
         }
 
     # Prepare table rows
@@ -351,7 +352,7 @@ def export_run_summary_to_html(all_results: List[Dict], file_path: str = "summar
         </div>
 
         <!-- Relationships Section -->
-        <!-- DISABLED: ER diagram temporarily disabled -->
+        {generate_relationships_summary_section(relationships or [], tables_metadata, show_diagram=False) if relationships else ''}
     </div>
 </body>
 </html>

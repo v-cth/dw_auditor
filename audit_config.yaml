@@ -7,20 +7,20 @@
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
-  backend: "bigquery"  # Options: bigquery, snowflake
+  backend: "snowflake"  # Options: bigquery, snowflake
   connection_params:
     # Required: default_database and default_schema for all backends
-    default_database: "portfolio-402"  # BigQuery: project_id | Snowflake: database name
-    default_schema: "demo"        # BigQuery: dataset | Snowflake: schema name
+    default_database: "SF_TRIAL" #"portfolio-402"  # BigQuery: project_id | Snowflake: database name
+    default_schema: "PUBLIC" #"demo"        # BigQuery: dataset | Snowflake: schema name
 
     # Optional for BigQuery:
     # credentials_path: "/path/to/service-account-key.json"
     # If not specified, uses Application Default Credentials (gcloud auth)
 
     # Required for Snowflake (if using Snowflake):
-    # account: "OOQYWEC-ND51384"
-    # user: "VALENTIN"
-    # password: "ProfilerSF7$"
+    account: "OOQYWEC-ND51384"
+    user: "VALENTIN"
+    password: "ProfilerSF7$"
     # warehouse: "my-warehouse"  # Optional
     # role: "my-role"            # Optional
 
@@ -32,21 +32,23 @@ tables:
   - name: customers
     primary_key: customer_id
   - orders
-  - order_items
-  - products
-  - name: fct_avaibility_part
-    schema: dbt_prod
-    query: "select * from fct_avaibility_part where collected_at > '2025-10-01'"
-  - name: dim_station_v
-    schema: dbt_prod
-  - name: dim_station
-    schema: dbt_prod
+  - name: order_items
+    query: "select * from order_items where product_id > 104"
 
-  # Cross-project table example (BigQuery)
-  - name: crime
-    database: bigquery-public-data
-    schema: chicago_crime
-    exclude_columns: ["description", "domestic"]
+  - products
+  # - name: fct_avaibility_part
+  #   schema: dbt_prod
+  #   query: "select * from fct_avaibility_part where collected_at > '2025-10-01'"
+  # - name: dim_station_v
+  #   schema: dbt_prod
+  # - name: dim_station
+  #   schema: dbt_prod
+
+  # # Cross-project table example (BigQuery)
+  # - name: crime
+  #   database: bigquery-public-data
+  #   schema: chicago_crime
+  #   exclude_columns: ["description", "domestic"]
 
 
   # Table with custom query (for filtering or joining)
@@ -182,6 +184,9 @@ output:
     - html      # Beautiful interactive report
     - csv       # For Excel/analysis
     - json      # For APIs/automation
+
+  auto_open_html: false # Opens HTML reports in browser when audit ends
+  
   
   # Prefix for output filenames
   # Final format: {prefix}_{table_name}_{timestamp}.{extension}

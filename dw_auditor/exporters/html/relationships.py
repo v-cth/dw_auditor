@@ -357,17 +357,18 @@ def _get_crow_foot_path(relationship_type: str, direction: str, is_start: bool) 
         return "M -10,-10 L 0,0 L -10,10 M 0,-10 L 0,10"
 
 
-def generate_relationships_summary_section(relationships: List[Dict], tables_metadata: Dict[str, Dict], min_confidence: float = 0.5) -> str:
+def generate_relationships_summary_section(relationships: List[Dict], tables_metadata: Dict[str, Dict], min_confidence: float = 0.5, show_diagram: bool = False) -> str:
     """
-    Generate ER diagram with crow's foot notation for summary.html
+    Generate relationship section for summary.html
 
     Args:
         relationships: List of relationship dictionaries
         tables_metadata: Metadata about tables (row counts, column counts, primary keys)
         min_confidence: Minimum confidence to display
+        show_diagram: Whether to show the ER diagram (default: False, only show table)
 
     Returns:
-        HTML string with relationship section including interactive ER diagram
+        HTML string with relationship section (table only by default, optionally with ER diagram)
     """
     # Filter relationships by minimum display confidence
     display_relationships = [r for r in relationships if r['confidence'] >= min_confidence]
@@ -386,54 +387,57 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
 
     tables_list = sorted(tables_in_relationships)
 
-    # Calculate table positions
-    positions = _calculate_table_positions(tables_list, num_cols=3)
+    # Generate ER diagram section only if requested
+    diagram_html = ""
+    if show_diagram:
+        # Calculate table positions
+        positions = _calculate_table_positions(tables_list, num_cols=3)
 
-    # Calculate SVG canvas size
-    max_x = max(pos[0] for pos in positions.values()) + 300
-    max_y = max(pos[1] for pos in positions.values()) + 250
+        # Calculate SVG canvas size
+        max_x = max(pos[0] for pos in positions.values()) + 300
+        max_y = max(pos[1] for pos in positions.values()) + 250
 
-    # Build table boxes SVG and track dimensions for endpoint snapping
-    table_boxes_svg = ""
-    table_dimensions = {}  # Store box dimensions for each table
+        # Build table boxes SVG and track dimensions for endpoint snapping
+        table_boxes_svg = ""
+        table_dimensions = {}  # Store box dimensions for each table
 
-    # Initialize global routing infrastructure for multi-pass routing
-    grid = Grid(max_x, max_y, resolution=30)
-    lane_registry = LaneRegistry()
+        # Initialize global routing infrastructure for multi-pass routing
+        grid = Grid(max_x, max_y, resolution=30)
+        lane_registry = LaneRegistry()
 
-    for table_name in tables_list:
-        x, y = positions[table_name]
-        columns = _get_table_columns_for_diagram(table_name, display_relationships, tables_metadata)
+        for table_name in tables_list:
+            x, y = positions[table_name]
+            columns = _get_table_columns_for_diagram(table_name, display_relationships, tables_metadata)
 
-        # Get metadata
-        metadata = tables_metadata.get(table_name, {})
-        row_count = metadata.get('total_rows', 'N/A')
-        if isinstance(row_count, int):
-            row_count_str = f"{row_count:,}"
-        else:
-            row_count_str = str(row_count)
+            # Get metadata
+            metadata = tables_metadata.get(table_name, {})
+            row_count = metadata.get('total_rows', 'N/A')
+            if isinstance(row_count, int):
+                row_count_str = f"{row_count:,}"
+            else:
+                row_count_str = str(row_count)
 
-        # Calculate box dimensions based on number of columns
-        total_columns = len(columns['pk']) + len(columns['fk'])
-        # Reduce header and padding for tables with few/no columns
-        if total_columns == 0:
-            header_height = 35
-            column_spacing = 0
-            box_height = header_height
-        elif total_columns <= 2:
-            header_height = 38
-            column_spacing = 20
-            box_height = header_height + (total_columns * column_spacing)
-        else:
-            header_height = 40
-            column_spacing = 22
-            box_height = header_height + 20 + (total_columns * column_spacing)
+            # Calculate box dimensions based on number of columns
+            total_columns = len(columns['pk']) + len(columns['fk'])
+            # Reduce header and padding for tables with few/no columns
+            if total_columns == 0:
+                header_height = 35
+                column_spacing = 0
+                box_height = header_height
+            elif total_columns <= 2:
+                header_height = 38
+                column_spacing = 20
+                box_height = header_height + (total_columns * column_spacing)
+            else:
+                header_height = 40
+                column_spacing = 22
+                box_height = header_height + 20 + (total_columns * column_spacing)
 
-        box_width = 280
-        table_dimensions[table_name] = (x, y, box_width, box_height)
+            box_width = 280
+            table_dimensions[table_name] = (x, y, box_width, box_height)
 
-        # Create table box
-        table_boxes_svg += f"""
+            # Create table box
+            table_boxes_svg += f"""
         <g class="er-table" data-table="{table_name}">
             <rect x="{x}" y="{y}" width="{box_width}" height="{box_height}"
                   fill="white" stroke="#d1d5db" stroke-width="1.5" rx="6"/>
@@ -449,198 +453,198 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
                   fill="rgba(255,255,255,0.8)" text-anchor="middle">{row_count_str} rows</text>
         """
 
-        # Add columns
-        y_offset = y + header_height + 18
-        for pk_col in columns['pk']:
-            table_boxes_svg += f"""
+            # Add columns
+            y_offset = y + header_height + 18
+            for pk_col in columns['pk']:
+                table_boxes_svg += f"""
             <text x="{x + 10}" y="{y_offset}"
                   font-family="'Courier New', monospace" font-size="12" font-weight="bold"
                   fill="#1f2937">🔑 {pk_col}</text>
         """
-            y_offset += column_spacing
+                y_offset += column_spacing
 
-        for fk_col in columns['fk']:
-            table_boxes_svg += f"""
+            for fk_col in columns['fk']:
+                table_boxes_svg += f"""
             <text x="{x + 10}" y="{y_offset}"
                   font-family="'Courier New', monospace" font-size="12"
                   fill="#4b5563">{fk_col}</text>
         """
-            y_offset += column_spacing
+                y_offset += column_spacing
 
-        table_boxes_svg += "</g>"
+            table_boxes_svg += "</g>"
 
-    # Mark all table boxes as obstacles in the grid
-    for box in table_dimensions.values():
-        grid.mark_obstacle(box, margin=20)
+        # Mark all table boxes as obstacles in the grid
+        for box in table_dimensions.values():
+            grid.mark_obstacle(box, margin=20)
 
-    # Group relationships by table pair to handle multiple relationships between same tables
-    from collections import defaultdict
-    table_pair_rels = defaultdict(list)
-    for rel in display_relationships:
-        # Create consistent key for table pair (always sort to avoid duplicates)
-        pair_key = tuple(sorted([rel['table1'], rel['table2']]))
-        table_pair_rels[pair_key].append(rel)
+        # Group relationships by table pair to handle multiple relationships between same tables
+        from collections import defaultdict
+        table_pair_rels = defaultdict(list)
+        for rel in display_relationships:
+            # Create consistent key for table pair (always sort to avoid duplicates)
+            pair_key = tuple(sorted([rel['table1'], rel['table2']]))
+            table_pair_rels[pair_key].append(rel)
 
-    # Build relationship lines with crow's foot notation
-    relationship_lines_svg = ""
-    rel_idx = 0
-    for pair_key, rels in table_pair_rels.items():
-        table1, table2 = pair_key
+        # Build relationship lines with crow's foot notation
+        relationship_lines_svg = ""
+        rel_idx = 0
+        for pair_key, rels in table_pair_rels.items():
+            table1, table2 = pair_key
 
-        if table1 not in positions or table2 not in positions:
-            continue
+            if table1 not in positions or table2 not in positions:
+                continue
 
-        # Get box dimensions for smart endpoint snapping
-        box1_x, box1_y, box1_w, box1_h = table_dimensions[table1]
-        box2_x, box2_y, box2_w, box2_h = table_dimensions[table2]
+            # Get box dimensions for smart endpoint snapping
+            box1_x, box1_y, box1_w, box1_h = table_dimensions[table1]
+            box2_x, box2_y, box2_w, box2_h = table_dimensions[table2]
 
-        # Calculate center points for initial direction
-        center_x1 = box1_x + box1_w / 2
-        center_y1 = box1_y + box1_h / 2
-        center_x2 = box2_x + box2_w / 2
-        center_y2 = box2_y + box2_h / 2
+            # Calculate center points for initial direction
+            center_x1 = box1_x + box1_w / 2
+            center_y1 = box1_y + box1_h / 2
+            center_x2 = box2_x + box2_w / 2
+            center_y2 = box2_y + box2_h / 2
 
-        # Draw each relationship with offset if multiple
-        num_rels = len(rels)
-        for i, rel in enumerate(rels):
-            # Calculate target points (other box centers) with slight offset for multiple relations
-            if num_rels > 1:
-                # Offset perpendicular to connection line
-                dx_temp = center_x2 - center_x1
-                dy_temp = center_y2 - center_y1
-                dist_temp = math.sqrt(dx_temp*dx_temp + dy_temp*dy_temp)
-                if dist_temp > 0:
-                    # Perpendicular offset
-                    perp_x = -dy_temp / dist_temp
-                    perp_y = dx_temp / dist_temp
-                    offset_amount = (i - (num_rels - 1) / 2) * 15
-                    target_x2 = center_x2 + perp_x * offset_amount
-                    target_y2 = center_y2 + perp_y * offset_amount
-                    target_x1 = center_x1 + perp_x * offset_amount
-                    target_y1 = center_y1 + perp_y * offset_amount
+            # Draw each relationship with offset if multiple
+            num_rels = len(rels)
+            for i, rel in enumerate(rels):
+                # Calculate target points (other box centers) with slight offset for multiple relations
+                if num_rels > 1:
+                    # Offset perpendicular to connection line
+                    dx_temp = center_x2 - center_x1
+                    dy_temp = center_y2 - center_y1
+                    dist_temp = math.sqrt(dx_temp*dx_temp + dy_temp*dy_temp)
+                    if dist_temp > 0:
+                        # Perpendicular offset
+                        perp_x = -dy_temp / dist_temp
+                        perp_y = dx_temp / dist_temp
+                        offset_amount = (i - (num_rels - 1) / 2) * 15
+                        target_x2 = center_x2 + perp_x * offset_amount
+                        target_y2 = center_y2 + perp_y * offset_amount
+                        target_x1 = center_x1 + perp_x * offset_amount
+                        target_y1 = center_y1 + perp_y * offset_amount
+                    else:
+                        target_x1, target_y1 = center_x1, center_y1
+                        target_x2, target_y2 = center_x2, center_y2
                 else:
                     target_x1, target_y1 = center_x1, center_y1
                     target_x2, target_y2 = center_x2, center_y2
-            else:
-                target_x1, target_y1 = center_x1, center_y1
-                target_x2, target_y2 = center_x2, center_y2
 
-            # Smart snap to closest box edges (now returns side info)
-            start_x, start_y, start_side = _snap_to_box_edge(box1_x, box1_y, box1_w, box1_h, target_x2, target_y2)
-            end_x, end_y, end_side = _snap_to_box_edge(box2_x, box2_y, box2_w, box2_h, target_x1, target_y1)
+                # Smart snap to closest box edges (now returns side info)
+                start_x, start_y, start_side = _snap_to_box_edge(box1_x, box1_y, box1_w, box1_h, target_x2, target_y2)
+                end_x, end_y, end_side = _snap_to_box_edge(box2_x, box2_y, box2_w, box2_h, target_x1, target_y1)
 
-            # Line color based on confidence
-            confidence = rel['confidence']
-            if confidence >= 0.9:
-                line_color = "#6606dc"
-                line_width = 2.5
-            elif confidence >= 0.7:
-                line_color = "#9ca3af"
-                line_width = 2
-            else:
-                line_color = "#d1d5db"
-                line_width = 1.5
+                # Line color based on confidence
+                confidence = rel['confidence']
+                if confidence >= 0.9:
+                    line_color = "#6606dc"
+                    line_width = 2.5
+                elif confidence >= 0.7:
+                    line_color = "#9ca3af"
+                    line_width = 2
+                else:
+                    line_color = "#d1d5db"
+                    line_width = 1.5
 
-            # Determine cardinality labels (1 or n)
-            if rel['relationship_type'] == "one-to-one":
-                label_start = "1"
-                label_end = "1"
-            elif rel['relationship_type'] == "many-to-one":
-                if rel.get('direction') == "table1_to_table2":
-                    label_start = "n"
-                    label_end = "1"
-                elif rel.get('direction') == "table2_to_table1":
+                # Determine cardinality labels (1 or n)
+                if rel['relationship_type'] == "one-to-one":
                     label_start = "1"
+                    label_end = "1"
+                elif rel['relationship_type'] == "many-to-one":
+                    if rel.get('direction') == "table1_to_table2":
+                        label_start = "n"
+                        label_end = "1"
+                    elif rel.get('direction') == "table2_to_table1":
+                        label_start = "1"
+                        label_end = "n"
+                    else:
+                        label_start = "1"
+                        label_end = "1"
+                elif rel['relationship_type'] == "many-to-many":
+                    label_start = "n"
                     label_end = "n"
                 else:
                     label_start = "1"
                     label_end = "1"
-            elif rel['relationship_type'] == "many-to-many":
-                label_start = "n"
-                label_end = "n"
-            else:
-                label_start = "1"
-                label_end = "1"
 
-            # Build tooltip text
-            tooltip_text = f"{rel['column1']} ↔ {rel['column2']}&#10;Confidence: {confidence:.1%}&#10;Type: {rel['relationship_type']}&#10;Overlap: {rel['overlap_ratio']:.1%}&#10;Matching: {rel['matching_values']:,}"
+                # Build tooltip text
+                tooltip_text = f"{rel['column1']} ↔ {rel['column2']}&#10;Confidence: {confidence:.1%}&#10;Type: {rel['relationship_type']}&#10;Overlap: {rel['overlap_ratio']:.1%}&#10;Matching: {rel['matching_values']:,}"
 
-            # Calculate lane offset for multiple parallel relationships
-            if num_rels > 1:
-                lane_offset = (i - (num_rels - 1) / 2) * 12
-            else:
-                lane_offset = 0
+                # Calculate lane offset for multiple parallel relationships
+                if num_rels > 1:
+                    lane_offset = (i - (num_rels - 1) / 2) * 12
+                else:
+                    lane_offset = 0
 
-            # Collect all box dimensions for collision detection
-            all_box_dims = list(table_dimensions.values())
+                # Collect all box dimensions for collision detection
+                all_box_dims = list(table_dimensions.values())
 
-            # Create orthogonal path with collision avoidance
-            path_d, label_positions = _create_orthogonal_path(
-                start_x, start_y, start_side,
-                end_x, end_y, end_side,
-                lane_offset, all_box_dims,
-                corner_radius=4,
-                grid=grid,
-                lane_registry=lane_registry
-            )
+                # Create orthogonal path with collision avoidance
+                path_d, label_positions = _create_orthogonal_path(
+                    start_x, start_y, start_side,
+                    end_x, end_y, end_side,
+                    lane_offset, all_box_dims,
+                    corner_radius=4,
+                    grid=grid,
+                    lane_registry=lane_registry
+                )
 
-            # Position cardinality labels based on edge sides (perpendicular offset from exit/entry)
-            # Adjust offset to account for multiple parallel relationships
-            base_offset = 22
+                # Position cardinality labels based on edge sides (perpendicular offset from exit/entry)
+                # Adjust offset to account for multiple parallel relationships
+                base_offset = 22
 
-            # Start label: offset perpendicular to the start edge
-            if start_side == 'top' or start_side == 'bottom':
-                label_start_x = start_x
-                label_start_y = start_y + (base_offset if start_side == 'bottom' else -base_offset) + lane_offset
-            else:  # left or right
-                label_start_x = start_x + (base_offset if start_side == 'right' else -base_offset)
-                label_start_y = start_y + lane_offset
+                # Start label: offset perpendicular to the start edge
+                if start_side == 'top' or start_side == 'bottom':
+                    label_start_x = start_x
+                    label_start_y = start_y + (base_offset if start_side == 'bottom' else -base_offset) + lane_offset
+                else:  # left or right
+                    label_start_x = start_x + (base_offset if start_side == 'right' else -base_offset)
+                    label_start_y = start_y + lane_offset
 
-            # End label: offset perpendicular to the end edge
-            if end_side == 'top' or end_side == 'bottom':
-                label_end_x = end_x
-                label_end_y = end_y + (base_offset if end_side == 'bottom' else -base_offset) + lane_offset
-            else:  # left or right
-                label_end_x = end_x + (base_offset if end_side == 'right' else -base_offset)
-                label_end_y = end_y + lane_offset
+                # End label: offset perpendicular to the end edge
+                if end_side == 'top' or end_side == 'bottom':
+                    label_end_x = end_x
+                    label_end_y = end_y + (base_offset if end_side == 'bottom' else -base_offset) + lane_offset
+                else:  # left or right
+                    label_end_x = end_x + (base_offset if end_side == 'right' else -base_offset)
+                    label_end_y = end_y + lane_offset
 
-            # Position column name label on the longest straight segment
-            # Add offset to prevent overlap with parallel relationship labels
-            if label_positions:
-                # Find the longest segment
-                max_len = 0
-                best_pos = label_positions[0]
-                best_seg_start = None
-                best_seg_end = None
-                for j in range(len(label_positions) - 1):
-                    seg_len = math.sqrt((label_positions[j+1][0] - label_positions[j][0])**2 +
-                                       (label_positions[j+1][1] - label_positions[j][1])**2)
-                    if seg_len > max_len:
-                        max_len = seg_len
-                        best_seg_start = label_positions[j]
-                        best_seg_end = label_positions[j+1]
-                        # Place label at midpoint of this segment
-                        best_pos = ((label_positions[j][0] + label_positions[j+1][0]) / 2,
-                                   (label_positions[j][1] + label_positions[j+1][1]) / 2)
+                # Position column name label on the longest straight segment
+                # Add offset to prevent overlap with parallel relationship labels
+                if label_positions:
+                    # Find the longest segment
+                    max_len = 0
+                    best_pos = label_positions[0]
+                    best_seg_start = None
+                    best_seg_end = None
+                    for j in range(len(label_positions) - 1):
+                        seg_len = math.sqrt((label_positions[j+1][0] - label_positions[j][0])**2 +
+                                           (label_positions[j+1][1] - label_positions[j][1])**2)
+                        if seg_len > max_len:
+                            max_len = seg_len
+                            best_seg_start = label_positions[j]
+                            best_seg_end = label_positions[j+1]
+                            # Place label at midpoint of this segment
+                            best_pos = ((label_positions[j][0] + label_positions[j+1][0]) / 2,
+                                       (label_positions[j][1] + label_positions[j+1][1]) / 2)
 
-                col_label_x, col_label_y = best_pos
+                    col_label_x, col_label_y = best_pos
 
-                # Determine if segment is horizontal or vertical and offset accordingly
-                if best_seg_start and best_seg_end:
-                    dx = abs(best_seg_end[0] - best_seg_start[0])
-                    dy = abs(best_seg_end[1] - best_seg_start[1])
-                    # Horizontal segment: add vertical offset (base 8px + lane offset)
-                    if dx > dy:
-                        col_label_y += -8 + (lane_offset * 0.5)  # Offset above the line
-                    # Vertical segment: add horizontal offset (base 8px + lane offset)
-                    else:
-                        col_label_x += 8 + (lane_offset * 0.5)  # Offset to the right of line
-            else:
-                # Fallback if no label positions
-                col_label_x = (start_x + end_x) / 2
-                col_label_y = (start_y + end_y) / 2
+                    # Determine if segment is horizontal or vertical and offset accordingly
+                    if best_seg_start and best_seg_end:
+                        dx = abs(best_seg_end[0] - best_seg_start[0])
+                        dy = abs(best_seg_end[1] - best_seg_start[1])
+                        # Horizontal segment: add vertical offset (base 8px + lane offset)
+                        if dx > dy:
+                            col_label_y += -8 + (lane_offset * 0.5)  # Offset above the line
+                        # Vertical segment: add horizontal offset (base 8px + lane offset)
+                        else:
+                            col_label_x += 8 + (lane_offset * 0.5)  # Offset to the right of line
+                else:
+                    # Fallback if no label positions
+                    col_label_x = (start_x + end_x) / 2
+                    col_label_y = (start_y + end_y) / 2
 
-            relationship_lines_svg += f"""
+                relationship_lines_svg += f"""
         <g class="er-relationship" data-table1="{rel['table1']}" data-table2="{rel['table2']}" data-rel-id="rel-{rel_idx}">
             <title>{tooltip_text}</title>
             <path d="{path_d}" stroke="{line_color}" stroke-width="{line_width}"
@@ -668,17 +672,10 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
             </text>
         </g>
         """
-            rel_idx += 1
+                rel_idx += 1
 
-    html = f"""
-    <section class="relationships-section">
-        <h2 class="relationships-title">
-            Table Relationships
-        </h2>
-        <p class="relationships-description">
-            Automatically detected relationships between tables based on column names, data types, and value overlaps.
-        </p>
-
+        # Build diagram HTML
+        diagram_html = f"""
         <!-- ER Diagram with Crow's Foot Notation -->
         <div class="alert-info mb-20">
             <strong>Interactive ER Diagram:</strong> Click on a table to highlight its relationships. Hover over connection lines to see details.
@@ -786,6 +783,18 @@ def generate_relationships_summary_section(relationships: List[Dict], tables_met
                 }});
             }})();
         </script>
+        """
+
+    html = f"""
+    <section class="relationships-section">
+        <h2 class="relationships-title">
+            Table Relationships
+        </h2>
+        <p class="relationships-description">
+            Automatically detected relationships between tables based on column names, data types, and value overlaps.
+        </p>
+
+        {diagram_html}
 
         <!-- Detailed Table View -->
         <h3 class="relationships-table-title">
