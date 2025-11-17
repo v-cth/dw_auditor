@@ -48,6 +48,59 @@ def prefetch_metadata(
     print(f"Metadata cached for all tables")
 
 
+def check_snowflake_large_tables(
+    db_conn: 'DatabaseConnection',
+    tables_to_audit: List[str],
+    config: 'AuditConfig'
+) -> Dict[str, Any]:
+    """
+    Check for large Snowflake tables and warn user about potential costs
+
+    Args:
+        db_conn: Database connection
+        tables_to_audit: List of table names to audit
+        config: Audit configuration
+
+    Returns:
+        Dictionary with 'large_tables' list and 'has_large_tables' boolean
+    """
+    print_separator()
+    print(f"Checking Snowflake table sizes...")
+    print_separator()
+
+    prefetch_metadata(db_conn, tables_to_audit, config)
+
+    large_tables = []
+    for table in tables_to_audit:
+        schema = config.get_table_schema(table)
+        table_schema = db_conn.get_table_schema(table, schema)
+        if table_schema:
+            row_count = table_schema.get('row_count', 0)
+            if row_count and row_count > 1_000_000:
+                large_tables.append({
+                    'table': table,
+                    'row_count': row_count
+                })
+
+    if large_tables:
+        print(f"\n⚠️  Warning: Large table(s) detected:")
+        for item in large_tables:
+            print(f"   • {item['table']}: {item['row_count']:,} rows")
+        print(f"\n💡 Note: Auditing large Snowflake tables may consume significant warehouse credits.")
+        print(f"   The actual cost depends on your warehouse size and query execution time.")
+
+        return {
+            'large_tables': large_tables,
+            'has_large_tables': True
+        }
+    else:
+        print(f"\n✓ All tables are under 1 million rows")
+        return {
+            'large_tables': [],
+            'has_large_tables': False
+        }
+
+
 def estimate_bigquery_costs(
     db_conn: 'DatabaseConnection',
     tables_to_audit: List[str],

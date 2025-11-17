@@ -18,7 +18,7 @@ from dw_auditor.cli import (
     get_user_confirmation,
     discover_tables
 )
-from dw_auditor.cli.cost_estimation import prefetch_metadata
+from dw_auditor.cli.cost_estimation import prefetch_metadata, check_snowflake_large_tables
 from dw_auditor.core.db_connection import DatabaseConnection
 
 
@@ -128,8 +128,16 @@ def setup_database_connection(
         if estimate_result['table_estimates']:
             if not get_user_confirmation(auto_yes):
                 sys.exit(0)
+    # Check for large tables in Snowflake
+    elif config.backend == 'snowflake' and audit_mode != 'discover':
+        check_result = check_snowflake_large_tables(db_conn, tables_to_audit, config)
+
+        # Get user confirmation if large tables detected
+        if check_result['has_large_tables']:
+            if not get_user_confirmation(auto_yes):
+                sys.exit(0)
     else:
-        # For non-BigQuery or discovery mode, just prefetch metadata
+        # For discovery mode or other backends, just prefetch metadata
         prefetch_metadata(db_conn, tables_to_audit, config)
 
     return db_conn
