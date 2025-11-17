@@ -5,7 +5,7 @@ Trailing/leading characters validation check
 from pydantic import BaseModel
 from typing import List, Union, Optional
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 import re
 
@@ -21,7 +21,7 @@ class TrailingCharactersParams(BaseModel):
     patterns: Optional[Union[str, List[str]]] = None
 
 
-@register_check("trailing_characters")
+@register_plugin("trailing_characters", category="check")
 class TrailingCharactersCheck(BaseCheck):
     """Detect strings with trailing or leading characters/patterns
 

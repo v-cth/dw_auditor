@@ -5,7 +5,7 @@ Case sensitivity duplicates check
 from pydantic import BaseModel
 from typing import List
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 
 
@@ -17,7 +17,7 @@ class CaseDuplicatesParams(BaseModel):
     pass
 
 
-@register_check("case_duplicates")
+@register_plugin("case_duplicates", category="check")
 class CaseDuplicatesCheck(BaseCheck):
     """Detect values that differ only in case
 

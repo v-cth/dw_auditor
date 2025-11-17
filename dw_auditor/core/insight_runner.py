@@ -4,7 +4,7 @@ Insight execution API - runs insights by name via the registry
 
 from typing import List, Optional, Any, Dict
 import polars as pl
-from .insight_registry import get_insight, insight_exists, list_insights
+from .plugin import get_insight, insight_exists, list_insights
 from .base_insight import InsightResult
 
 

@@ -6,7 +6,7 @@ from typing import List, Union
 from pydantic import BaseModel, Field, field_validator
 import polars as pl
 from ...core.base_insight import BaseInsight, InsightResult
-from ...core.insight_registry import register_insight
+from ...core.plugin import register_plugin
 
 
 class QuantilesParams(BaseModel):
@@ -27,7 +27,7 @@ class QuantilesParams(BaseModel):
         return v
 
 
-@register_insight("quantiles")
+@register_plugin("quantiles", category="insight")
 class QuantilesInsight(BaseInsight):
     """Generate statistical quantiles (percentiles) for numeric columns
 

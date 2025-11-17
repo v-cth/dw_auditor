@@ -6,7 +6,7 @@ from typing import List
 from pydantic import BaseModel, Field
 import polars as pl
 from ...core.base_insight import BaseInsight, InsightResult
-from ...core.insight_registry import register_insight
+from ...core.plugin import register_plugin
 
 
 class TopValuesParams(BaseModel):
@@ -14,7 +14,7 @@ class TopValuesParams(BaseModel):
     limit: int = Field(default=10, gt=0, description="Number of top values to return")
 
 
-@register_insight("top_values")
+@register_plugin("top_values", category="insight")
 class TopValuesInsight(BaseInsight):
     """Generate most frequent values with counts and percentages
 

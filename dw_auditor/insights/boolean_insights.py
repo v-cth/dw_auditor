@@ -6,7 +6,7 @@ from typing import List
 from pydantic import BaseModel
 import polars as pl
 from ..core.base_insight import BaseInsight, InsightResult
-from ..core.insight_registry import register_insight
+from ..core.plugin import register_plugin
 
 
 class BooleanInsightsParams(BaseModel):
@@ -14,7 +14,7 @@ class BooleanInsightsParams(BaseModel):
     top_values: int = 0
 
 
-@register_insight("boolean_insights")
+@register_plugin("boolean_insights", category="insight")
 class BooleanInsights(BaseInsight):
     """Composite insight for boolean columns
 

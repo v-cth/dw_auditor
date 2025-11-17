@@ -5,7 +5,7 @@ Date range validation check
 from pydantic import BaseModel, validator
 from typing import List, Optional
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 from datetime import date
 
@@ -35,7 +35,7 @@ class DateRangeParams(BaseModel):
         return v
 
 
-@register_check("date_range")
+@register_plugin("date_range", category="check")
 class DateRangeCheck(BaseCheck):
     """Check if dates/datetimes are within specified range or boundaries
 

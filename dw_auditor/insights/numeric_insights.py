@@ -6,7 +6,7 @@ from typing import List, Union, Dict, Any
 from pydantic import BaseModel
 import polars as pl
 from ..core.base_insight import BaseInsight, InsightResult
-from ..core.insight_registry import register_insight
+from ..core.plugin import register_plugin
 from ..core.insight_runner import run_insight_sync
 
 
@@ -21,7 +21,7 @@ class NumericInsightsParams(BaseModel):
     histogram: Union[bool, int, Dict[str, Any]] = False
 
 
-@register_insight("numeric_insights")
+@register_plugin("numeric_insights", category="insight")
 class NumericInsights(BaseInsight):
     """Composite insight for numeric columns
 

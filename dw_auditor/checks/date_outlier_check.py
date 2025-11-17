@@ -5,7 +5,7 @@ Date outlier detection check
 from pydantic import BaseModel, Field
 from typing import List
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 
 
@@ -24,7 +24,7 @@ class DateOutlierParams(BaseModel):
     min_suspicious_count: int = Field(default=1, ge=1)
 
 
-@register_check("date_outliers")
+@register_plugin("date_outliers", category="check")
 class DateOutlierCheck(BaseCheck):
     """Detect date/timestamp outliers (unusually old or future dates)
 

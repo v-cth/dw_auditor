@@ -15,17 +15,16 @@ from . import (
 )
 
 # Export registry and runner functions for public API
-from ..core.registry import (
-    CHECK_REGISTRY,
-    register_check,
+from ..core.plugin import (
+    PLUGIN_REGISTRY as CHECK_REGISTRY,  # Backward compatibility
+    register_plugin as register_check,  # Backward compatibility
     get_check,
     list_checks,
-    get_check_info,
+    get_plugin_info as get_check_info,
     check_exists
 )
 
 from ..core.runner import (
-    run_check,
     run_check_sync,
     run_multiple_checks,
     validate_check_config
@@ -40,7 +39,6 @@ __all__ = [
     "get_check_info",
     "check_exists",
     # Runner functions
-    "run_check",
     "run_check_sync",
     "run_multiple_checks",
     "validate_check_config"

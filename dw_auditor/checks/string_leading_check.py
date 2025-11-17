@@ -5,7 +5,7 @@ String leading characters validation check
 from pydantic import BaseModel
 from typing import List, Union, Optional
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 import re
 
@@ -21,7 +21,7 @@ class LeadingCharactersParams(BaseModel):
     patterns: Optional[Union[str, List[str]]] = None
 
 
-@register_check("leading_characters")
+@register_plugin("leading_characters", category="check")
 class LeadingCharactersCheck(BaseCheck):
     """Detect strings that begin with specific characters or patterns
 

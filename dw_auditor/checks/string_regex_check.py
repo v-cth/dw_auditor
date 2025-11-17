@@ -5,7 +5,7 @@ Regex pattern validation check
 from pydantic import BaseModel, validator
 from typing import List, Optional
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 import re
 
@@ -43,7 +43,7 @@ class RegexPatternParams(BaseModel):
         return v
 
 
-@register_check("regex_pattern")
+@register_plugin("regex_pattern", category="check")
 class RegexPatternCheck(BaseCheck):
     """Check strings against regex patterns with flexible validation modes
 

@@ -6,7 +6,7 @@ from typing import List
 from pydantic import BaseModel
 import polars as pl
 from ...core.base_insight import BaseInsight, InsightResult
-from ...core.insight_registry import register_insight
+from ...core.plugin import register_plugin
 
 
 class LengthStatsParams(BaseModel):
@@ -16,7 +16,7 @@ class LengthStatsParams(BaseModel):
     avg_length: bool = False
 
 
-@register_insight("length_stats")
+@register_plugin("length_stats", category="insight")
 class LengthStatsInsight(BaseInsight):
     """Generate string length statistics
 

@@ -6,7 +6,7 @@ from typing import List
 from pydantic import BaseModel
 import polars as pl
 from ..core.base_insight import BaseInsight, InsightResult
-from ..core.insight_registry import register_insight
+from ..core.plugin import register_plugin
 
 
 class DatetimeInsightsParams(BaseModel):
@@ -20,7 +20,7 @@ class DatetimeInsightsParams(BaseModel):
     most_common_timezones: int = 0
 
 
-@register_insight("datetime_insights")
+@register_plugin("datetime_insights", category="insight")
 class DatetimeInsights(BaseInsight):
     """Composite insight for datetime and date columns
 

@@ -5,7 +5,7 @@ Future date detection check
 from pydantic import BaseModel, Field
 from typing import List
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 from datetime import datetime, date, timezone
 
@@ -18,7 +18,7 @@ class FutureDateParams(BaseModel):
     pass
 
 
-@register_check("future_dates")
+@register_plugin("future_dates", category="check")
 class FutureDateCheck(BaseCheck):
     """Detect dates/datetimes that are in the future relative to current time
 

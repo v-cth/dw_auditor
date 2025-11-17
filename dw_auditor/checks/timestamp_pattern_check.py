@@ -5,7 +5,7 @@ Timestamp pattern detection check
 from pydantic import BaseModel, Field
 from typing import List
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 
 
@@ -17,7 +17,7 @@ class TimestampPatternParams(BaseModel):
     pass
 
 
-@register_check("timestamp_patterns")
+@register_plugin("timestamp_patterns", category="check")
 class TimestampPatternCheck(BaseCheck):
     """Detect timestamp patterns (same hour, effectively dates)
 

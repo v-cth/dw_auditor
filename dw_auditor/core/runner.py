@@ -4,7 +4,7 @@ Check execution API - runs checks by name via the registry
 
 from typing import List, Optional, Any, Dict
 import polars as pl
-from .registry import get_check, check_exists
+from .plugin import get_check, check_exists
 from .base_check import CheckResult
 
 

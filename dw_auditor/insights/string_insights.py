@@ -6,7 +6,7 @@ from typing import List
 from pydantic import BaseModel
 import polars as pl
 from ..core.base_insight import BaseInsight, InsightResult
-from ..core.insight_registry import register_insight
+from ..core.plugin import register_plugin
 from ..core.insight_runner import run_insight_sync
 
 
@@ -18,7 +18,7 @@ class StringInsightsParams(BaseModel):
     avg_length: bool = False
 
 
-@register_insight("string_insights")
+@register_plugin("string_insights", category="insight")
 class StringInsights(BaseInsight):
     """Composite insight for string columns
 

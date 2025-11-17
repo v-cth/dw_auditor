@@ -6,7 +6,7 @@ from typing import List, Optional, Union, Dict, Any
 from pydantic import BaseModel, Field, field_validator
 import polars as pl
 from ...core.base_insight import BaseInsight, InsightResult
-from ...core.insight_registry import register_insight
+from ...core.plugin import register_plugin
 
 
 class HistogramParams(BaseModel):
@@ -35,7 +35,7 @@ class HistogramParams(BaseModel):
         return v
 
 
-@register_insight("histogram")
+@register_plugin("histogram", category="insight")
 class HistogramInsight(BaseInsight):
     """Generate histogram distribution buckets for numeric columns
 

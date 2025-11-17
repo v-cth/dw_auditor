@@ -5,7 +5,7 @@ Numeric range validation check
 from pydantic import BaseModel, validator
 from typing import Optional, List
 from ..core.base_check import BaseCheck, CheckResult
-from ..core.registry import register_check
+from ..core.plugin import register_plugin
 import polars as pl
 
 
@@ -36,7 +36,7 @@ class NumericRangeParams(BaseModel):
         return v
 
 
-@register_check("numeric_range")
+@register_plugin("numeric_range", category="check")
 class NumericRangeCheck(BaseCheck):
     """Check if numeric values fall within specified ranges
 
