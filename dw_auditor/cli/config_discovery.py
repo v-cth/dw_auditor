@@ -12,8 +12,8 @@ def discover_config(explicit_path: str = None) -> str:
 
     Priority order:
     1. Explicit path provided by user
-    2. OS-native config location (~/.config/dw_auditor/config.yaml on Linux/Mac)
-    3. Current directory (./audit_config.yaml)
+    2. Current directory (./audit_config.yaml) - recommended location
+    3. OS-native config location (~/.config/dw_auditor/config.yaml on Linux/Mac) - legacy
 
     Args:
         explicit_path: Optional explicit path to config file
@@ -31,30 +31,19 @@ def discover_config(explicit_path: str = None) -> str:
             raise FileNotFoundError(f"Config not found: {explicit_path}")
         return str(path)
 
-    # Priority 2: OS-native config location
+    # Priority 2: Current directory (recommended location)
+    local_config = Path('audit_config.yaml').resolve()
+    if local_config.exists():
+        return str(local_config)
+
+    # Priority 3: OS-native config location (legacy)
     os_config_dir = Path(user_config_dir('dw_auditor', appauthor=False))
     os_config = os_config_dir / 'config.yaml'
     if os_config.exists():
         return str(os_config)
-
-    # Priority 3: Current directory (legacy location)
-    local_config = Path('audit_config.yaml').resolve()
-    if local_config.exists():
-        return str(local_config)
 
     # Not found anywhere
     raise FileNotFoundError(
         "No config file found.\n"
         "Run 'dw_auditor init' to create one, or specify a config file path."
     )
-
-
-def get_config_location() -> str:
-    """
-    Get the OS-native config file path (for informational purposes)
-
-    Returns:
-        Path to where config file should be created
-    """
-    config_dir = Path(user_config_dir('dw_auditor', appauthor=False))
-    return str(config_dir / 'config.yaml')

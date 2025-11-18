@@ -23,18 +23,23 @@ cd database_audit
 # 3. Install dependencies (creates venv automatically)
 uv sync
 
-# 4. Create config file
+# 4. Create config file in current directory
 uv run dw_auditor init
 
-# 5. Edit config with your database details
-# Config location shown after init (OS-native path)
-# Linux/Mac: ~/.config/dw_auditor/config.yaml
-# Windows: %APPDATA%\dw_auditor\config.yaml
+# 5. Create .env file with your credentials (use single quotes for passwords with special chars)
+cat > .env << 'EOF'
+export SNOWFLAKE_ACCOUNT='your-account'
+export SNOWFLAKE_USER='your-username'
+export SNOWFLAKE_PASSWORD='your-password'
+EOF
 
-# 6. Run the audit
+# 6. Edit audit_config.yaml with your database details
+
+# 7. Run the audit (load env vars first)
+source .env
 uv run dw_auditor run
 
-# 7. Open the HTML report
+# 8. Open the HTML report
 open audit_results/audit_run_*/summary.html
 ```
 
@@ -153,17 +158,35 @@ database:
 ```
 
 #### Usage
+
+**Option 1: Using .env file (recommended)**
 ```bash
-# Set environment variables
-export SNOWFLAKE_ACCOUNT="OOQYWEC-ND51384"
-export SNOWFLAKE_USER="my_user"
-export SNOWFLAKE_PASSWORD="my_password"
+# Create .env file (use single quotes for passwords with special chars like $)
+cat > .env << 'EOF'
+export SNOWFLAKE_ACCOUNT='your-account'
+export SNOWFLAKE_USER='your-username'
+export SNOWFLAKE_PASSWORD='your-password'
+EOF
+
+# Load and run
+source .env
+dw_auditor run
+```
+
+**Option 2: Export directly**
+```bash
+# Set environment variables (use single quotes for special chars)
+export SNOWFLAKE_ACCOUNT='OOQYWEC-ND51384'
+export SNOWFLAKE_USER='my_user'
+export SNOWFLAKE_PASSWORD='my_password'
 
 # Run audit
 dw_auditor run
+```
 
-# Or inline
-SNOWFLAKE_PASSWORD="secret" dw_auditor run
+**Option 3: Inline (for one-time use)**
+```bash
+SNOWFLAKE_PASSWORD='secret' dw_auditor run
 ```
 
 **Benefits:**
@@ -213,7 +236,7 @@ relationship_detection:
 
 ### Initialize Config
 ```bash
-dw_auditor init                      # Create in OS-native location
+dw_auditor init                      # Create in current directory (./audit_config.yaml)
 dw_auditor init --force              # Overwrite existing config
 dw_auditor init --path ./my.yaml     # Create in custom location
 ```
