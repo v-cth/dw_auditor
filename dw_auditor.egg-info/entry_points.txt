@@ -1,2 +1,0 @@
-[console_scripts]
-dw_auditor = dw_auditor.__main__:main

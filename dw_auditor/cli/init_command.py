@@ -4,17 +4,16 @@ CLI command to initialize dw_auditor configuration
 
 import sys
 from pathlib import Path
-from platformdirs import user_config_dir
 from .config_template import MINIMAL_CONFIG_TEMPLATE
 
 
 def run_init_command(force: bool = False, path: str = None) -> int:
     """
-    Generate a configuration file in OS-native location or custom path
+    Generate a configuration file in current directory or custom path
 
     Args:
         force: If True, overwrite existing config file
-        path: Custom path for config file. If None, uses OS-native location
+        path: Custom path for config file. If None, creates ./audit_config.yaml
 
     Returns:
         Exit code (0 = success, 1 = error)
@@ -23,9 +22,8 @@ def run_init_command(force: bool = False, path: str = None) -> int:
     if path:
         config_path = Path(path).resolve()
     else:
-        # Use OS-native config directory
-        config_dir = Path(user_config_dir('dw_auditor', appauthor=False))
-        config_path = config_dir / 'config.yaml'
+        # Create in current directory
+        config_path = Path('./audit_config.yaml').resolve()
 
     # Check if file already exists
     if config_path.exists() and not force:
@@ -52,16 +50,13 @@ def run_init_command(force: bool = False, path: str = None) -> int:
     # Success message
     print(f"✅ Config created: {config_path}")
     print("\nNext steps:")
-    print("  1. Edit the config file with your database details:")
-
-    # Platform-specific edit command hint
-    import platform
-    if platform.system() == "Windows":
-        print(f"     notepad {config_path}")
-    else:
-        print(f"     nano {config_path}")
-
-    print(f"\n  2. Run your first audit:")
-    print(f"     dw_auditor run")
+    print("  1. Create a .env file in this directory with your credentials:")
+    print("     export SNOWFLAKE_ACCOUNT='your-account'")
+    print("     export SNOWFLAKE_USER='your-username'")
+    print("     export SNOWFLAKE_PASSWORD='your-password'")
+    print("\n  2. Edit the config file with your database details:")
+    print(f"     nano {config_path}")
+    print("\n  3. Run your first audit:")
+    print("     dw_auditor run")
 
     return 0

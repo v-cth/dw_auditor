@@ -5,27 +5,43 @@ Minimal configuration template for dw_auditor
 MINIMAL_CONFIG_TEMPLATE = """# Data Warehouse Audit Configuration
 # ============================================================================
 # Quick start configuration - Edit the values below with your database details
-# For full configuration options, see: https://github.com/your-repo/docs
+# For full documentation, see: https://github.com/your-repo/database_audit
 
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
-  backend: "bigquery"  # Options: bigquery, snowflake
+  backend: "snowflake"  # Options: bigquery, snowflake
   connection_params:
     # Required for all backends
-    default_database: "your-project-id"  # BigQuery: project_id | Snowflake: DATABASE
-    default_schema: "your-dataset"       # BigQuery: dataset | Snowflake: SCHEMA
+    default_database: "MY_DATABASE"  # BigQuery: project_id | Snowflake: DATABASE
+    default_schema: "MY_SCHEMA"      # BigQuery: dataset | Snowflake: SCHEMA
 
-    # BigQuery Authentication (optional):
-    # credentials_path: "/path/to/service-account-key.json"
-    # If not specified, uses Application Default Credentials (gcloud auth)
+    # ==================================================
+    # SNOWFLAKE CONNECTION (recommended: use environment variables)
+    # ==================================================
+    # Create a .env file in this directory with:
+    #   export SNOWFLAKE_ACCOUNT='your-account'
+    #   export SNOWFLAKE_USER='your-username'
+    #   export SNOWFLAKE_PASSWORD='your-password'
+    #
+    # Note: Use 'export' and single quotes (especially if password contains special chars like $)
+    #
+    # Then reference them here (keeps credentials out of version control):
+    account: "${SNOWFLAKE_ACCOUNT}"
+    user: "${SNOWFLAKE_USER}"
+    password: "${SNOWFLAKE_PASSWORD}"
+    # warehouse: "${SNOWFLAKE_WAREHOUSE:-COMPUTE_WH}"  # Optional, with default value
+    # role: "${SNOWFLAKE_ROLE}"                        # Optional
 
-    # Snowflake Connection (if using Snowflake, use UPPERCASE):
-    # account: "your-account"
-    # user: "your-user"
-    # password: "your-password"
-    # warehouse: "your-warehouse"  # Optional
-    # role: "your-role"            # Optional
+    # ==================================================
+    # BIGQUERY CONNECTION
+    # ==================================================
+    # Uncomment and configure if using BigQuery:
+    # backend: "bigquery"
+    # default_database: "your-project-id"
+    # default_schema: "your-dataset"
+    # credentials_path: "/path/to/service-account.json"  # Optional
+    # If credentials_path not specified, uses: gcloud auth application-default login
 
 # Tables to Audit
 # ----------------------------------------------------------------------------

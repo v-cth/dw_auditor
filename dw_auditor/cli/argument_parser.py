@@ -19,7 +19,7 @@ def setup_argument_parser() -> argparse.ArgumentParser:
         epilog="""
 Examples:
   # Initialize configuration
-  dw_auditor init                          # Create config in OS-native location
+  dw_auditor init                          # Create config in current directory
   dw_auditor init --force                  # Overwrite existing config
   dw_auditor init --path ./my_config.yaml  # Create in custom location
 
@@ -58,7 +58,7 @@ Examples:
     init_parser.add_argument(
         '--path', '-p',
         type=str,
-        help='Custom path for config file (default: OS-native config directory)'
+        help='Custom path for config file (default: ./audit_config.yaml)'
     )
 
     # ========================================================================
