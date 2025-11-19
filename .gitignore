@@ -49,11 +49,9 @@ coverage.xml
 *.log
 .pytest_cache/
 
-# Jupyter Notebook
-.ipynb_checkpoints
 
 # IDEs
-.idea/
+.aider*
 .vscode/
 *.swp
 *.swo
@@ -87,7 +85,7 @@ dw_auditor/__pycache__
 #   commonly ignored for libraries.
 # uv.lock  # Commit this for reproducible builds
 
-#audit_config.yaml
+audit_config.yaml
 audit_results/
 
 .hypothesis
@@ -102,11 +100,3 @@ venv/
 ENV/
 env.bak/
 venv.bak/
-
-# Visual Studio Code
-#  Visual Studio Code specific template is maintained in a separate VisualStudioCode.gitignore 
-#  that can be found at https://github.com/github/gitignore/blob/main/Global/VisualStudioCode.gitignore
-#  and can be added to the global gitignore or merged into this file. However, if you prefer, 
-#  you could uncomment the following to ignore the entire vscode folder
-# .vscode/
-.aider*

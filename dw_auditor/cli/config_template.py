@@ -100,4 +100,10 @@ column_insights:
       quantiles: true  # Calculate percentiles
     string:
       top_values: 10     # Show 10 most frequent values
+
+# Relationship Detection Configuration
+# ----------------------------------------------------------------------------
+# Automatically discover foreign key relationships between tables
+relationship_detection:
+  enabled: false    
 """
