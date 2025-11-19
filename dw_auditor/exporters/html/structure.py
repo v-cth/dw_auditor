@@ -321,13 +321,11 @@ def _generate_column_summary_table(results: Dict) -> str:
 
         col_name_display = col_name if not is_primary_key else f"{col_name} (PK)"
 
-        # Show type conversion if it happened
+        # Display database type - show conversion if it happened
         dtype_display = col_data['dtype']
-        if 'source_dtype' in col_data:
-            # Show as "source → converted"
-            source = col_data['source_dtype'].lower()
-            converted = col_data['dtype'].lower()
-            dtype_display = f"{source} → {converted}"
+        if 'converted_to' in col_data:
+            # Show as "ORIGINAL → converted"
+            dtype_display = f"{col_data['dtype']} → {col_data['converted_to']}"
 
         # Build cells
         bold_class = ' class="td-bold"' if is_primary_key else ''
@@ -355,14 +353,14 @@ def _generate_column_summary_table(results: Dict) -> str:
 
     # Show conversion summary if any columns were converted
     converted_cols = [(col_name, col_data) for col_name, col_data in results['column_summary'].items()
-                      if 'source_dtype' in col_data]
+                      if 'converted_to' in col_data]
     if converted_cols:
         html += '    <div style="margin-top: 16px; padding: 12px; background: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 4px;">\n'
         html += '        <div style="font-weight: 600; color: #92400e; margin-bottom: 8px;">💡 Auto-converted columns:</div>\n'
         html += '        <ul style="margin: 0; padding-left: 20px; color: #78350f;">\n'
         for col_name, col_data in converted_cols:
-            source = col_data['source_dtype'].lower()
-            converted = col_data['dtype'].lower()
+            source = col_data['dtype'].lower()
+            converted = col_data['converted_to'].lower()
             html += f'            <li><code>{col_name}</code>: {source} → {converted}</li>\n'
         html += '        </ul>\n'
         html += '    </div>\n'

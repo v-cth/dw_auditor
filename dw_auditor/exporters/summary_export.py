@@ -32,11 +32,6 @@ def export_combined_column_summary_to_dataframe(all_results: List[Dict]) -> pl.D
                 'null_pct': col_data['null_pct'],
                 'distinct_count': col_data['distinct_count']
             }
-            # Add source_dtype if this column was type-converted
-            if 'source_dtype' in col_data:
-                row['source_dtype'] = col_data['source_dtype']
-            else:
-                row['source_dtype'] = None
             all_rows.append(row)
 
     if not all_rows:
@@ -44,7 +39,6 @@ def export_combined_column_summary_to_dataframe(all_results: List[Dict]) -> pl.D
             'table_name': [],
             'column_name': [],
             'data_type': [],
-            'source_dtype': [],
             'status': [],
             'null_count': [],
             'null_pct': [],
@@ -69,7 +63,6 @@ def export_column_summary_to_dataframe(results: Dict) -> pl.DataFrame:
             'table_name': [],
             'column_name': [],
             'data_type': [],
-            'source_dtype': [],
             'status': [],
             'null_count': [],
             'null_pct': [],
@@ -87,11 +80,6 @@ def export_column_summary_to_dataframe(results: Dict) -> pl.DataFrame:
             'null_pct': col_data['null_pct'],
             'distinct_count': col_data['distinct_count']
         }
-        # Add source_dtype if this column was type-converted
-        if 'source_dtype' in col_data:
-            row['source_dtype'] = col_data['source_dtype']
-        else:
-            row['source_dtype'] = None
         rows.append(row)
 
     return pl.DataFrame(rows)

@@ -48,29 +48,55 @@ def print_column_summary(results: Dict):
         else:
             status_display = f"- {status}"
 
-        # Show type conversion if it happened
+        # Display the dtype - show conversion if it happened
         dtype_display = col_data['dtype']
-        if 'source_dtype' in col_data:
-            # Show as "source → converted"
-            source = col_data['source_dtype'].lower()
-            converted = col_data['dtype'].lower()
-            dtype_display = f"{source} → {converted}"
+        if 'converted_to' in col_data:
+            # Show as "ORIGINAL → converted"
+            dtype_display = f"{col_data['dtype']} → {col_data['converted_to']}"
 
         print(f"{col_name:<30} {dtype_display:<30} {status_display:<12} {null_display:<15} {distinct_display:<15}")
 
     print("=" * 115)
 
-    # Show conversion summary if any columns were converted
-    converted_cols = [(col_name, col_data) for col_name, col_data in results['column_summary'].items()
-                      if 'source_dtype' in col_data]
-    if converted_cols:
-        print("\n💡 Auto-converted columns:")
-        for col_name, col_data in converted_cols:
-            source = col_data['source_dtype'].lower()
-            converted = col_data['dtype'].lower()
-            print(f"   • {col_name}: {source} → {converted}")
-
     print()
+
+
+def _insights_to_dict(insights: list) -> dict:
+    """Convert List[dict] to Dict for easy lookup
+
+    Args:
+        insights: List of insight dictionaries (serialized from InsightResult objects)
+
+    Returns:
+        Dictionary with insight types as keys and values
+    """
+    result = {}
+
+    for insight in insights:
+        insight_type = insight['type']
+        value = insight['value']
+
+        # Handle different insight types
+        if insight_type in ['top_values', 'boolean_distribution', 'most_common_dates', 'most_common_hours', 'most_common_days', 'histogram']:
+            # Lists of dicts
+            result[insight_type] = value
+
+        elif insight_type == 'quantiles':
+            # Dict like {'p25': 1.0, 'p50': 2.0, 'p75': 3.0}
+            result['quantiles'] = value
+
+        elif insight_type in ['min_length', 'max_length', 'avg_length']:
+            # Length stats - group under length_stats key
+            if 'length_stats' not in result:
+                result['length_stats'] = {}
+            stat_name = insight_type.replace('_length', '')
+            result['length_stats'][stat_name] = value
+
+        else:
+            # Simple scalar values (min, max, mean, std, median, min_date, max_date, date_range_days, timezone, etc.)
+            result[insight_type] = value
+
+    return result
 
 
 def print_insights(results: Dict):
@@ -80,8 +106,11 @@ def print_insights(results: Dict):
 
     print("\n💡 Column Insights:\n")
 
-    for col_name, insights in results['column_insights'].items():
+    for col_name, insights_list in results['column_insights'].items():
         print(f"📊 {col_name}:")
+
+        # Convert list of InsightResult dicts to simple dict for easier access
+        insights = _insights_to_dict(insights_list)
 
         # String insights
         if 'top_values' in insights:
@@ -171,7 +200,10 @@ def print_results(results: Dict):
         if not col_data['issues']:
             continue
 
-        print(f"📊 Column: {col_name} ({col_data['dtype']})")
+        # Use dtype from column_summary if available (shows database type), otherwise use Polars type
+        display_dtype = results['column_summary'][col_name]['dtype'] if col_name in results.get('column_summary', {}) else col_data['dtype']
+
+        print(f"📊 Column: {col_name} ({display_dtype})")
         print(f"   Nulls: {col_data['null_count']:,} ({col_data['null_pct']:.1f}%)")
         print(f"   Distinct values: {col_data.get('distinct_count', 'N/A'):,}")
 

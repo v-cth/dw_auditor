@@ -58,13 +58,21 @@ def _generate_issues_section(results: Dict, has_issues: bool) -> str:
         # Determine if this column has issues
         has_column_issues = len(col_data.get('issues', [])) > 0
 
+        # Get dtype from column_summary (shows database type with conversions)
+        dtype = results.get('column_summary', {}).get(col_name, {}).get('dtype', col_data['dtype'])
+
+        # Check if column was converted and show conversion notation
+        if col_name in results.get('column_summary', {}) and 'converted_to' in results['column_summary'][col_name]:
+            converted_to = results['column_summary'][col_name]['converted_to']
+            dtype = f"{dtype} → {converted_to}"
+
         html += f"""
     <div class="column-card">
         <div class="collapsible-header collapsible-section" onclick="toggleCollapse('{issue_id}')">
             <span class="collapse-icon" id="{issue_id}-icon">▼</span>
             <div class="flex flex-between flex-center flex-1">
                 <div class="column-name">{col_name}</div>
-                <div class="column-type">{col_data['dtype']}</div>
+                <div class="column-type">{dtype}</div>
             </div>
         </div>
         <div class="collapsible-content" id="{issue_id}">

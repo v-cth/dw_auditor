@@ -6,11 +6,11 @@
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
-  backend: "snowflake"  # Options: bigquery, snowflake
+  backend: "bigquery"  # Options: bigquery, snowflake
   connection_params:
     # Required for all backends
-    default_database: "MY_DATABASE"  # BigQuery: project_id | Snowflake: DATABASE
-    default_schema: "MY_SCHEMA"      # BigQuery: dataset | Snowflake: SCHEMA
+    default_database: "portfolio-402"  # BigQuery: project_id | Snowflake: DATABASE
+    default_schema: "demo"      # BigQuery: dataset | Snowflake: SCHEMA
 
     # ==================================================
     # SNOWFLAKE CONNECTION (recommended: use environment variables)
@@ -42,8 +42,11 @@ database:
 # List specific tables or leave empty to discover all tables automatically
 tables:
   # Examples:
-  # - customers
-  # - orders
+  - customers
+  - orders
+  - name: fct_avaibility_part
+    schema: dbt_prod
+    query: "select * from fct_avaibility_part where collected_at > '2025-10-01'"
   #
   # Cross-schema/database tables:
   # - name: dim_users
@@ -57,7 +60,7 @@ tables:
 # ----------------------------------------------------------------------------
 # For large tables (>100k rows), sample data for faster audits
 sampling:
-  sample_size: 10000  # Number of rows to analyze from large tables
+  sample_size: 100000  # Number of rows to analyze from large tables
 
 # Output Configuration
 # ----------------------------------------------------------------------------
@@ -91,7 +94,10 @@ column_checks:
 column_insights:
   defaults:
     numeric:
+      min: true
+      max: true
+      mean: true
+      std: true  
       quantiles: true  # Calculate percentiles
     string:
-      top_values:      # Show most frequent values
-        limit: 10
+      top_values: 10   # Show top 10 most frequent values

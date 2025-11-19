@@ -403,11 +403,11 @@ class AuditConfig:
         """
         # Start with global defaults for this data type
         dtype_key = column_dtype.lower()
-        if 'string' in dtype_key or 'utf8' in dtype_key:
+        if 'string' in dtype_key or 'utf8' in dtype_key or 'text' in dtype_key or 'char' in dtype_key:
             base_config = self.column_check_defaults.get('string', {}).copy()
         elif 'datetime' in dtype_key or 'date' in dtype_key:
             base_config = self.column_check_defaults.get('datetime', {}).copy()
-        elif 'int' in dtype_key or 'float' in dtype_key or 'decimal' in dtype_key or 'numeric' in dtype_key:
+        elif 'int' in dtype_key or 'float' in dtype_key or 'decimal' in dtype_key or 'numeric' in dtype_key or 'number' in dtype_key:
             base_config = self.column_check_defaults.get('numeric', {}).copy()
         else:
             base_config = {}
@@ -439,13 +439,13 @@ class AuditConfig:
         """
         # Start with global defaults for this data type
         dtype_key = column_dtype.lower()
-        if 'string' in dtype_key or 'utf8' in dtype_key:
+        if 'string' in dtype_key or 'utf8' in dtype_key or 'text' in dtype_key or 'char' in dtype_key:
             base_config = self.column_insights_defaults.get('string', {}).copy()
         elif 'datetime' in dtype_key or 'date' in dtype_key:
             base_config = self.column_insights_defaults.get('datetime', {}).copy()
         elif 'bool' in dtype_key:
             base_config = self.column_insights_defaults.get('boolean', {}).copy()
-        elif 'int' in dtype_key or 'float' in dtype_key or 'decimal' in dtype_key or 'numeric' in dtype_key:
+        elif 'int' in dtype_key or 'float' in dtype_key or 'decimal' in dtype_key or 'numeric' in dtype_key or 'number' in dtype_key:
             base_config = self.column_insights_defaults.get('numeric', {}).copy()
         else:
             base_config = {}

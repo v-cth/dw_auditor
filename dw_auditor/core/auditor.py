@@ -429,7 +429,13 @@ class SecureTableAuditor(AuditorExporterMixin):
             # Check if column dtype matches any supported dtype
             dtype_matches = False
             for supported_dtype in supported_dtypes:
-                if isinstance(dtype, type(supported_dtype)) or dtype == supported_dtype:
+                # Handle parameterized types (like Decimal)
+                if supported_dtype == pl.Decimal:
+                    if isinstance(dtype, pl.Decimal):
+                        dtype_matches = True
+                        break
+                # Regular type matching
+                elif isinstance(dtype, type(supported_dtype)) or dtype == supported_dtype:
                     dtype_matches = True
                     break
 
@@ -1013,8 +1019,11 @@ class SecureTableAuditor(AuditorExporterMixin):
                 status = 'NOT_CHECKED'
 
             # Store summary for ALL columns
+            # Use original database type if available, otherwise use Polars type
+            display_dtype = table_schema[col]['data_type'] if table_schema and col in table_schema else col_results['dtype']
+
             column_summary = {
-                'dtype': col_results['dtype'],
+                'dtype': display_dtype,
                 'null_count': col_results['null_count'],
                 'null_pct': col_results['null_pct'],
                 'distinct_count': col_results['distinct_count'],
@@ -1022,9 +1031,13 @@ class SecureTableAuditor(AuditorExporterMixin):
                 'description': column_descriptions.get(col, None)
             }
 
-            # Add source type if this column was converted
+            # Track type conversion if this column was auto-converted
             if col in converted_types:
-                column_summary['source_dtype'] = original_schema.get(col, 'unknown')
+                column_summary['converted_to'] = converted_types[col]['to']
+                column_summary['polars_dtype'] = col_results['dtype']
+            # Add Polars type if different from database type (for debugging/reference)
+            elif table_schema and col in table_schema and col_results['dtype'] != display_dtype:
+                column_summary['polars_dtype'] = col_results['dtype']
 
             results['column_summary'][col] = column_summary
 

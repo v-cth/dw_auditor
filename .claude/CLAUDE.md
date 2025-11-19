@@ -1,4 +1,5 @@
 Prefer a modular, extensible architecture that avoids unnecessary coupling between components.
+Prefer simplicity and avoid over-engineering.
 Communicate clearly and concisely, prioritizing relevant information and avoiding verbosity.
 Adhere to industry best practices, including clean code principles, consistent naming conventions, and maintainable design patterns.
 I don't need backward compatibility. If you thing you have to do it, first ask me.

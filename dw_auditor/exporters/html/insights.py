@@ -139,18 +139,40 @@ def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",",
 
         return f"-{result}" if is_negative else result
 
-    if 'min' in insights_dict and 'max' in insights_dict:
-        min_val = insights_dict['min']
-        max_val = insights_dict['max']
-        value_range = max_val - min_val if max_val != min_val else 1
+    # Check if we have any numeric insights to display
+    has_stats = any(key in insights_dict for key in ['min', 'max', 'mean', 'median', 'std', 'quantiles'])
 
-        # Get quantile values or use median/mean
-        q1 = insights_dict.get('quantiles', {}).get('p25', insights_dict.get('quantiles', {}).get('Q1', None))
-        median = insights_dict.get('median', insights_dict.get('quantiles', {}).get('p50', insights_dict.get('quantiles', {}).get('Q2', None)))
-        q3 = insights_dict.get('quantiles', {}).get('p75', insights_dict.get('quantiles', {}).get('Q3', None))
+    if has_stats:
+        min_val = insights_dict.get('min')
+        max_val = insights_dict.get('max')
         mean = insights_dict.get('mean')
+        median = insights_dict.get('median')
+        std = insights_dict.get('std')
 
-        html += """
+        # Get quantile values
+        quantiles = insights_dict.get('quantiles', {})
+        q1 = quantiles.get('p25')
+        if median is None:
+            median = quantiles.get('p50')
+        q3 = quantiles.get('p75')
+
+        # Track whether min/max were explicitly provided (vs derived)
+        has_explicit_min = min_val is not None
+        has_explicit_max = max_val is not None
+
+        # If we don't have explicit min/max but have quantiles, derive range for positioning only
+        if (min_val is None or max_val is None) and 'quantiles' in insights_dict and insights_dict['quantiles']:
+            quantile_values = list(insights_dict['quantiles'].values())
+            if min_val is None:
+                min_val = min(quantile_values)
+            if max_val is None:
+                max_val = max(quantile_values)
+
+        # Show visual distribution if we have a valid range
+        if min_val is not None and max_val is not None:
+            value_range = max_val - min_val if max_val != min_val else 1
+
+            html += """
             <div class="insight-section">
                 <h4 class="insight-header">Distribution Range:</h4>
                 <div class="insight-content p-12">
@@ -159,66 +181,39 @@ def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",",
                         <div class="distribution-gradient"></div>
 """
 
-        # Calculate positions for all stats
-        stats_data = []
-        if q1 is not None and value_range > 0:
-            stats_data.append({'name': 'Q1', 'value': q1, 'pos': ((q1 - min_val) / value_range) * 100,
-                             'color': '#6b7280', 'marker': 'line', 'row': 'top'})
-        if median is not None and value_range > 0:
-            stats_data.append({'name': 'Median', 'value': median, 'pos': ((median - min_val) / value_range) * 100,
-                             'color': '#4338ca', 'marker': 'thick_line', 'row': 'top'})
-        if q3 is not None and value_range > 0:
-            stats_data.append({'name': 'Q3', 'value': q3, 'pos': ((q3 - min_val) / value_range) * 100,
-                             'color': '#6b7280', 'marker': 'line', 'row': 'top'})
-        if mean is not None and value_range > 0:
-            stats_data.append({'name': 'μ', 'value': mean, 'pos': ((mean - min_val) / value_range) * 100,
-                             'color': '#f59e0b', 'marker': 'dot', 'row': 'bottom'})
+            # Calculate positions for all stats
+            stats_data = []
+            if q1 is not None and value_range > 0:
+                stats_data.append({'name': 'Q1', 'value': q1, 'pos': ((q1 - min_val) / value_range) * 100,
+                                 'color': '#6b7280', 'marker': 'line', 'row': 'top'})
+            if median is not None and value_range > 0:
+                stats_data.append({'name': 'Median', 'value': median, 'pos': ((median - min_val) / value_range) * 100,
+                                 'color': '#4338ca', 'marker': 'thick_line', 'row': 'top'})
+            if q3 is not None and value_range > 0:
+                stats_data.append({'name': 'Q3', 'value': q3, 'pos': ((q3 - min_val) / value_range) * 100,
+                                 'color': '#6b7280', 'marker': 'line', 'row': 'top'})
+            if mean is not None and value_range > 0:
+                stats_data.append({'name': 'μ', 'value': mean, 'pos': ((mean - min_val) / value_range) * 100,
+                                 'color': '#f59e0b', 'marker': 'dot', 'row': 'bottom'})
 
-        # Group overlapping labels (within 8% of range)
-        OVERLAP_THRESHOLD = 8.0
-        label_groups = []
-        used_indices = set()
-
-        for i, stat in enumerate(stats_data):
-            if i in used_indices:
-                continue
-
-            # Find all stats that overlap with this one
-            group = [stat]
-            used_indices.add(i)
-
-            for j, other_stat in enumerate(stats_data):
-                if j <= i or j in used_indices:
-                    continue
-
-                # Check if positions are within threshold and on same row
-                if stat['row'] == other_stat['row'] and abs(stat['pos'] - other_stat['pos']) < OVERLAP_THRESHOLD:
-                    group.append(other_stat)
-                    used_indices.add(j)
-
-            label_groups.append(group)
-
-        # Render all visual markers first (adjusted for new bar position at top: 30px)
-        for stat in stats_data:
-            if stat['marker'] == 'line':
-                html += f"""
+            # Render all visual markers first (adjusted for new bar position at top: 30px)
+            for stat in stats_data:
+                if stat['marker'] == 'line':
+                    html += f"""
                         <div class="distribution-marker" style="left: {stat['pos']}%;"></div>
 """
-            elif stat['marker'] == 'thick_line':
-                html += f"""
+                elif stat['marker'] == 'thick_line':
+                    html += f"""
                         <div class="distribution-marker-bold" style="left: {stat['pos']}%;"></div>
 """
-            elif stat['marker'] == 'dot':
-                html += f"""
+                elif stat['marker'] == 'dot':
+                    html += f"""
                         <div class="distribution-marker-mean" style="left: {stat['pos']}%;"></div>
 """
 
-        # Detect horizontal overlaps and assign vertical positions
-        # Sort all individual stats and combined groups by position for stacking
-        all_labels = []
-        for group in label_groups:
-            if len(group) == 1:
-                stat = group[0]
+            # Create labels for all stats (no grouping, just individual labels)
+            all_labels = []
+            for stat in stats_data:
                 all_labels.append({
                     'pos': stat['pos'],
                     'row': stat['row'],
@@ -226,112 +221,92 @@ def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",",
                     'color': stat['color'],
                     'is_combined': False
                 })
-            else:
-                # Combined label
-                order = {'Q1': 1, 'Median': 2, 'Q3': 3, 'μ': 4}
-                group.sort(key=lambda x: order.get(x['name'], 99))
-                combined_label = '/'.join([s['name'] for s in group])
-                value = group[0]['value']
-                avg_pos = sum(s['pos'] for s in group) / len(group)
 
-                if any(s['name'] == 'Median' for s in group):
-                    color = '#4338ca'
-                elif any(s['name'] == 'μ' for s in group):
-                    color = '#f59e0b'
-                else:
-                    color = '#6b7280'
-
+            # Add Min and Max labels only if they were explicitly provided in config
+            if has_explicit_min:
                 all_labels.append({
-                    'pos': avg_pos,
-                    'row': group[0]['row'],
-                    'label': f"{combined_label}: {format_number(value)}",
-                    'color': color,
-                    'is_combined': True
+                    'pos': 0,
+                    'row': 'bottom',
+                    'label': f"Min: {format_number(min_val)}",
+                    'color': '#6b7280',
+                    'is_combined': False,
+                    'is_edge': True
+                })
+            if has_explicit_max:
+                all_labels.append({
+                    'pos': 100,
+                    'row': 'bottom',
+                    'label': f"Max: {format_number(max_val)}",
+                    'color': '#6b7280',
+                    'is_combined': False,
+                    'is_edge': True
                 })
 
-        # Add Min and Max labels to the stacking system
-        all_labels.append({
-            'pos': 0,
-            'row': 'bottom',
-            'label': f"Min: {format_number(min_val)}",
-            'color': '#6b7280',
-            'is_combined': False,
-            'is_edge': True
-        })
-        all_labels.append({
-            'pos': 100,
-            'row': 'bottom',
-            'label': f"Max: {format_number(max_val)}",
-            'color': '#6b7280',
-            'is_combined': False,
-            'is_edge': True
-        })
+            # Sort by row and position
+            all_labels.sort(key=lambda x: (x['row'], x['pos']))
 
-        # Sort by row and position
-        all_labels.sort(key=lambda x: (x['row'], x['pos']))
+            # Assign vertical offsets to prevent overlap within each row
+            LABEL_WIDTH_ESTIMATE = 20  # Estimate ~20% width per label (increased for safety)
 
-        # Assign vertical offsets to prevent overlap within each row
-        LABEL_WIDTH_ESTIMATE = 20  # Estimate ~20% width per label (increased for safety)
+            for row_type in ['top', 'bottom']:
+                row_labels = [l for l in all_labels if l['row'] == row_type]
 
-        for row_type in ['top', 'bottom']:
-            row_labels = [l for l in all_labels if l['row'] == row_type]
+                # Track which vertical offset to use (0, 1, 2...)
+                offset_idx = 0
+                last_end_pos = -100  # Track where last label ended
 
-            # Track which vertical offset to use (0, 1, 2...)
-            offset_idx = 0
-            last_end_pos = -100  # Track where last label ended
+                for label in row_labels:
+                    # Check if this label would overlap with previous
+                    if label['pos'] - LABEL_WIDTH_ESTIMATE/2 < last_end_pos:
+                        # Overlap detected - use next vertical offset
+                        offset_idx = 1 if offset_idx == 0 else 0
+                    else:
+                        # No overlap - reset to primary position
+                        offset_idx = 0
 
-            for label in row_labels:
-                # Check if this label would overlap with previous
-                if label['pos'] - LABEL_WIDTH_ESTIMATE/2 < last_end_pos:
-                    # Overlap detected - use next vertical offset
-                    offset_idx = 1 if offset_idx == 0 else 0
+                    label['v_offset'] = offset_idx
+                    last_end_pos = label['pos'] + LABEL_WIDTH_ESTIMATE/2
+
+            # Render labels with vertical stacking
+            for label in all_labels:
+                if label['row'] == 'top':
+                    # Top row: primary at 5px, secondary at 15px (ensures labels stay within container)
+                    y_pos = '5px' if label['v_offset'] == 0 else '15px'
                 else:
-                    # No overlap - reset to primary position
-                    offset_idx = 0
+                    # Bottom row: primary at 55px, secondary at 45px
+                    y_pos = '55px' if label['v_offset'] == 0 else '45px'
 
-                label['v_offset'] = offset_idx
-                last_end_pos = label['pos'] + LABEL_WIDTH_ESTIMATE/2
-
-        # Render labels with vertical stacking
-        for label in all_labels:
-            if label['row'] == 'top':
-                # Top row: primary at 5px, secondary at 15px (ensures labels stay within container)
-                y_pos = '5px' if label['v_offset'] == 0 else '15px'
-            else:
-                # Bottom row: primary at 55px, secondary at 45px
-                y_pos = '55px' if label['v_offset'] == 0 else '45px'
-
-            # Handle edge labels (Min at 0%, Max at 100%) with proper alignment
-            if label.get('is_edge'):
-                if label['pos'] == 0:
-                    # Min label - left aligned
-                    html += f"""
+                # Handle edge labels (Min at 0%, Max at 100%) with proper alignment
+                if label.get('is_edge'):
+                    if label['pos'] == 0:
+                        # Min label - left aligned
+                        html += f"""
                         <div class="distribution-label distribution-label-left" style="top: {y_pos}; color: {label['color']};">{label['label']}</div>
 """
-                else:
-                    # Max label - right aligned
-                    html += f"""
+                    else:
+                        # Max label - right aligned
+                        html += f"""
                         <div class="distribution-label distribution-label-right" style="top: {y_pos}; color: {label['color']};">{label['label']}</div>
 """
-            else:
-                # Regular labels - center aligned
-                html += f"""
+                else:
+                    # Regular labels - center aligned
+                    html += f"""
                         <div class="distribution-label" style="top: {y_pos}; left: {label['pos']}%; transform: translateX(-50%); color: {label['color']};">{label['label']}</div>
 """
 
-        html += """
+            html += """
                     </div>
 """
 
-        # Additional stats row (std dev)
-        if 'std' in insights_dict:
-            html += f"""
+            # Additional stats row (std dev)
+            if std is not None:
+                html += f"""
                     <div class="std-footer">
-                        <span><span class="text-bold">σ (Std Dev):</span> {insights_dict['std']:.2f}</span>
+                        <span><span class="text-bold">σ (Std Dev):</span> {std:.2f}</span>
                     </div>
 """
 
-        html += """
+            html += """
                 </div>
             </div>
 """
