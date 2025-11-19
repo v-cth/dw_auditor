@@ -6,11 +6,11 @@
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
-  backend: "bigquery"  # Options: bigquery, snowflake
+  backend: "snowflake"  # Options: bigquery, snowflake
   connection_params:
     # Required for all backends
-    default_database: "portfolio-402"  # BigQuery: project_id | Snowflake: DATABASE
-    default_schema: "demo"      # BigQuery: dataset | Snowflake: SCHEMA
+    default_database: "SF_TRIAL"  # BigQuery: project_id | Snowflake: DATABASE
+    default_schema: "PUBLIC"      # BigQuery: dataset | Snowflake: SCHEMA
 
     # ==================================================
     # SNOWFLAKE CONNECTION (recommended: use environment variables)
@@ -44,9 +44,12 @@ tables:
   # Examples:
   - customers
   - orders
-  - name: fct_avaibility_part
-    schema: dbt_prod
-    query: "select * from fct_avaibility_part where collected_at > '2025-10-01'"
+  - name: order_items
+    schema: public
+    query: "select * from order_items where order_id > 1003"
+ ## - name: fct_avaibility_part
+  #  schema: dbt_prod
+  #  query: "select * from fct_avaibility_part where collected_at > '2025-10-01'"
   #
   # Cross-schema/database tables:
   # - name: dim_users

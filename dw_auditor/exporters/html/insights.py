@@ -273,8 +273,8 @@ def _render_numeric_insights(insights: List[Any], thousand_separator: str = ",",
                     # Top row: primary at 5px, secondary at 15px (ensures labels stay within container)
                     y_pos = '5px' if label['v_offset'] == 0 else '15px'
                 else:
-                    # Bottom row: primary at 55px, secondary at 45px
-                    y_pos = '55px' if label['v_offset'] == 0 else '45px'
+                    # Bottom row: primary at 60px, secondary at 70px (below the axis bar)
+                    y_pos = '60px' if label['v_offset'] == 0 else '70px'
 
                 # Handle edge labels (Min at 0%, Max at 100%) with proper alignment
                 if label.get('is_edge'):
