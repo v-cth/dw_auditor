@@ -3,7 +3,9 @@
 **High-performance data quality auditing for BigQuery & Snowflake with automatic relationship detection.**
 
 ✅ Find data issues before they cause problems
+
 🔗 Discover table relationships automatically
+
 🎨 Beautiful HTML reports with ER diagrams
 
 ---
