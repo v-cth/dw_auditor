@@ -19,7 +19,7 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # Or with pip: pip install uv
 
 # 2. Clone and setup
-git clone <your-repo>
+git clone https://github.com/v-cth/database_audit.git
 cd database_audit
 
 # 3. Install dependencies (creates venv automatically)
@@ -28,12 +28,11 @@ uv sync
 # 4. Create config file in current directory
 uv run dw_auditor init
 
-# 5. Create .env file with your credentials (use single quotes for passwords with special chars)
-cat > .env << 'EOF'
+# 5. Create envrionment variable your credentials (use single quotes for passwords with special chars)
+In your .env file:
 export SNOWFLAKE_ACCOUNT='your-account'
 export SNOWFLAKE_USER='your-username'
 export SNOWFLAKE_PASSWORD='your-password'
-EOF
 
 # 6. Edit audit_config.yaml with your database details
 
@@ -52,17 +51,17 @@ open audit_results/audit_run_*/summary.html
 
 ## ✨ Key Features
 
-🔍 **11 Quality Checks** - Detect trailing spaces, case duplicates, regex patterns, range violations, future dates, and more
+- **Quality Checks** - Detect trailing spaces, case duplicates, regex patterns, range violations, future dates, and more
 
-📊 **Automatic Profiling** - Distributions, top values, quantiles, string lengths, date ranges
+- **Automatic Profiling** - Distributions, top values, quantiles, string lengths, date ranges
 
-🔗 **Relationship Detection** - Automatically discover foreign keys
+- **Fields With Wrong Type** - Detect string columns that contain only dates, integer, booleans ...
 
-🎨 **Rich HTML Reports** - 4-tab interface (Summary/Insights/Checks/Metadata) with visual gradients and timelines
+- **Relationship Detection** - Automatically discover foreign keys
 
-🏢 **Enterprise Ready** - Multi-schema auditing, VIEW support, PII masking, custom queries
+- **Rich HTML Reports** - 4-tab interface (Summary/Insights/Checks/Metadata) with visual gradients and timelines
 
-🔒 **Secure by Design** - Zero data exports, database-native operations via Ibis
+- **Secure by Design** - Zero data exports, database-native operations via Ibis, PII masking
 
 
 ---
@@ -263,7 +262,7 @@ dw_auditor run --insight             # Profiling only
 
 - **[Configuration Reference](./audit_config.yaml)** - Inline documentation for all options
 - **[Quality Checks Guide](./doc/checks.md)** - All checks with examples
-- **[Data Inisghts Guide](./doc/insights.md)** - All insights with examples
+- **[Data Insights Guide](./doc/insights.md)** - All insights with examples
 
 
 
