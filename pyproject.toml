@@ -14,6 +14,7 @@ dependencies = [
     "ibis-framework[duckdb]>=9.0.0",
     "ibis-framework[bigquery]>=9.0.0",
     "ibis-framework[snowflake]>=9.0.0",
+    "ibis-framework[databricks]>=9.0.0",
     "google-cloud-bigquery>=3.0.0",
     "snowflake-connector-python>=3.0.0",
     "platformdirs>=3.0.0",

@@ -9,10 +9,42 @@ import os
 from typing import Optional, List, Dict, Any
 
 from .base import BaseAdapter
-from .utils import qualify_query_tables, apply_sampling
+from .utils import apply_sampling
 from .metadata_helpers import should_skip_query, split_columns_pk_dataframe, build_table_filters
 
 logger = logging.getLogger(__name__)
+
+
+def qualify_databricks_query_tables(query: str, table_name: str, schema: str, catalog: str) -> str:
+    """
+    Rewrite SQL query to use fully-qualified Databricks table names
+
+    Databricks requires each part to be backticked separately: `catalog`.`schema`.`table`
+    (not `catalog.schema.table` as a single identifier)
+
+    Args:
+        query: SQL query string
+        table_name: Unqualified table name to replace
+        schema: Schema name
+        catalog: Catalog name
+
+    Returns:
+        Modified query with qualified table names
+    """
+    import re
+
+    # Create fully qualified name with each part backticked separately
+    full_table_name = f"`{catalog}`.`{schema}`.`{table_name}`"
+
+    # Replace in FROM clauses
+    pattern = r'\bFROM\s+' + re.escape(table_name) + r'\b'
+    query = re.sub(pattern, f'FROM {full_table_name}', query, flags=re.IGNORECASE)
+
+    # Replace in JOIN clauses
+    pattern = r'\bJOIN\s+' + re.escape(table_name) + r'\b'
+    query = re.sub(pattern, f'JOIN {full_table_name}', query, flags=re.IGNORECASE)
+
+    return query
 
 
 class DatabricksAdapter(BaseAdapter):
@@ -129,19 +161,22 @@ class DatabricksAdapter(BaseAdapter):
         table_filter_columns = filters['columns']
 
         # Query 1: Tables metadata from INFORMATION_SCHEMA
+        # Note: In Databricks, INFORMATION_SCHEMA is at catalog level, not schema level
         try:
             tables_query = f"""
             SELECT
                 '{schema}' AS schema_name,
-                table_name,
-                table_type,
-                created AS creation_time,
-                comment AS description
-            FROM `{catalog_for_metadata}`.`{schema}`.INFORMATION_SCHEMA.TABLES
-            WHERE table_schema = '{schema}'
-                AND table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MANAGED', 'EXTERNAL')
+                t.table_name,
+                t.table_type,
+                t.created AS creation_time,
+                t.created AS created_at,
+                t.last_altered AS modified_at,
+                t.comment AS description
+            FROM `{catalog_for_metadata}`.INFORMATION_SCHEMA.TABLES t
+            WHERE t.table_schema = '{schema}'
+                AND t.table_type IN ('BASE TABLE', 'TABLE', 'VIEW', 'MANAGED', 'EXTERNAL')
                 {table_filter_tables}
-            ORDER BY table_name
+            ORDER BY t.table_name
             """
             logger.debug(f"[query] Databricks metadata tables query:\n{tables_query}")
             new_tables_df = self.conn.sql(tables_query).to_polars()
@@ -149,9 +184,69 @@ class DatabricksAdapter(BaseAdapter):
             # Store in cache entry
             cache_entry['tables_df'] = new_tables_df
 
-            # Databricks doesn't have a direct equivalent to __TABLES__ for row counts
-            # Row counts need to be fetched separately (or we return None)
-            cache_entry['rowcount_df'] = pl.DataFrame({
+            # Query 1b: Fetch detailed table metadata using DESCRIBE EXTENDED
+            # This gives us row counts and size from Statistics field
+            rowcount_data = []
+            if len(new_tables_df) > 0:
+                for row in new_tables_df.iter_rows(named=True):
+                    table_name = row['table_name']
+                    # Get timestamps from INFORMATION_SCHEMA as fallback
+                    table_created_at = row.get('created_at')
+                    table_modified_at = row.get('modified_at')
+
+                    try:
+                        # Use DESCRIBE EXTENDED to get detailed table metadata
+                        # Note: Must use raw_sql() instead of sql() to avoid Ibis introspection
+                        desc_query = f"DESCRIBE EXTENDED `{catalog_for_metadata}`.`{schema}`.`{table_name}`"
+                        logger.debug(f"[query] Databricks table details: {desc_query}")
+
+                        # Execute raw SQL and fetch results manually
+                        with self.conn._safe_raw_sql(desc_query) as cur:
+                            result = cur.fetchall()
+                            columns = [desc[0] for desc in cur.description]
+                            desc_df = pl.DataFrame(result, schema=columns, orient='row')
+
+                        # Parse the key-value pairs from DESCRIBE EXTENDED output
+                        # Format: col_name='Statistics', data_type='1497 bytes, 7 rows'
+                        # Note: We only extract statistics (row_count, size_bytes) from DESCRIBE EXTENDED
+                        # Timestamps come from INFORMATION_SCHEMA for consistent formatting
+                        metadata = {}
+                        import re
+                        for desc_row in desc_df.iter_rows(named=True):
+                            key = str(desc_row['col_name']).strip() if desc_row['col_name'] else ''
+                            value = str(desc_row['data_type']).strip() if desc_row['data_type'] else ''
+
+                            if key == 'Statistics' and value:
+                                # Parse format: "1497 bytes, 7 rows"
+                                bytes_match = re.search(r'(\d+)\s+bytes', value)
+                                rows_match = re.search(r'(\d+)\s+rows?', value)
+                                if bytes_match:
+                                    metadata['size_bytes'] = int(bytes_match.group(1))
+                                if rows_match:
+                                    metadata['row_count'] = int(rows_match.group(1))
+
+                        # Always use INFORMATION_SCHEMA timestamps for consistent formatting
+                        rowcount_data.append({
+                            'schema_name': schema,
+                            'table_id': table_name,
+                            'row_count': metadata.get('row_count'),
+                            'size_bytes': metadata.get('size_bytes'),
+                            'created_at': table_created_at,
+                            'modified_at': table_modified_at
+                        })
+                    except Exception as desc_error:
+                        logger.debug(f"Could not fetch detailed metadata for {table_name}: {desc_error}")
+                        # Add placeholder entry with INFORMATION_SCHEMA timestamps
+                        rowcount_data.append({
+                            'schema_name': schema,
+                            'table_id': table_name,
+                            'row_count': None,
+                            'size_bytes': None,
+                            'created_at': table_created_at,
+                            'modified_at': table_modified_at
+                        })
+
+            cache_entry['rowcount_df'] = pl.DataFrame(rowcount_data) if rowcount_data else pl.DataFrame({
                 'schema_name': [],
                 'table_id': [],
                 'row_count': [],
@@ -167,14 +262,15 @@ class DatabricksAdapter(BaseAdapter):
         # Query 2: Columns + Primary Keys (single joined query), then split to two frames
         try:
             # Note: Unity Catalog supports PRIMARY KEY constraints in INFORMATION_SCHEMA
+            # INFORMATION_SCHEMA is at catalog level, not schema level
             columns_pk_query = f"""
             WITH pk AS (
                 SELECT
                     tc.table_name,
                     kcu.column_name,
                     kcu.ordinal_position AS pk_ordinal_position
-                FROM `{catalog_for_metadata}`.`{schema}`.INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
-                JOIN `{catalog_for_metadata}`.`{schema}`.INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
+                FROM `{catalog_for_metadata}`.INFORMATION_SCHEMA.TABLE_CONSTRAINTS tc
+                JOIN `{catalog_for_metadata}`.INFORMATION_SCHEMA.KEY_COLUMN_USAGE kcu
                     ON tc.constraint_name = kcu.constraint_name
                     AND tc.table_name = kcu.table_name
                     AND tc.table_schema = kcu.table_schema
@@ -191,7 +287,7 @@ class DatabricksAdapter(BaseAdapter):
                 c.comment AS description,
                 CASE WHEN pk.column_name IS NOT NULL THEN TRUE ELSE FALSE END AS is_pk,
                 pk.pk_ordinal_position
-            FROM `{catalog_for_metadata}`.`{schema}`.INFORMATION_SCHEMA.COLUMNS c
+            FROM `{catalog_for_metadata}`.INFORMATION_SCHEMA.COLUMNS c
             LEFT JOIN pk
                 ON c.table_name = pk.table_name AND c.column_name = pk.column_name
             WHERE c.table_schema = '{schema}' {table_filter_columns}
@@ -253,9 +349,9 @@ class DatabricksAdapter(BaseAdapter):
             return self.conn.sql(f"SELECT * FROM {full_table_name}")
 
         # Normal flow (same catalog)
+        # Note: Databricks Ibis backend uses 'database' parameter to specify schema
         if schema_name:
-            full_name = f"{schema_name}.{table_name}"
-            return self.conn.table(full_name)
+            return self.conn.table(table_name, database=schema_name)
         else:
             return self.conn.table(table_name)
 
@@ -277,16 +373,18 @@ class DatabricksAdapter(BaseAdapter):
 
         if custom_query:
             schema_name = schema or self.connection_params.get('default_schema')
-            target_catalog = project_id or self.source_catalog
+            target_catalog = project_id or self.source_catalog or self.connection_params.get('default_database')
 
             # Qualify table references in custom query
+            # For Databricks, always use catalog.schema.table format with each part backticked
             if target_catalog and schema_name:
-                custom_query = qualify_query_tables(
+                custom_query = qualify_databricks_query_tables(
                     custom_query, table_name, schema_name, target_catalog
                 )
             elif schema_name:
-                custom_query = qualify_query_tables(
-                    custom_query, table_name, schema_name
+                # Fallback if no catalog (shouldn't happen for Databricks)
+                custom_query = qualify_databricks_query_tables(
+                    custom_query, table_name, schema_name, 'main'
                 )
 
             logger.debug(f"[query] Databricks custom query:\n{custom_query}")
