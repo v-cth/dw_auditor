@@ -8,7 +8,7 @@ import logging
 from typing import Optional, List, Dict, Any
 
 from .base import BaseAdapter
-from .utils import apply_sampling
+from .utils import apply_sampling, qualify_query_tables
 from .metadata_helpers import split_columns_pk_dataframe, normalize_snowflake_columns, build_table_filters
 
 logger = logging.getLogger(__name__)
@@ -63,7 +63,7 @@ class SnowflakeAdapter(BaseAdapter):
         logger.info(f"Connected to SNOWFLAKE ({auth_method})")
         return self.conn
 
-    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
+    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, database_id: Optional[str] = None):
         """Fetch metadata for schema in fewer queries (filtered by table_names if provided)
 
         Optimizations:
@@ -73,7 +73,7 @@ class SnowflakeAdapter(BaseAdapter):
         Args:
             schema: Schema/dataset name
             table_names: Optional list of specific table names to fetch (if None, fetch all)
-            project_id: Ignored for Snowflake (used for BigQuery cross-project queries)
+            database_id: Ignored for Snowflake (used for BigQuery cross-project queries)
         """
         if self.conn is None:
             self.connect()
@@ -248,13 +248,13 @@ class SnowflakeAdapter(BaseAdapter):
         # Update fetched_tables tracking
         cache_entry['fetched_tables'] = None if table_names is None else set(t.upper() for t in table_names)
 
-    def get_table_metadata(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Any]:
+    def get_table_metadata(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> Dict[str, Any]:
         """Get table metadata with Snowflake-specific fields
 
-        Note: project_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
+        Note: database_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
         """
         # Base class handles table name normalization via _normalize_table_name()
-        metadata = super().get_table_metadata(table_name, schema, project_id)
+        metadata = super().get_table_metadata(table_name, schema, database_id)
 
         # Add clustering_key if present
         effective_schema = schema or self.connection_params.get('default_schema')
@@ -275,10 +275,10 @@ class SnowflakeAdapter(BaseAdapter):
 
         return metadata
 
-    def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
+    def get_table(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> ibis.expr.types.Table:
         """Get Snowflake table reference
 
-        Note: project_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
+        Note: database_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
         """
         if self.conn is None:
             self.connect()
@@ -291,74 +291,26 @@ class SnowflakeAdapter(BaseAdapter):
         else:
             return self.conn.table(table_name_normalized)
 
-    def execute_query(
+    def _qualify_custom_query(
         self,
+        custom_query: str,
         table_name: str,
-        schema: Optional[str] = None,
-        limit: Optional[int] = None,
-        custom_query: Optional[str] = None,
-        sample_size: Optional[int] = None,
-        sampling_method: str = 'random',
-        sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None,
-        project_id: Optional[str] = None
-    ) -> pl.DataFrame:
-        """Execute Snowflake query
+        schema: Optional[str],
+        database_id: Optional[str]
+    ) -> str:
+        """Qualify table names in Snowflake custom query"""
+        schema_name = schema or self.connection_params.get('default_schema')
+        database_name = self.connection_params.get('default_database')
+        
+        # Qualify table references in custom query
+        if database_name and schema_name:
+            return qualify_query_tables(
+                custom_query, table_name, schema_name, database_name, dialect='snowflake'
+            )
+        return custom_query
 
-        Note: project_id parameter is ignored for Snowflake (used for BigQuery cross-project queries)
-        """
-        if self.conn is None:
-            self.connect()
 
-        if custom_query:
-            logger.debug(f"[query] Snowflake custom query:\n{custom_query}")
-            result = self.conn.sql(custom_query)
-        else:
-            table = self.get_table(table_name, schema, project_id)
+    def _get_database_id(self) -> Optional[str]:
+        """Get Snowflake database name"""
+        return self.connection_params.get('default_database')
 
-            if columns:
-                table = table.select(columns)
-
-            if sample_size:
-                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column)
-            elif limit:
-                table = table.limit(limit)
-
-            result = table
-
-            # Log the compiled SQL query
-            try:
-                compiled_query = ibis.to_sql(result)
-                logger.debug(f"[query] Snowflake generated query:\n{compiled_query}")
-            except Exception as e:
-                logger.debug(f"[query] Could not compile query to SQL: {e}")
-
-        return result.to_polars()
-
-    def estimate_bytes_scanned(
-        self,
-        table_name: str,
-        schema: Optional[str] = None,
-        custom_query: Optional[str] = None,
-        sample_size: Optional[int] = None,
-        sampling_method: str = 'random',
-        sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None
-    ) -> Optional[int]:
-        """Snowflake does not support bytes estimation"""
-        return None
-
-    def list_tables(self, schema: Optional[str] = None) -> List[str]:
-        """List tables using Ibis native method"""
-        if self.conn is None:
-            self.connect()
-
-        if schema:
-            return self.conn.list_tables(database=schema)
-        else:
-            return self.conn.list_tables()
-
-    def _build_table_uid(self, table_name: str, schema: str) -> str:
-        """Build Snowflake table UID: database.schema.table"""
-        database = self.connection_params.get('default_database')
-        return f"{database}.{schema}.{table_name}"

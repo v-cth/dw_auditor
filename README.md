@@ -1,12 +1,12 @@
 # Data Warehouse Table Auditor
 
-**High-performance data quality auditing for BigQuery & Snowflake with automatic relationship detection.**
+**High-performance data quality auditing for BigQuery, Snowflake & Databricks with automatic relationship detection.**
 
 ✅ Find data issues before they cause problems
 
 🔗 Discover table relationships automatically
 
-🎨 Beautiful HTML reports with ER diagrams
+🎨 Beautiful HTML and CSV reports 
 
 ---
 
@@ -135,6 +135,22 @@ database:
     account: "ACCOUNT"
     user: "USER"
     password: "PWD"
+
+tables:
+  - name: users
+  - name: orders
+```
+
+#### Databricks
+```yaml
+database:
+  backend: "databricks"
+  connection_params:
+    default_database: "main"  # Unity Catalog name
+    default_schema: "default"
+    server_hostname: "${DATABRICKS_SERVER_HOSTNAME}"
+    http_path: "${DATABRICKS_HTTP_PATH}"
+    access_token: "${DATABRICKS_TOKEN}"
 
 tables:
   - name: users
@@ -277,6 +293,7 @@ dw_auditor run --insight             # Profiling only
 ### Authentication
 **BigQuery**: Use `gcloud auth application-default login` or set `credentials_path` in config
 **Snowflake**: Use environment variables for credentials (see Configuration Examples) or `authenticator: externalbrowser` for SSO
+**Databricks**: Use Personal Access Token (`access_token`) or OAuth (`auth_type: databricks-oauth`) - see config template for all options
 **Security**: Always use environment variables for passwords - never commit credentials to git
 
 ### Performance

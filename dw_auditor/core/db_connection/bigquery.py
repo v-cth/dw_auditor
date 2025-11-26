@@ -21,7 +21,8 @@ class BigQueryAdapter(BaseAdapter):
 
     def __init__(self, **connection_params):
         super().__init__(**connection_params)
-        self.source_project_id = connection_params.get('source_project_id')
+        super().__init__(**connection_params)
+
 
     def connect(self) -> ibis.BaseBackend:
         """Establish BigQuery connection"""
@@ -56,7 +57,7 @@ class BigQueryAdapter(BaseAdapter):
         logger.info("Connected to BIGQUERY")
         return self.conn
 
-    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
+    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, database_id: Optional[str] = None):
         """Fetch metadata for schema in fewer queries (filtered by table_names if provided)
 
         Optimizations:
@@ -66,14 +67,19 @@ class BigQueryAdapter(BaseAdapter):
         Args:
             schema: Schema/dataset name
             table_names: Optional list of specific table names to fetch (if None, fetch all)
-            project_id: Optional project ID for cross-project queries
+            database_id: Optional project ID for cross-project queries
         """
         if self.conn is None:
             self.connect()
 
-        # Use provided project_id or fall back to source_project_id or default_database
-        project_for_metadata = project_id or self.source_project_id or self.connection_params.get('default_database')
-        cache_key = (project_id, schema)
+        # Use provided database_id or fall back to default_database
+        project_for_metadata = database_id or self.connection_params.get('default_database')
+        
+        # Ensure project_for_metadata is not empty string
+        if not project_for_metadata:
+            raise ValueError("BigQuery requires a project ID for metadata queries. Please set 'default_database' in your configuration.")
+        
+        cache_key = (database_id, schema)
 
         # Initialize cache entry if it doesn't exist
         if cache_key not in self._metadata_cache:
@@ -207,19 +213,19 @@ class BigQueryAdapter(BaseAdapter):
         # Update fetched_tables tracking
         cache_entry['fetched_tables'] = None if table_names is None else set(table_names)
 
-    def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
+    def get_table(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> ibis.expr.types.Table:
         """Get BigQuery table reference
 
         Args:
             table_name: Name of the table
             schema: Dataset name (schema/dataset)
-            project_id: Optional project ID for cross-project queries
+            database_id: Optional project ID for cross-project queries
         """
         if self.conn is None:
             self.connect()
 
-        # Determine the project to use (priority: parameter > source_project_id > default_database)
-        target_project = project_id or self.source_project_id
+        # Determine the project to use (priority: parameter > default_database)
+        target_project = database_id or self.connection_params.get('default_database')
         dataset = schema or self.connection_params.get('default_schema')
 
         # Cross-project query support
@@ -237,58 +243,27 @@ class BigQueryAdapter(BaseAdapter):
         else:
             return self.conn.table(table_name)
 
-    def execute_query(
+    def _qualify_custom_query(
         self,
+        custom_query: str,
         table_name: str,
-        schema: Optional[str] = None,
-        limit: Optional[int] = None,
-        custom_query: Optional[str] = None,
-        sample_size: Optional[int] = None,
-        sampling_method: str = 'random',
-        sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None,
-        project_id: Optional[str] = None
-    ) -> pl.DataFrame:
-        """Execute BigQuery query"""
-        if self.conn is None:
-            self.connect()
+        schema: Optional[str],
+        database_id: Optional[str]
+    ) -> str:
+        """Qualify table names in BigQuery custom query"""
+        dataset = schema or self.connection_params.get('default_schema')
+        target_project = database_id or self.connection_params.get('default_database')
 
-        if custom_query:
-            dataset = schema or self.connection_params.get('default_schema')
-            target_project = project_id or self.source_project_id
+        if target_project and dataset:
+            return qualify_query_tables(
+                custom_query, table_name, dataset, target_project
+            )
+        elif dataset:
+            return qualify_query_tables(
+                custom_query, table_name, dataset
+            )
+        return custom_query
 
-            if target_project and dataset:
-                custom_query = qualify_query_tables(
-                    custom_query, table_name, dataset, target_project
-                )
-            elif dataset:
-                custom_query = qualify_query_tables(
-                    custom_query, table_name, dataset
-                )
-
-            logger.debug(f"[query] BigQuery custom query:\n{custom_query}")
-            result = self.conn.sql(custom_query)
-        else:
-            table = self.get_table(table_name, schema, project_id)
-
-            if columns:
-                table = table.select(columns)
-
-            if sample_size:
-                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column)
-            elif limit:
-                table = table.limit(limit)
-
-            result = table
-
-            # Log the compiled SQL query
-            try:
-                compiled_query = ibis.to_sql(result)
-                logger.debug(f"[query] BigQuery generated query:\n{compiled_query}")
-            except Exception as e:
-                logger.debug(f"[query] Could not compile query to SQL: {e}")
-
-        return result.to_polars()
 
     def estimate_bytes_scanned(
         self,
@@ -311,9 +286,9 @@ class BigQueryAdapter(BaseAdapter):
             dataset = schema or self.connection_params.get('default_schema')
 
             if custom_query:
-                if self.source_project_id and dataset:
+                if dataset:
                     query = qualify_query_tables(
-                        custom_query, table_name, dataset, self.source_project_id
+                        custom_query, table_name, dataset, self.connection_params.get('default_database')
                     )
                 elif dataset:
                     query = qualify_query_tables(
@@ -322,8 +297,8 @@ class BigQueryAdapter(BaseAdapter):
                 else:
                     query = custom_query
             else:
-                if self.source_project_id and dataset:
-                    full_table_name = f"`{self.source_project_id}.{dataset}.{table_name}`"
+                if dataset:
+                    full_table_name = f"`{self.connection_params.get('default_database')}.{dataset}.{table_name}`"
                 elif dataset:
                     full_table_name = f"`{dataset}.{table_name}`"
                 else:
@@ -356,17 +331,7 @@ class BigQueryAdapter(BaseAdapter):
             logger.warning(f"Could not estimate bytes: {e}")
             return None
 
-    def list_tables(self, schema: Optional[str] = None) -> List[str]:
-        """List tables using Ibis native method"""
-        if self.conn is None:
-            self.connect()
+    def _get_database_id(self) -> Optional[str]:
+        """Get BigQuery project ID"""
+        return self.connection_params.get('default_database')
 
-        if schema:
-            return self.conn.list_tables(database=schema)
-        else:
-            return self.conn.list_tables()
-
-    def _build_table_uid(self, table_name: str, schema: str) -> str:
-        """Build BigQuery table UID: project.dataset.table"""
-        project = self.source_project_id or self.connection_params.get('default_database')
-        return f"{project}.{schema}.{table_name}"

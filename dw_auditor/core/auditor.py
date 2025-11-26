@@ -125,7 +125,7 @@ class SecureTableAuditor(AuditorExporterMixin):
         user_primary_key: Optional[List[str]],
         custom_query: Optional[str],
         backend: str,
-        project_id: Optional[str] = None
+        database_id: Optional[str] = None
     ) -> Tuple[Dict, Optional[int], List[str]]:
         """
         Get table metadata including row count and primary key columns
@@ -137,7 +137,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             user_primary_key: User-defined primary key columns
             custom_query: Custom query if any
             backend: Database backend
-            project_id: Optional project ID for cross-project queries (BigQuery only)
+            database_id: Optional database/project/catalog ID for cross-database queries
 
         Returns:
             Tuple of (metadata dict, row count, primary key columns)
@@ -148,7 +148,7 @@ class SecureTableAuditor(AuditorExporterMixin):
 
         # Get table metadata (including UID and row count)
         try:
-            table_metadata = db_conn.get_table_metadata(table_name, schema, project_id)
+            table_metadata = db_conn.get_table_metadata(table_name, schema, database_id)
             if table_metadata:
                 if 'table_uid' in table_metadata:
                     logger.info(f"Table UID: {table_metadata['table_uid']}")
@@ -187,7 +187,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             table_metadata['primary_key_source'] = 'user_config'
         else:
             try:
-                primary_key_columns = db_conn.get_primary_key_columns(table_name, schema, project_id)
+                primary_key_columns = db_conn.get_primary_key_columns(table_name, schema, database_id)
                 if primary_key_columns:
                     logger.info(f"Primary key from schema: {', '.join(primary_key_columns)}")
                     table_metadata['primary_key_columns'] = primary_key_columns
@@ -201,7 +201,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             row_count = None
         elif row_count is None:
             try:
-                row_count = db_conn.get_row_count(table_name, schema, project_id)
+                row_count = db_conn.get_row_count(table_name, schema, database_id)
                 if row_count is not None:
                     logger.info(f"Table has {row_count:,} rows")
                 else:
@@ -222,7 +222,7 @@ class SecureTableAuditor(AuditorExporterMixin):
         should_sample: bool,
         sampling_method: str,
         sampling_key_column: Optional[str],
-        project_id: Optional[str] = None
+        database_id: Optional[str] = None
     ) -> pl.DataFrame:
         """
         Load data from database
@@ -236,7 +236,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             should_sample: Whether to sample
             sampling_method: Sampling method
             sampling_key_column: Key column for sampling
-            project_id: Optional project ID for cross-project queries (BigQuery only)
+            database_id: Optional database/project/catalog ID for cross-database queries
 
         Returns:
             Polars DataFrame with loaded data
@@ -255,7 +255,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             sampling_method=sampling_method,
             sampling_key_column=sampling_key_column,
             columns=columns_to_load if columns_to_load else None,
-            project_id=project_id
+            database_id=database_id
         )
 
         logger.info(f"Loaded {len(df):,} rows into memory")
@@ -675,13 +675,13 @@ class SecureTableAuditor(AuditorExporterMixin):
                 should_close_conn = True
 
         try:
-            # Extract database (project_id for BigQuery) for cross-project queries
-            project_id = connection_params.get('default_database') if backend == 'bigquery' else None
+            # Extract database (database_id for BigQuery, catalog for Databricks) for cross-project/catalog queries
+            database_id = connection_params.get('default_database') if backend in ['bigquery', 'databricks'] else None
 
             # Get table metadata
             with timing_phase('metadata', phase_timings):
                 table_metadata, row_count, primary_key_columns = self._get_table_metadata(
-                    db_conn, table_name, schema, user_primary_key, custom_query, backend, project_id
+                    db_conn, table_name, schema, user_primary_key, custom_query, backend, database_id
                 )
 
             # Get table schema and determine which columns to load (optimization)
@@ -690,7 +690,7 @@ class SecureTableAuditor(AuditorExporterMixin):
                 table_schema = None
                 try:
                     # Get table schema (column names and types)
-                    table_schema = db_conn.get_table_schema(table_name, schema, project_id)
+                    table_schema = db_conn.get_table_schema(table_name, schema, database_id)
 
                     if table_schema:
                         # Get filter configuration (per-table overrides global)
@@ -735,7 +735,7 @@ class SecureTableAuditor(AuditorExporterMixin):
             with timing_phase('data_loading', phase_timings):
                 df = self._load_data(
                     db_conn, table_name, schema, custom_query, columns_to_load,
-                    should_sample, sampling_method, sampling_key_column, project_id
+                    should_sample, sampling_method, sampling_key_column, database_id
                 )
 
             # For custom queries, the row count is the result set size

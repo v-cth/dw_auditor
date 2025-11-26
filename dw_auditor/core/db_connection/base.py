@@ -36,31 +36,31 @@ class BaseAdapter(ABC):
         pass
 
     @abstractmethod
-    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
+    def _fetch_all_metadata(self, schema: str, table_names: Optional[List[str]] = None, database_id: Optional[str] = None):
         """
         Fetch metadata for tables in schema (3-4 queries total)
 
         Args:
             schema: Schema/dataset name
             table_names: Optional list of specific table names to fetch (if None, fetch all)
-            project_id: Optional project ID for cross-project queries (BigQuery only)
+            database_id: Optional database/project/catalog ID for cross-database queries
 
-        Stores results in _metadata_cache[(project_id, schema)]
+        Stores results in _metadata_cache[(database_id, schema)]
         """
         pass
 
-    def _ensure_metadata(self, schema: str, table_names: Optional[List[str]] = None, project_id: Optional[str] = None):
-        """Fetch metadata if not cached or (project_id, schema) changed; avoid unnecessary refetches."""
+    def _ensure_metadata(self, schema: str, table_names: Optional[List[str]] = None, database_id: Optional[str] = None):
+        """Fetch metadata if not cached or (database_id, schema) changed; avoid unnecessary refetches."""
         logger = logging.getLogger(__name__)
-        cache_key = (project_id, schema)
+        cache_key = (database_id, schema)
 
         # Normalize table names for this database backend
         normalized_table_names = [self._normalize_table_name(t) for t in table_names] if table_names else None
 
-        # Get or create cache entry for this (project_id, schema) combination
+        # Get or create cache entry for this (database_id, schema) combination
         if cache_key not in self._metadata_cache:
-            logger.debug(f"[metadata] fetch INIT project={project_id} schema={schema} tables={'ALL' if normalized_table_names is None else ','.join(normalized_table_names)}")
-            self._fetch_all_metadata(schema, normalized_table_names, project_id)
+            logger.debug(f"[metadata] fetch INIT database={database_id} schema={schema} tables={'ALL' if normalized_table_names is None else ','.join(normalized_table_names)}")
+            self._fetch_all_metadata(schema, normalized_table_names, database_id)
             return
 
         cache_entry = self._metadata_cache[cache_key]
@@ -70,8 +70,8 @@ class BaseAdapter(ABC):
         if normalized_table_names is None:
             # Caller wants full coverage. If we don't already have all, upgrade to all.
             if fetched_tables is not None:
-                logger.debug(f"[metadata] fetch UPGRADE project={project_id} schema={schema} tables=ALL (from subset of {len(fetched_tables)})")
-                self._fetch_all_metadata(schema, None, project_id)
+                logger.debug(f"[metadata] fetch UPGRADE database={database_id} schema={schema} tables=ALL (from subset of {len(fetched_tables)})")
+                self._fetch_all_metadata(schema, None, database_id)
             return
 
         # Caller wants a subset of tables
@@ -86,27 +86,26 @@ class BaseAdapter(ABC):
 
         # Need to extend cache to cover union of requested and existing subset
         union_tables = fetched_tables | requested
-        logger.debug(f"[metadata] fetch EXTEND project={project_id} schema={schema} tables={','.join(sorted(list(union_tables)))}")
-        self._fetch_all_metadata(schema, sorted(list(union_tables)), project_id)
+        logger.debug(f"[metadata] fetch EXTEND database={database_id} schema={schema} tables={','.join(sorted(list(union_tables)))}")
+        self._fetch_all_metadata(schema, sorted(list(union_tables)), database_id)
 
-    def prefetch_metadata(self, schema: str, table_names: List[str], project_id: Optional[str] = None):
+    def prefetch_metadata(self, schema: str, table_names: List[str], database_id: Optional[str] = None):
         """
         Pre-fetch metadata for specific tables (recommended for multi-table audits)
 
         Args:
             schema: Schema/dataset name
             table_names: List of table names to fetch metadata for
-            project_id: Optional project ID for cross-project queries (BigQuery only)
+            database_id: Optional database/project/catalog ID for cross-database queries
         """
         # Use _ensure_metadata which handles all the caching logic
-        self._ensure_metadata(schema, table_names, project_id)
+        self._ensure_metadata(schema, table_names, database_id)
 
     @abstractmethod
-    def get_table(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> ibis.expr.types.Table:
+    def get_table(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> ibis.expr.types.Table:
         """Get Ibis table reference"""
         pass
 
-    @abstractmethod
     def execute_query(
         self,
         table_name: str,
@@ -117,18 +116,87 @@ class BaseAdapter(ABC):
         sampling_method: str = 'random',
         sampling_key_column: Optional[str] = None,
         columns: Optional[List[str]] = None,
-        project_id: Optional[str] = None
+        database_id: Optional[str] = None
     ) -> pl.DataFrame:
-        """Execute query and return Polars DataFrame"""
+        """
+        Execute query and return Polars DataFrame
+        
+        Common implementation - override _qualify_custom_query for dialect-specific behavior
+        """
+        logger = logging.getLogger(__name__)
+        if self.conn is None:
+            self.connect()
+
+        if custom_query:
+            # Qualify table names in custom query using dialect-specific logic
+            custom_query = self._qualify_custom_query(
+                custom_query, table_name, schema, database_id
+            )
+            
+            backend_name = self.__class__.__name__.replace('Adapter', '')
+            logger.debug(f"[query] {backend_name} custom query:\n{custom_query}")
+            result = self.conn.sql(custom_query)
+        else:
+            # Build table reference
+            table = self.get_table(table_name, schema, database_id)
+
+            # Apply column selection
+            if columns:
+                table = table.select(columns)
+
+            # Apply sampling or limit
+            if sample_size:
+                from .utils import apply_sampling
+                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column)
+            elif limit:
+                table = table.limit(limit)
+
+            result = table
+
+            # Log the compiled SQL query
+            try:
+                compiled_query = ibis.to_sql(result)
+                backend_name = self.__class__.__name__.replace('Adapter', '')
+                logger.debug(f"[query] {backend_name} generated query:\n{compiled_query}")
+            except Exception as e:
+                logger.debug(f"[query] Could not compile query to SQL: {e}")
+
+        return result.to_polars()
+
+    @abstractmethod
+    def _qualify_custom_query(
+        self,
+        custom_query: str,
+        table_name: str,
+        schema: Optional[str],
+        database_id: Optional[str]
+    ) -> str:
+        """
+        Qualify table names in custom query (dialect-specific)
+        
+        Args:
+            custom_query: The custom SQL query to qualify
+            table_name: Name of the table being queried
+            schema: Schema/dataset name
+            database_id: Optional database/project/catalog ID
+            
+        Returns:
+            Qualified SQL query
+        """
         pass
 
-    def get_table_metadata(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Any]:
+    @abstractmethod
+    def get_table(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> ibis.Table:
+        """Get Ibis table reference"""
+        pass
+
+    def get_table_metadata(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> Dict[str, Any]:
         """Get table metadata by filtering cached DataFrames
 
         Args:
             table_name: Name of the table
             schema: Schema/dataset name
-            project_id: Optional project ID for cross-project queries (BigQuery only)
+            database_id: Optional database/project/catalog ID for cross-database queries
         """
         effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
@@ -137,11 +205,11 @@ class BaseAdapter(ABC):
         # Normalize table name for database-specific lookups
         normalized_table_name = self._normalize_table_name(table_name)
 
-        # Ensure metadata is cached for this (project_id, schema, table) combination
-        self._ensure_metadata(effective_schema, [table_name], project_id)
+        # Ensure metadata is cached for this (database_id, schema, table) combination
+        self._ensure_metadata(effective_schema, [table_name], database_id)
 
-        # Get cache entry for this (project_id, schema)
-        cache_key = (project_id, effective_schema)
+        # Get cache entry for this (database_id, schema)
+        cache_key = (database_id, effective_schema)
         if cache_key not in self._metadata_cache:
             return {}
 
@@ -227,17 +295,14 @@ class BaseAdapter(ABC):
 
         return metadata
 
-    def get_table_schema(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
+    def get_table_schema(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> Dict[str, Dict[str, Any]]:
         """
         Get column metadata (data types and descriptions) by filtering cached columns_df
 
         Args:
             table_name: Name of the table
             schema: Schema/dataset name
-            project_id: Optional project ID for cross-project queries (BigQuery only)
-
-        Returns:
-            Dict mapping column_name to {'data_type': str, 'description': Optional[str]}
+            database_id: Optional database/project/catalog ID for cross-database queries
         """
         import logging
         logger = logging.getLogger(__name__)
@@ -250,18 +315,18 @@ class BaseAdapter(ABC):
         # Normalize table name for database-specific lookups
         normalized_table_name = self._normalize_table_name(table_name)
 
-        # Ensure metadata is cached for this (project_id, schema, table) combination
-        self._ensure_metadata(effective_schema, [table_name], project_id)
+        # Ensure metadata is cached for this (database_id, schema, table) combination
+        self._ensure_metadata(effective_schema, [table_name], database_id)
 
-        # Get cache entry for this (project_id, schema)
-        cache_key = (project_id, effective_schema)
+        # Get cache entry for this (database_id, schema)
+        cache_key = (database_id, effective_schema)
         if cache_key not in self._metadata_cache:
             return {}
 
         cache_entry = self._metadata_cache[cache_key]
         columns_df = cache_entry.get('columns_df')
 
-        if columns_df is None:
+        if columns_df is None or columns_df.is_empty():
             return {}
 
         table_cols = columns_df.filter(
@@ -285,17 +350,17 @@ class BaseAdapter(ABC):
 
         return result
 
-    def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
+    def get_primary_key_columns(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> List[str]:
         """Get primary key columns by filtering cached pk_df"""
         effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             return []
 
-        # Ensure metadata is cached for this (project_id, schema, table) combination
-        self._ensure_metadata(effective_schema, [table_name], project_id)
+        # Ensure metadata is cached for this (database_id, schema, table) combination
+        self._ensure_metadata(effective_schema, [table_name], database_id)
 
-        # Get cache entry for this (project_id, schema)
-        cache_key = (project_id, effective_schema)
+        # Get cache entry for this (database_id, schema)
+        cache_key = (database_id, effective_schema)
         if cache_key not in self._metadata_cache:
             return []
 
@@ -311,18 +376,18 @@ class BaseAdapter(ABC):
 
         return [str(col) for col in pk_cols['column_name'].to_list()]
 
-    def get_row_count(self, table_name: str, schema: Optional[str] = None, project_id: Optional[str] = None, approximate: bool = True) -> Optional[int]:
+    def get_row_count(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None, approximate: bool = True) -> Optional[int]:
         """Get row count from cached metadata or exact count"""
         effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             return None
 
         if approximate:
-            # Ensure metadata is cached for this (project_id, schema, table) combination
-            self._ensure_metadata(effective_schema, [table_name], project_id)
+            # Ensure metadata is cached for this (database_id, schema, table) combination
+            self._ensure_metadata(effective_schema, [table_name], database_id)
 
             # Check if this is a VIEW - if so, skip approximate count and go to exact count
-            cache_key = (project_id, effective_schema)
+            cache_key = (database_id, effective_schema)
             if cache_key in self._metadata_cache:
                 cache_entry = self._metadata_cache[cache_key]
                 tables_df = cache_entry.get('tables_df')
@@ -351,7 +416,7 @@ class BaseAdapter(ABC):
 
         # Fallback to exact count
         try:
-            table = self.get_table(table_name, schema, project_id)
+            table = self.get_table(table_name, schema, database_id)
             count_result = table.count().to_polars()
 
             # Handle both DataFrame and scalar returns
@@ -363,17 +428,17 @@ class BaseAdapter(ABC):
             logging.getLogger(__name__).error(f"Could not get row count: {e}")
             return None
 
-    def get_all_tables(self, schema: Optional[str] = None, project_id: Optional[str] = None) -> List[str]:
+    def get_all_tables(self, schema: Optional[str] = None, database_id: Optional[str] = None) -> List[str]:
         """Get list of all tables by filtering cached tables_df"""
         effective_schema = schema or self.connection_params.get('default_schema')
         if not effective_schema:
             return []
 
         # Listing all tables requires full coverage
-        self._ensure_metadata(effective_schema, None, project_id)
+        self._ensure_metadata(effective_schema, None, database_id)
 
-        # Get cache entry for this (project_id, schema)
-        cache_key = (project_id, effective_schema)
+        # Get cache entry for this (database_id, schema)
+        cache_key = (database_id, effective_schema)
         if cache_key not in self._metadata_cache:
             return []
 
@@ -385,7 +450,6 @@ class BaseAdapter(ABC):
 
         return tables_df['table_name'].to_list()
 
-    @abstractmethod
     def estimate_bytes_scanned(
         self,
         table_name: str,
@@ -396,17 +460,36 @@ class BaseAdapter(ABC):
         sampling_key_column: Optional[str] = None,
         columns: Optional[List[str]] = None
     ) -> Optional[int]:
-        """Estimate bytes to be scanned (BigQuery only)"""
-        pass
+        """
+        Estimate bytes to be scanned (BigQuery only)
+        
+        Default implementation for non-BigQuery backends.
+        BigQuery adapter should override this method.
+        """
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Cost estimation not supported for {self.__class__.__name__}")
+        return None
 
-    @abstractmethod
     def list_tables(self, schema: Optional[str] = None) -> List[str]:
         """List tables using Ibis native method"""
-        pass
+        if self.conn is None:
+            self.connect()
+        
+        if schema:
+            return self.conn.list_tables(database=schema)
+        else:
+            return self.conn.list_tables()
 
-    @abstractmethod
     def _build_table_uid(self, table_name: str, schema: str) -> str:
         """Build unique table identifier (backend-specific format)"""
+        db_id = self._get_database_id()
+        if db_id:
+            return f"{db_id}.{schema}.{table_name}"
+        return f"{schema}.{table_name}"
+
+    @abstractmethod
+    def _get_database_id(self) -> Optional[str]:
+        """Get the database/project/catalog ID for the connection"""
         pass
 
     def close(self):

@@ -5,16 +5,16 @@ Minimal configuration template for dw_auditor
 MINIMAL_CONFIG_TEMPLATE = """# Data Warehouse Audit Configuration
 # ============================================================================
 # Quick start configuration - Edit the values below with your database details
-# For full documentation, see: https://github.com/your-repo/database_audit
+# For full documentation, see: https://github.com/v-cth/database_audit
 
 # Database Connection
 # ----------------------------------------------------------------------------
 database:
-  backend: "snowflake"  # Options: bigquery, snowflake
+  backend: "snowflake"  # Options: bigquery, snowflake, databricks
   connection_params:
     # Required for all backends
-    default_database: "MY_DATABASE"  # BigQuery: project_id | Snowflake: DATABASE
-    default_schema: "MY_SCHEMA"      # BigQuery: dataset | Snowflake: SCHEMA
+    default_database: "MY_DATABASE"  # BigQuery: project_id | Snowflake: DATABASE | Databricks: CATALOG
+    default_schema: "MY_SCHEMA"      # BigQuery: dataset | Snowflake/Databricks: SCHEMA
 
     # ==================================================
     # SNOWFLAKE CONNECTION (recommended: use environment variables)
@@ -37,11 +37,28 @@ database:
     # BIGQUERY CONNECTION
     # ==================================================
     # Uncomment and configure if using BigQuery:
-    # backend: "bigquery"
-    # default_database: "your-project-id"
-    # default_schema: "your-dataset"
     # credentials_path: "/path/to/service-account.json"  # Optional
     # If credentials_path not specified, uses: gcloud auth application-default login
+
+    # ==================================================
+    # DATABRICKS CONNECTION (recommended: use environment variables)
+    # ==================================================
+    # Uncomment and configure if using Databricks:
+    # server_hostname: "${DATABRICKS_SERVER_HOSTNAME}"  # e.g., "myworkspace.cloud.databricks.com"
+    # http_path: "${DATABRICKS_HTTP_PATH}"              # e.g., "/sql/1.0/warehouses/abc123"
+    #
+    # Authentication options (choose one):
+    # Option 1 - OAuth/AAD (recommended for enterprise):
+    # auth_type: "databricks-oauth"  # or "azure-oauth"
+    #
+    # Option 2 - Personal Access Token:
+    # access_token: "${DATABRICKS_TOKEN}"
+    #
+    # Option 3 - Basic auth:
+    # username: "${DATABRICKS_USERNAME}"
+    # password: "${DATABRICKS_PASSWORD}"
+    #
+
 
 # Tables to Audit
 # ----------------------------------------------------------------------------
@@ -52,9 +69,6 @@ tables:
   # - orders
   #
   # Cross-schema/database tables:
-  # - name: dim_users
-  #   schema: analytics
-  #
   # - name: events
   #   database: other-project
   #   schema: raw_data
@@ -98,6 +112,10 @@ column_insights:
   defaults:
     numeric:
       quantiles: true  # Calculate percentiles
+      min: true
+      max: true
+      mean: true
+      std_dev: true
     string:
       top_values: 10     # Show 10 most frequent values
 

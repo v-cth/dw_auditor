@@ -23,9 +23,9 @@ class TableConfig(BaseModel):
     primary_key: Optional[Union[str, List[str]]] = Field(None, description="Primary key column(s)")
     query: Optional[str] = Field(None, description="Custom SQL query")
 
-    # Unified connection parameter overrides (works for both BigQuery and Snowflake)
-    database: Optional[str] = Field(None, description="Override database (project_id for BigQuery, database for Snowflake)")
-    table_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Override schema (dataset for BigQuery, schema for Snowflake)")
+    # Unified connection parameter overrides (works for BigQuery, Snowflake, and Databricks)
+    database: Optional[str] = Field(None, description="Override database (project_id for BigQuery, database for Snowflake, catalog for Databricks)")
+    table_schema: Optional[str] = Field(None, alias="schema", serialization_alias="schema", description="Override schema (dataset for BigQuery, schema for Snowflake/Databricks)")
 
     # Per-table column filtering
     include_columns: Optional[List[str]] = Field(None, description="Columns to include (overrides global filters)")
@@ -47,7 +47,7 @@ class ConnectionParams(BaseModel):
 
 class DatabaseConfig(BaseModel):
     """Database connection configuration"""
-    backend: Literal['bigquery', 'snowflake'] = Field(..., description="Database backend")
+    backend: Literal['bigquery', 'snowflake', 'databricks'] = Field(..., description="Database backend")
     connection_params: ConnectionParams = Field(..., description="Connection parameters")
 
     @model_validator(mode='after')
@@ -57,9 +57,9 @@ class DatabaseConfig(BaseModel):
 
         # Validate required unified params
         if 'default_database' not in params:
-            raise ValueError("connection_params requires 'default_database' (project_id for BigQuery, database for Snowflake)")
+            raise ValueError("connection_params requires 'default_database' (project_id for BigQuery, database for Snowflake, catalog for Databricks)")
         if 'default_schema' not in params:
-            raise ValueError("connection_params requires 'default_schema' (dataset for BigQuery, schema for Snowflake)")
+            raise ValueError("connection_params requires 'default_schema' (dataset for BigQuery, schema for Snowflake/Databricks)")
 
         if self.backend == 'bigquery':
             # BigQuery-specific: only need default_database and default_schema
@@ -76,6 +76,26 @@ class DatabaseConfig(BaseModel):
             # Password is required unless using external browser authentication
             if 'password' not in params and params.get('authenticator') != 'externalbrowser':
                 raise ValueError("Snowflake backend requires 'password' (or set authenticator='externalbrowser' for SSO)")
+
+        elif self.backend == 'databricks':
+            # Databricks-specific: requires server_hostname and http_path
+            required = ['server_hostname', 'http_path']
+            missing = [p for p in required if p not in params]
+            if missing:
+                raise ValueError(f"Databricks backend requires: {', '.join(missing)}")
+
+            # Authentication: requires either auth_type (OAuth/AAD) or access_token
+            has_auth = (
+                'auth_type' in params or
+                'access_token' in params or
+                ('username' in params and 'password' in params)
+            )
+            if not has_auth:
+                raise ValueError(
+                    "Databricks backend requires authentication: "
+                    "'auth_type' for OAuth/AAD, 'access_token' for token-based auth, "
+                    "or 'username' and 'password' for basic auth"
+                )
 
         return self
 

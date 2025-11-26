@@ -57,7 +57,7 @@ def setup_logging(log_file: Path, log_level: str = 'INFO') -> None:
         logger.setLevel(logging.DEBUG)
 
     # Silence noisy third-party loggers
-    for noisy_logger in ['asyncio', 'urllib3', 'google', 'googleapiclient', 'snowflake.connector', 'botocore', 'boto3']:
+    for noisy_logger in ['asyncio', 'urllib3', 'google', 'googleapiclient', 'snowflake.connector', 'botocore', 'boto3', 'databricks', 'databricks.sql']:
         logging.getLogger(noisy_logger).setLevel(logging.WARNING)
 
 

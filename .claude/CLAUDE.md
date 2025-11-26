@@ -6,7 +6,7 @@ I don't need backward compatibility. If you thing you have to do it, first ask m
 
 # Data Warehouse Table Auditor
 
-High-performance data warehouse auditing tool for BigQuery and Snowflake using Ibis for secure, direct database access.
+High-performance data warehouse auditing tool for BigQuery, Snowflake, and Databricks using Ibis for secure, direct database access.
 
 **Stack**: Python 3.10+ | Ibis | Polars | Pydantic
 
@@ -186,7 +186,10 @@ df, conversion_log = converter.convert_dataframe(df)
 ## Configuration
 
 **Key Sections** in `audit_config.yaml`:
-- `database`: Connection settings (backend, project_id, dataset_id)
+- `database`: Connection settings (backend: bigquery/snowflake/databricks, connection_params)
+  - **BigQuery**: default_database (project_id), default_schema (dataset), credentials_path/credentials_json, source_project_id (cross-project)
+  - **Snowflake**: default_database, default_schema, account, user, password/authenticator, warehouse, role
+  - **Databricks**: default_database (catalog), default_schema, server_hostname, http_path, auth_type/access_token, source_catalog (cross-catalog)
 - `tables`: Tables to audit (optional: `primary_key`, `query`, `schema` per table)
 - `column_insights`: Profiling settings per data type
 - `output.number_format`: Display formatting (thousand_separator, decimal_places)
@@ -205,6 +208,16 @@ df, conversion_log = converter.convert_dataframe(df)
 **HTML**: Use `format_number()` helper for thousand separators, avoid label overlap with vertical stacking
 
 ## Recent Changes (October 2025-November 2025)
+
+**Nov 24**: Databricks support added
+- Implemented `DatabricksAdapter` in `core/db_connection/databricks.py` following BigQuery/Snowflake patterns
+- Unity Catalog support with three-level namespace (catalog.schema.table)
+- Multiple authentication methods: OAuth/AAD (primary), Personal Access Token, username/password
+- Cross-catalog queries via `source_catalog` parameter (similar to BigQuery's `source_project_id`)
+- Metadata fetching from `system.information_schema` (INFORMATION_SCHEMA.TABLES, INFORMATION_SCHEMA.COLUMNS, INFORMATION_SCHEMA.TABLE_CONSTRAINTS)
+- Updated config validation to support 'databricks' backend with required params (server_hostname, http_path, auth)
+- Added Databricks example to config template with environment variable support
+- No cost estimation support (returns None, similar to Snowflake)
 
 **Nov 14**: TypeConverter refactor (optimized two-phase conversion)
 - Extracted type conversion logic from `auditor.py` to new `core/type_converter.py` class (126 lines → separate module)
@@ -253,4 +266,4 @@ df, conversion_log = converter.convert_dataframe(df)
 
 ---
 
-**Last Updated**: November 14, 2025
+**Last Updated**: November 24, 2025
