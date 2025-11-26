@@ -47,8 +47,9 @@ def qualify_query_tables(
                 not table.catalog and 
                 table.name not in cte_names):
                 if project:
-                    table.set('catalog', sqlglot.exp.Identifier(this=project))
-                table.set('db', sqlglot.exp.Identifier(this=dataset))
+                    # Use quoted=True for BigQuery to ensure backticks around identifiers
+                    table.set('catalog', sqlglot.exp.Identifier(this=project, quoted=True))
+                table.set('db', sqlglot.exp.Identifier(this=dataset, quoted=True))
         
         return parsed.sql(dialect=dialect)
     except Exception as e:

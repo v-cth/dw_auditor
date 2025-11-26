@@ -321,87 +321,31 @@ class DatabricksAdapter(BaseAdapter):
         else:
             return self.conn.table(table_name)
 
-    def execute_query(
+
+    def _qualify_custom_query(
         self,
+        custom_query: str,
         table_name: str,
-        schema: Optional[str] = None,
-        limit: Optional[int] = None,
-        custom_query: Optional[str] = None,
-        sample_size: Optional[int] = None,
-        sampling_method: str = 'random',
-        sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None,
-        database_id: Optional[str] = None
-    ) -> pl.DataFrame:
-        """Execute Databricks query"""
-        if self.conn is None:
-            self.connect()
+        schema: Optional[str],
+        database_id: Optional[str]
+    ) -> str:
+        """Qualify table names in Databricks custom query"""
+        schema_name = schema or self.connection_params.get('default_schema')
+        target_catalog = database_id or self.source_catalog or self.connection_params.get('default_database')
 
-        if custom_query:
-            schema_name = schema or self.connection_params.get('default_schema')
-            target_catalog = database_id or self.source_catalog or self.connection_params.get('default_database')
+        # For Databricks, always use catalog.schema.table format
+        if target_catalog and schema_name:
+            return qualify_query_tables(
+                custom_query, table_name, schema_name, target_catalog, dialect='databricks'
+            )
+        elif schema_name:
+            # Fallback if no catalog (shouldn't happen for Databricks)
+            return qualify_query_tables(
+                custom_query, table_name, schema_name, 'main', dialect='databricks'
+            )
+        return custom_query
 
-            # Qualify table references in custom query
-            # For Databricks, always use catalog.schema.table format with each part backticked
-            if target_catalog and schema_name:
-                custom_query = qualify_query_tables(
-                    custom_query, table_name, schema_name, target_catalog, dialect='databricks'
-                )
-            elif schema_name:
-                # Fallback if no catalog (shouldn't happen for Databricks)
-                custom_query = qualify_query_tables(
-                    custom_query, table_name, schema_name, 'main', dialect='databricks'
-                )
+    def _get_database_id(self) -> Optional[str]:
+        """Get Databricks catalog name"""
+        return self.source_catalog or self.connection_params.get('default_database')
 
-            logger.debug(f"[query] Databricks custom query:\n{custom_query}")
-            result = self.conn.sql(custom_query)
-        else:
-            table = self.get_table(table_name, schema, database_id)
-
-            if columns:
-                table = table.select(columns)
-
-            if sample_size:
-                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column)
-            elif limit:
-                table = table.limit(limit)
-
-            result = table
-
-            # Log the compiled SQL query
-            try:
-                compiled_query = ibis.to_sql(result)
-                logger.debug(f"[query] Databricks generated query:\n{compiled_query}")
-            except Exception as e:
-                logger.debug(f"[query] Could not compile query to SQL: {e}")
-
-        return result.to_polars()
-
-    def estimate_bytes_scanned(
-        self,
-        table_name: str,
-        schema: Optional[str] = None,
-        custom_query: Optional[str] = None,
-        sample_size: Optional[int] = None,
-        sampling_method: str = 'random',
-        sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None
-    ) -> Optional[int]:
-        """Databricks doesn't support cost estimation like BigQuery"""
-        logger.debug("Cost estimation not supported for Databricks")
-        return None
-
-    def list_tables(self, schema: Optional[str] = None) -> List[str]:
-        """List tables using Ibis native method"""
-        if self.conn is None:
-            self.connect()
-
-        if schema:
-            return self.conn.list_tables(database=schema)
-        else:
-            return self.conn.list_tables()
-
-    def _build_table_uid(self, table_name: str, schema: str) -> str:
-        """Build Databricks table UID: catalog.schema.table"""
-        catalog = self.source_catalog or self.connection_params.get('default_database')
-        return f"{catalog}.{schema}.{table_name}"

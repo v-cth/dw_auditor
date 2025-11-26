@@ -73,6 +73,11 @@ class BigQueryAdapter(BaseAdapter):
 
         # Use provided database_id or fall back to source_project_id or default_database
         project_for_metadata = database_id or self.source_project_id or self.connection_params.get('default_database')
+        
+        # Ensure project_for_metadata is not empty string
+        if not project_for_metadata:
+            raise ValueError("BigQuery requires a project ID for metadata queries. Please set 'default_database' in your configuration.")
+        
         cache_key = (database_id, schema)
 
         # Initialize cache entry if it doesn't exist
@@ -237,58 +242,27 @@ class BigQueryAdapter(BaseAdapter):
         else:
             return self.conn.table(table_name)
 
-    def execute_query(
+    def _qualify_custom_query(
         self,
+        custom_query: str,
         table_name: str,
-        schema: Optional[str] = None,
-        limit: Optional[int] = None,
-        custom_query: Optional[str] = None,
-        sample_size: Optional[int] = None,
-        sampling_method: str = 'random',
-        sampling_key_column: Optional[str] = None,
-        columns: Optional[List[str]] = None,
-        database_id: Optional[str] = None
-    ) -> pl.DataFrame:
-        """Execute BigQuery query"""
-        if self.conn is None:
-            self.connect()
+        schema: Optional[str],
+        database_id: Optional[str]
+    ) -> str:
+        """Qualify table names in BigQuery custom query"""
+        dataset = schema or self.connection_params.get('default_schema')
+        target_project = database_id or self.source_project_id
 
-        if custom_query:
-            dataset = schema or self.connection_params.get('default_schema')
-            target_project = database_id or self.source_project_id
+        if target_project and dataset:
+            return qualify_query_tables(
+                custom_query, table_name, dataset, target_project
+            )
+        elif dataset:
+            return qualify_query_tables(
+                custom_query, table_name, dataset
+            )
+        return custom_query
 
-            if target_project and dataset:
-                custom_query = qualify_query_tables(
-                    custom_query, table_name, dataset, target_project
-                )
-            elif dataset:
-                custom_query = qualify_query_tables(
-                    custom_query, table_name, dataset
-                )
-
-            logger.debug(f"[query] BigQuery custom query:\n{custom_query}")
-            result = self.conn.sql(custom_query)
-        else:
-            table = self.get_table(table_name, schema, database_id)
-
-            if columns:
-                table = table.select(columns)
-
-            if sample_size:
-                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column)
-            elif limit:
-                table = table.limit(limit)
-
-            result = table
-
-            # Log the compiled SQL query
-            try:
-                compiled_query = ibis.to_sql(result)
-                logger.debug(f"[query] BigQuery generated query:\n{compiled_query}")
-            except Exception as e:
-                logger.debug(f"[query] Could not compile query to SQL: {e}")
-
-        return result.to_polars()
 
     def estimate_bytes_scanned(
         self,
@@ -356,17 +330,7 @@ class BigQueryAdapter(BaseAdapter):
             logger.warning(f"Could not estimate bytes: {e}")
             return None
 
-    def list_tables(self, schema: Optional[str] = None) -> List[str]:
-        """List tables using Ibis native method"""
-        if self.conn is None:
-            self.connect()
+    def _get_database_id(self) -> Optional[str]:
+        """Get BigQuery project ID"""
+        return self.source_project_id or self.connection_params.get('default_database')
 
-        if schema:
-            return self.conn.list_tables(database=schema)
-        else:
-            return self.conn.list_tables()
-
-    def _build_table_uid(self, table_name: str, schema: str) -> str:
-        """Build BigQuery table UID: project.dataset.table"""
-        project = self.source_project_id or self.connection_params.get('default_database')
-        return f"{project}.{schema}.{table_name}"

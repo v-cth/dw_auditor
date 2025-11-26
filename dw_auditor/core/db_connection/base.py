@@ -106,7 +106,6 @@ class BaseAdapter(ABC):
         """Get Ibis table reference"""
         pass
 
-    @abstractmethod
     def execute_query(
         self,
         table_name: str,
@@ -119,7 +118,76 @@ class BaseAdapter(ABC):
         columns: Optional[List[str]] = None,
         database_id: Optional[str] = None
     ) -> pl.DataFrame:
-        """Execute query and return Polars DataFrame"""
+        """
+        Execute query and return Polars DataFrame
+        
+        Common implementation - override _qualify_custom_query for dialect-specific behavior
+        """
+        logger = logging.getLogger(__name__)
+        if self.conn is None:
+            self.connect()
+
+        if custom_query:
+            # Qualify table names in custom query using dialect-specific logic
+            custom_query = self._qualify_custom_query(
+                custom_query, table_name, schema, database_id
+            )
+            
+            backend_name = self.__class__.__name__.replace('Adapter', '')
+            logger.debug(f"[query] {backend_name} custom query:\n{custom_query}")
+            result = self.conn.sql(custom_query)
+        else:
+            # Build table reference
+            table = self.get_table(table_name, schema, database_id)
+
+            # Apply column selection
+            if columns:
+                table = table.select(columns)
+
+            # Apply sampling or limit
+            if sample_size:
+                from .utils import apply_sampling
+                table = apply_sampling(table, sample_size, sampling_method, sampling_key_column)
+            elif limit:
+                table = table.limit(limit)
+
+            result = table
+
+            # Log the compiled SQL query
+            try:
+                compiled_query = ibis.to_sql(result)
+                backend_name = self.__class__.__name__.replace('Adapter', '')
+                logger.debug(f"[query] {backend_name} generated query:\n{compiled_query}")
+            except Exception as e:
+                logger.debug(f"[query] Could not compile query to SQL: {e}")
+
+        return result.to_polars()
+
+    @abstractmethod
+    def _qualify_custom_query(
+        self,
+        custom_query: str,
+        table_name: str,
+        schema: Optional[str],
+        database_id: Optional[str]
+    ) -> str:
+        """
+        Qualify table names in custom query (dialect-specific)
+        
+        Args:
+            custom_query: The custom SQL query to qualify
+            table_name: Name of the table being queried
+            schema: Schema/dataset name
+            database_id: Optional database/project/catalog ID
+            
+        Returns:
+            Qualified SQL query
+        """
+        pass
+
+    @abstractmethod
+    def get_table(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> ibis.Table:
+        """Get Ibis table reference"""
         pass
 
     def get_table_metadata(self, table_name: str, schema: Optional[str] = None, database_id: Optional[str] = None) -> Dict[str, Any]:
@@ -382,7 +450,6 @@ class BaseAdapter(ABC):
 
         return tables_df['table_name'].to_list()
 
-    @abstractmethod
     def estimate_bytes_scanned(
         self,
         table_name: str,
@@ -393,17 +460,36 @@ class BaseAdapter(ABC):
         sampling_key_column: Optional[str] = None,
         columns: Optional[List[str]] = None
     ) -> Optional[int]:
-        """Estimate bytes to be scanned (BigQuery only)"""
-        pass
+        """
+        Estimate bytes to be scanned (BigQuery only)
+        
+        Default implementation for non-BigQuery backends.
+        BigQuery adapter should override this method.
+        """
+        logger = logging.getLogger(__name__)
+        logger.debug(f"Cost estimation not supported for {self.__class__.__name__}")
+        return None
 
-    @abstractmethod
     def list_tables(self, schema: Optional[str] = None) -> List[str]:
         """List tables using Ibis native method"""
-        pass
+        if self.conn is None:
+            self.connect()
+        
+        if schema:
+            return self.conn.list_tables(database=schema)
+        else:
+            return self.conn.list_tables()
 
-    @abstractmethod
     def _build_table_uid(self, table_name: str, schema: str) -> str:
         """Build unique table identifier (backend-specific format)"""
+        db_id = self._get_database_id()
+        if db_id:
+            return f"{db_id}.{schema}.{table_name}"
+        return f"{schema}.{table_name}"
+
+    @abstractmethod
+    def _get_database_id(self) -> Optional[str]:
+        """Get the database/project/catalog ID for the connection"""
         pass
 
     def close(self):
