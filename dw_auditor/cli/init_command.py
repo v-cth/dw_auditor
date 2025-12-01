@@ -50,11 +50,8 @@ def run_init_command(force: bool = False, path: str = None) -> int:
     # Success message
     print(f"✅ Config created: {config_path}")
     print("\nNext steps:")
-    print("  1. Create a .env file in this directory with your credentials:")
-    print("     export SNOWFLAKE_ACCOUNT='your-account'")
-    print("     export SNOWFLAKE_USER='your-username'")
-    print("     export SNOWFLAKE_PASSWORD='your-password'")
-    print("\n  2. Edit the config file with your database details:")
+    print("  1. Create a .env file in this directory with your credentials (optionnal)")
+    print("\n  2. Follow exemples in {config_path} and edit the file with your database details :")
     print(f"     nano {config_path}")
     print("\n  3. Run your first audit:")
     print("     dw_auditor run")
