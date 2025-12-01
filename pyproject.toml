@@ -8,19 +8,9 @@ version = "0.2.0"
 description = "High-performance data quality auditing for BigQuery, Snowflake & Databricks"
 requires-python = ">=3.10"
 readme = "README.md"
-license = {text = "MIT"}
-authors = [
-      {name = "Valentin Cathelain", email =
-  "valentin.cathelain.data@gmail.com"}
-    ]
-keywords = ["data-quality", "data engineering", "bigquery", "snowflake",
-   "databricks", "audit", "ibis"]
-
-[project.urls]
-Homepage = "https://github.com/v-cth/database_audit"
-Repository = "https://github.com/v-cth/database_audit"
-Issues = "https://github.com/v-cth/database_audit/issues"
-
+license =  "MIT"
+authors = [{name = "Valentin Cathelain", email = "valentin.cathelain.data@gmail.com"}]
+keywords = ["data-quality", "data engineering", "bigquery", "snowflake", "databricks", "audit", "ibis"]
 dependencies = [
     "polars>=0.20.0",
     "pyyaml>=6.0",
@@ -34,6 +24,11 @@ dependencies = [
     "platformdirs>=3.0.0",
     "sqlglot>=20.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/v-cth/database_audit"
+Repository = "https://github.com/v-cth/database_audit"
+Issues = "https://github.com/v-cth/database_audit/issues"
 
 [project.scripts]
 dw_auditor = "dw_auditor.__main__:main"
