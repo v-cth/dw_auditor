@@ -1,5 +1,9 @@
 # Data Warehouse Table Auditor
 
+[![PyPI version](https://badge.fury.io/py/dw-auditor.svg)](https://pypi.org/project/dw-auditor/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 **High-performance data quality auditing for BigQuery, Snowflake & Databricks with automatic relationship detection.**
 
 ✅ Find data issues before they cause problems
@@ -12,40 +16,36 @@
 
 ## 🚀 Quick Start
 
+### Installation
+
 ```bash
-# 1. Install uv (one-time setup)
-curl -LsSf https://astral.sh/uv/install.sh | sh
-# Or on Windows: powershell -c "irm https://astral.sh/uv/install.ps1 | iex"
-# Or with pip: pip install uv
+# Install with pip
+pip install dw-auditor
 
-# 2. Clone and setup
-git clone https://github.com/v-cth/database_audit.git
-cd database_audit
+# Or with uv (faster)
+uv pip install dw-auditor
+```
 
-# 3. Install dependencies (creates venv automatically)
-uv sync
+### Basic Usage
 
-# 4. Create config file in current directory
-uv run dw_auditor init
+```bash
+# 1. Create config file
+dw_auditor init
 
-# 5. Create envrionment variable your credentials (use single quotes for passwords with special chars)
-In your .env file:
+# 2. Set your credentials as environment variables (recommended)
 export SNOWFLAKE_ACCOUNT='your-account'
 export SNOWFLAKE_USER='your-username'
 export SNOWFLAKE_PASSWORD='your-password'
 
-# 6. Edit audit_config.yaml with your database details
+# 3. Edit audit_config.yaml with your database details
+# Update backend, default_database, default_schema, and tables
 
-# 7. Run the audit (load env vars first)
-source .env
-uv run dw_auditor run
+# 4. Run the audit
+dw_auditor run
 
-# 8. Open the HTML report
+# 5. Open the HTML report
 open audit_results/audit_run_*/summary.html
 ```
-
-
-> **Note**: If you prefer pip, you can still use: `pip install -e .`
 
 ---
 
@@ -206,12 +206,6 @@ dw_auditor run
 SNOWFLAKE_PASSWORD='secret' dw_auditor run
 ```
 
-**Benefits:**
-- ✅ Keep credentials out of version control
-- ✅ Different credentials per environment (dev/staging/prod)
-- ✅ Works with CI/CD secrets management
-- ✅ Supports default values: `${VAR:-default}`
-
 ### Multi-Schema Auditing
 ```yaml
 tables:
@@ -219,8 +213,8 @@ tables:
     schema: raw_data
   - name: stg_customers
     schema: staging
-  - name: prod_customers
-    schema: production
+    database: uat_retail
+
 ```
 
 ### Custom Quality Checks
@@ -287,14 +281,18 @@ dw_auditor run --insight             # Profiling only
 ## 🛠️ Troubleshooting
 
 ### Installation
-**Using uv**: Make sure uv is installed: `curl -LsSf https://astral.sh/uv/install.sh | sh`
-**Using pip**: You can still install with: `pip install -e .` (reads from pyproject.toml)
+**PyPI**: `pip install dw-auditor` or `uv pip install dw-auditor`
+**From source**: Clone repo and run `pip install -e .` or `uv sync`
+**Requirements**: Python 3.10 or higher
 
 ### Authentication
 **BigQuery**: Use `gcloud auth application-default login` or set `credentials_path` in config
+
 **Snowflake**: Use environment variables for credentials (see Configuration Examples) or `authenticator: externalbrowser` for SSO
+
 **Databricks**: Use Personal Access Token (`access_token`) or OAuth (`auth_type: databricks-oauth`) - see config template for all options
-**Security**: Always use environment variables for passwords - never commit credentials to git
+
+Always use environment variables for passwords - never commit credentials to git.
 
 ### Performance
 - Sampling is always database-native via Ibis (fast & secure)
