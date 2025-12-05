@@ -12,6 +12,9 @@
 
 🎨 Beautiful HTML and CSV reports 
 
+<img width="1134" height="832" alt="image" src="https://github.com/user-attachments/assets/e40668ed-3e0a-482f-9d50-3dd49dcca0bd" />
+
+
 ---
 
 ## 🚀 Quick Start
