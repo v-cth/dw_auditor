@@ -73,7 +73,7 @@ open audit_results/audit_run_*/summary.html
 
 - **Relationship Detection** - Automatically discover foreign keys
 
-- **Rich HTML Reports** - 4-tab interface (Summary/Insights/Checks/Metadata) with visual gradients and timelines
+- **Rich HTML Reports** - Minimal interface highlighting valuable insights
 
 - **Secure by Design** - Zero data exports, database-native operations via Ibis, PII masking
 
