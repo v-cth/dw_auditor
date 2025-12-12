@@ -1,19 +1,30 @@
-# Data Warehouse Table Auditor
+# dw-auditor
 
 [![PyPI version](https://badge.fury.io/py/dw-auditor.svg)](https://pypi.org/project/dw-auditor/)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**High-performance data quality auditing for BigQuery, Snowflake & Databricks with automatic relationship detection.**
+**Audit your data warehouse in minutes, not days.**
 
-✅ Find data issues before they cause problems
-
-🔗 Discover table relationships automatically
-
-🎨 Beautiful HTML and CSV reports 
+dw-auditor scans your data warehouse tables and generates a detailed quality report. Point it at your tables, run one command, get actionable insights.
+Currently supports BigQuery, Snowflake and Databricks tables.
 
 <img width="567" height="416" alt="image" src="https://github.com/user-attachments/assets/e40668ed-3e0a-482f-9d50-3dd49dcca0bd" />
 
+---
+
+## Why dw-auditor?
+
+Most data quality tools start you with a blank slate. You define every test, every threshold, every expectation from scratch.
+
+dw-auditor takes a different approach: **built-in checks run automatically** on every column, based on type. You configure which tables to audit, and it handles the rest.
+
+| Problem | How dw-auditor Helps |
+|---------|---------------------|
+| "I inherited a warehouse, no idea what's broken" | Run audit, see all issues in one report |
+| "My dashboard numbers look wrong" | Find nulls, duplicates, outliers, orphan FKs |
+| "I don't know how these tables connect" | Auto-detect foreign key relationships |
+| "Is there PII in this table?" | Built-in PII detection + masking |
 
 ---
 
